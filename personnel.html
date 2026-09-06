@@ -32,7 +32,7 @@ main{padding:16px 18px 28px;max-width:1900px;margin:auto}.toolbar{display:flex;g
     <div id="authLoading" class="auth-loading">로그인 상태 확인 중...</div>
   </div>
 </div>
-<header><div class="brand"><a href="index.html">JAS ADMIN</a></div><div class="subtitle">인원 / 조 운영</div><span class="ver">DRAFT v0.1 · SKD VIEWER</span><div class="spacer"></div><span id="authUser" class="rcmdate" style="display:none"></span><button id="logoutBtn" style="display:none;padding:6px 10px">로그아웃</button><div id="now"></div></header>
+<header><div class="brand"><a href="index.html">JAS ADMIN</a></div><div class="subtitle">인원 / 조 운영</div><span class="ver">DRAFT v0.2 · SKD VIEWER</span><div class="spacer"></div><span id="authUser" class="rcmdate" style="display:none"></span><button id="logoutBtn" style="display:none;padding:6px 10px">로그아웃</button><div id="now"></div></header>
 <main>
   <div class="toolbar">
     <div class="dateNav"><button id="prevDay">◀</button><input id="opDate" class="dateinput" type="date"><button id="nextDay">▶</button><button id="todayBtn">오늘</button></div>
@@ -42,7 +42,7 @@ main{padding:16px 18px 28px;max-width:1900px;margin:auto}.toolbar{display:flex;g
     <select id="statusFilter" class="select"><option value="">전체 상태</option><option value="WORK">근무</option><option value="HOLIDAY_WORK">휴무근무</option><option value="OFF">휴무</option><option value="LEAVE">휴가/기타</option></select>
     <input id="search" class="search" placeholder="성명 / 조 / 직무 / 근무코드 검색">
   </div>
-  <div id="note" class="note">월간 SKD를 업로드하면 선택 날짜 기준 근무자와 조 편성을 자동으로 표시합니다. RA/RP 계열은 휴무근무로 집계합니다.</div>
+  <div id="note" class="note">월간 SKD를 업로드하면 선택 날짜 기준 근무자와 조 편성을 자동으로 표시합니다. RA/RP 계열은 휴무근무, HA/HP 계열은 기타 근무로 집계합니다.</div>
   <section class="kpis">
     <div class="kpi cyan"><div class="label">총 인원</div><div class="num" id="kTotal">0</div></div>
     <div class="kpi green"><div class="label">근무</div><div class="num" id="kWork">0</div></div>
@@ -70,7 +70,27 @@ const TIME_OVERRIDES={
   'A2':['02:00','11:00'], 'A3':['03:00','12:00'], 'P13':['13:00','22:00'],
   'RA43':['04:30',''], 'RP14':['14:00','']
 };
-const LEAVE_CODES=new Set(['L','AL','SL','교육','출장','병가','육휴','파견','퇴사']);
+const CODE_INFO={
+  'RR':{label:'휴직',status:'LEAVE'},
+  'ML':{label:'출산',status:'LEAVE'},
+  'BL':{label:'배우자 출산',status:'LEAVE'},
+  'HL':{label:'대휴',status:'OFF'},
+  'UL':{label:'무급휴직',status:'LEAVE'},
+  'PL':{label:'유급휴직',status:'LEAVE'},
+  'SL':{label:'배우자 출산휴가',status:'LEAVE'},
+  'L':{label:'연차',status:'LEAVE'},
+  'M':{label:'조퇴',status:'LEAVE'},
+  'B':{label:'출장',status:'LEAVE'},
+  'E':{label:'교육',status:'LEAVE'},
+  'C':{label:'경조',status:'LEAVE'},
+  'HA4':{label:'기타 근무',status:'WORK'},
+  'HA53':{label:'기타 근무',status:'WORK'},
+  'HA7':{label:'기타 근무',status:'WORK'},
+  'HA9':{label:'기타 근무',status:'WORK'},
+  'HA11':{label:'기타 근무',status:'WORK'},
+  'HP14':{label:'기타 근무',status:'WORK'}
+};
+const LEAVE_CODES=new Set(['AL','교육','출장','병가','육휴','파견','퇴사']);
 function norm(v){return String(v??'').trim();}
 function xTime(v){
   if(v==null||v==='')return'';
@@ -82,9 +102,14 @@ function codeStatus(code){
   const c=norm(code).toUpperCase();
   if(!c)return 'LEAVE';
   if(/^R[AP]/.test(c))return 'HOLIDAY_WORK';
+  if(CODE_INFO[c]?.status)return CODE_INFO[c].status;
   if(c==='R'||c==='OFF'||c==='휴'||c==='휴무')return 'OFF';
-  if(LEAVE_CODES.has(c)||/^(H|L)/.test(c))return 'LEAVE';
+  if(LEAVE_CODES.has(c))return 'LEAVE';
   return 'WORK';
+}
+function codeLabel(code){
+  const c=norm(code).toUpperCase();
+  return CODE_INFO[c]?.label||'';
 }
 function statusLabel(s){return s==='WORK'?'근무':s==='HOLIDAY_WORK'?'휴무근무':s==='OFF'?'휴무':'휴가/기타';}
 function statusPill(s){const cls=s==='WORK'?'pill-work':s==='HOLIDAY_WORK'?'pill-holiday':s==='OFF'?'pill-off':'pill-leave';return `<span class="pill ${cls}">${statusLabel(s)}</span>`;}
@@ -150,9 +175,9 @@ function render(){
   $('#kTotal').textContent=total;$('#kWork').textContent=work;$('#kHolidayWork').textContent=hw;$('#kOff').textContent=off;$('#kLeave').textContent=leave;$('#kUnknown').textContent=unknown;
   renderGroups(data);
   const gf=$('#groupFilter').value,sf=$('#statusFilter').value,q=$('#search').value.trim().toUpperCase();
-  data=data.filter(x=>(!gf||x.bucket===gf)&&(!sf||x.status===sf)&&(!q||[x.name,x.group,x.bucket,x.rank,x.position,x.job,x.code].some(v=>norm(v).toUpperCase().includes(q))));
+  data=data.filter(x=>(!gf||x.bucket===gf)&&(!sf||x.status===sf)&&(!q||[x.name,x.group,x.bucket,x.rank,x.position,x.job,x.code,codeLabel(x.code)].some(v=>norm(v).toUpperCase().includes(q))));
   $('#rowBadge').textContent=`${data.length}명`;
-  $('#tbody').innerHTML=data.length?data.map(x=>`<tr><td class="group">${esc(x.group)}</td><td class="name">${esc(x.name)}</td><td>${esc(x.empNo||'-')}</td><td>${esc(x.rank||'-')}</td><td>${esc(x.position||'-')}</td><td>${esc(x.job||'-')}</td><td class="code ${x.status==='HOLIDAY_WORK'?'holidaywork':x.status==='OFF'?'off':x.status==='LEAVE'?'leave':'work'}">${esc(x.code||'-')}</td><td class="time">${esc(x.workTime||'-')}</td><td>${statusPill(x.status)}</td></tr>`).join(''):'<tr><td colspan="9" class="empty">조건에 맞는 인원이 없습니다.</td></tr>';
+  $('#tbody').innerHTML=data.length?data.map(x=>`<tr><td class="group">${esc(x.group)}</td><td class="name">${esc(x.name)}</td><td>${esc(x.empNo||'-')}</td><td>${esc(x.rank||'-')}</td><td>${esc(x.position||'-')}</td><td>${esc(x.job||'-')}</td><td class="code ${x.status==='HOLIDAY_WORK'?'holidaywork':x.status==='OFF'?'off':x.status==='LEAVE'?'leave':'work'}">${esc(x.code||'-')}${codeLabel(x.code)?` <span style="font-size:10px;color:#8da5bf">(${esc(codeLabel(x.code))})</span>`:''}</td><td class="time">${esc(x.workTime||'-')}</td><td>${statusPill(x.status)}</td></tr>`).join(''):'<tr><td colspan="9" class="empty">조건에 맞는 인원이 없습니다.</td></tr>';
 }
 function renderGroups(data){
   const order=['1 GROUP','2 GROUP','3 GROUP','소산','Office','신입','병가','육휴','파견','퇴사','기타'];
