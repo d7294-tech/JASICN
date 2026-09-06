@@ -17,7 +17,7 @@ button,.btn,input,select{font:inherit}.btn,button{border:1px solid #2c5774;backg
 .grid{display:block}.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}.panel-head{display:flex;align-items:center;gap:9px;padding:12px 14px;background:#0d2035;border-bottom:1px solid var(--line)}.panel-title{font-weight:950}.badge{font-size:11px;border:1px solid #31506d;border-radius:20px;padding:3px 8px;color:#adc2d6}.legend{margin-left:auto;font-size:11px;color:#8fa7bd}
 .tablewrap{overflow:auto;max-height:calc(100vh - 300px)}table{width:100%;border-collapse:separate;border-spacing:0;font-size:12px;min-width:1180px}th{position:sticky;top:0;z-index:2;background:#10263b;color:#a7bed1;text-align:left;border-bottom:1px solid var(--line);padding:9px 7px;font-size:11px}td{padding:8px 7px;border-bottom:1px solid #17304a;white-space:nowrap}tbody tr:hover td{background:#10263a}
 .flight{font-weight:950}.time{font-variant-numeric:tabular-nums}.win{font-size:11px;color:#9fe8ff}.spot{font-weight:900;color:#ffd36a}.conflict{color:#ff8996;font-weight:950}.ok{color:#67e9aa;font-weight:900}.muted{color:#7891a8}
-.assign{background:#0b1c2e;color:#fff;border:1px solid #31506d;border-radius:6px;padding:5px 6px;min-width:92px}.breakList{padding:10px 12px}.crewbox{border:1px solid #26435e;border-radius:10px;padding:10px;margin-bottom:9px;background:#0b1b2e}.crewhead{display:flex;align-items:center;gap:8px;margin-bottom:6px}.crewname{font-weight:950;color:#cbbcff}.shift{font-size:11px;color:#8fa7bd}.gap{display:inline-block;margin:3px 4px 0 0;border:1px solid #31506d;border-radius:999px;padding:4px 7px;font-size:11px;color:#bfe6ff}.gap.good{border-color:#347656;color:#7ee9b4}.gap.short{color:#8aa0b2}
+.assign{background:#0b1c2e;color:#fff;border:1px solid #31506d;border-radius:6px;padding:5px 6px;min-width:92px}.memo{width:180px;min-width:150px;background:#08182a;color:#fff;border:1px solid #31506d;border-radius:6px;padding:6px 7px;resize:horizontal}.breakList{padding:10px 12px}.crewbox{border:1px solid #26435e;border-radius:10px;padding:10px;margin-bottom:9px;background:#0b1b2e}.crewhead{display:flex;align-items:center;gap:8px;margin-bottom:6px}.crewname{font-weight:950;color:#cbbcff}.shift{font-size:11px;color:#8fa7bd}.gap{display:inline-block;margin:3px 4px 0 0;border:1px solid #31506d;border-radius:999px;padding:4px 7px;font-size:11px;color:#bfe6ff}.gap.good{border-color:#347656;color:#7ee9b4}.gap.short{color:#8aa0b2}
 .rulebox{display:grid;grid-template-columns:repeat(4,minmax(120px,1fr));gap:8px;margin-bottom:12px}.rule{background:#0b1b2e;border:1px solid var(--line);border-radius:10px;padding:8px}.rule label{display:block;font-size:10px;color:#8da5bf;margin-bottom:4px}.rule input{width:100%;background:#08182a;border:1px solid #31506d;color:#fff;border-radius:6px;padding:7px}
 .auth-overlay{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:#06111e;padding:20px}.auth-overlay.hidden{display:none}.login-card{width:min(420px,94vw);background:#0d1d31;border:1px solid #294866;border-radius:18px;padding:28px}.login-logo{font-size:26px;font-weight:950;color:var(--cyan)}.login-sub{color:#9fb4c8;font-size:13px;margin:5px 0 18px}.login-card label{display:block;font-size:11px;color:#9fb4c8;margin:10px 0 5px}.login-card input{width:100%;background:#08182a;border:1px solid #2a4965;color:#fff;border-radius:8px;padding:11px}.login-card button{width:100%;margin-top:16px}.msg{font-size:12px;color:#ff9aa8;min-height:20px;margin-top:10px}
 @media(max-width:1200px){.grid{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(3,1fr)}}@media(max-width:700px){.kpis{grid-template-columns:repeat(2,1fr)}.rulebox{grid-template-columns:repeat(2,1fr)}}
@@ -54,7 +54,7 @@ button,.btn,input,select{font:inherit}.btn,button{border:1px solid #2c5774;backg
 
 <header>
   <div class="brand"><a href="index.html">JAS ADMIN</a></div><div class="subtitle">잡 배정 / 조별 휴게시간</div>
-  <span class="ver">DRAFT v0.2 · SINGLE CREW + TIMELINE</span><div class="spacer"></div><span id="userBadge" class="badge"></span>
+  <span class="ver">DRAFT v0.3 · IN/OUT CREW + MEMO</span><div class="spacer"></div><span id="userBadge" class="badge"></span>
 </header>
 
 <main>
@@ -63,7 +63,7 @@ button,.btn,input,select{font:inherit}.btn,button{border:1px solid #2c5774;backg
     <button id="reloadBtn" class="primary">운항현황 불러오기</button>
     <span id="flightSource" class="badge">CLOUD 대기</span><span id="rosterSource" class="badge">SKD 대기</span>
   </div>
-  <div class="note">운항현황 CLOUD + 인원/조 운영의 해당일 출근조를 사용합니다. 운항편당 조 1개만 수기 배정하며, 아래 시간대 차트에서 조별 작업/휴게 가능시간을 함께 확인합니다.</div>
+  <div class="note">운항현황의 연결편을 한 줄로 표시하고 IN/OUT 각각 배정조를 지정합니다. 비고는 수기 입력하며 자동저장됩니다. 아래 차트는 IN/OUT 작업시간을 조별로 반영합니다.</div>
 
   <div class="rulebox">
     <div class="rule"><label>IN 시작 (분)</label><input id="inPre" type="number" value="15"></div>
@@ -81,9 +81,9 @@ button,.btn,input,select{font:inherit}.btn,button{border:1px solid #2c5774;backg
   </section>
 
   <section class="panel">
-    <div class="panel-head"><div class="panel-title">운항 JOB 배정</div><span id="jobBadge" class="badge">0건</span><div class="legend">운항편당 조 1개 배정 · 중복 자동경고</div></div>
+    <div class="panel-head"><div class="panel-title">운항 JOB 배정</div><span id="jobBadge" class="badge">0건</span><div class="legend">IN/OUT 각각 조 배정 · 비고 수기입력 · 중복 자동경고</div></div>
     <div class="tablewrap" style="max-height:430px"><table>
-      <thead><tr><th>구분</th><th>편명</th><th>REG</th><th>SPOT</th><th>기준시간</th><th>작업시간</th><th>배정 조</th><th>상태</th></tr></thead>
+      <thead><tr><th>ARR FLT</th><th>ETA</th><th>도착 SPOT</th><th>ORG</th><th>출발 SPOT</th><th>DEP FLT</th><th>REG</th><th>STD</th><th>DEST</th><th>IN</th><th>OUT</th><th>상태</th><th>비고</th></tr></thead>
       <tbody id="jobBody"></tbody>
     </table></div>
   </section>
@@ -112,19 +112,13 @@ function hm(v){if(!v)return'';const m=String(v).match(/(\d{1,2}):(\d{2})/);retur
 function toMin(t){const m=hm(t).match(/(\d{2}):(\d{2})/);return m?Number(m[1])*60+Number(m[2]):null;}
 function fmtMin(n){n=(n%1440+1440)%1440;return `${String(Math.floor(n/60)).padStart(2,'0')}:${String(n%60).padStart(2,'0')}`;}
 function shiftTime(t,delta){const x=toMin(t);return x==null?'':fmtMin(x+delta);}
-function jobKey(j){return `${j.dir}|${j.flight}`;}
-function assignKey(j){return jobKey(j);}
+function jobKey(j){return `${j.arrFlight||''}|${j.depFlight||''}|${j.reg||''}`;}
+function assignKey(j,side){return `${jobKey(j)}|${side}`;}
+function memoKey(j){return `${jobKey(j)}|memo`;}
 function saveAssignments(){localStorage.setItem('jas_job_assign_v1_'+($('#opDate').value||todayLocal()),JSON.stringify(assignments));}
 function loadAssignments(){
-  try{
-    assignments=JSON.parse(localStorage.getItem('jas_job_assign_v1_'+($('#opDate').value||todayLocal()))||'{}')||{};
-    const migrated={};
-    for(const [k,v] of Object.entries(assignments)){
-      if(k.endsWith('|bag')||k.endsWith('|cargo')){const nk=k.replace(/\|(bag|cargo)$/,'');if(v&&!migrated[nk])migrated[nk]=v;}
-      else migrated[k]=v;
-    }
-    assignments=migrated;
-  }catch{assignments={};}
+  try{assignments=JSON.parse(localStorage.getItem('jas_job_assign_v1_'+($('#opDate').value||todayLocal()))||'{}')||{};}
+  catch{assignments={};}
 }
 
 async function openSkdDb(){
@@ -181,13 +175,56 @@ async function loadFlights(){
 }
 function buildJobs(){
   const inPre=Number($('#inPre').value||15),inPost=Number($('#inPost').value||25),outPre=Number($('#outPre').value||60),outPost=Number($('#outPost').value||10);
-  jobs=flights.map(f=>{
-    const dir=f.direction==='A'?'IN':'OUT';
-    const base=dir==='IN'?(hm(f.estimated_time)||hm(f.schedule_time)):(hm(f.estimated_time)||hm(f.schedule_time));
-    const start=dir==='IN'?shiftTime(base,-inPre):shiftTime(base,-outPre);
-    const end=dir==='IN'?shiftTime(base,inPost):shiftTime(base,outPost);
-    return {dir,flight:f.flight||'',reg:f.reg||'',spot:f.spot||'',base,start,end};
-  }).filter(x=>x.base).sort((a,b)=>toMin(a.start)-toMin(b.start));
+
+  // Try to combine ARR/DEP records by REG. If the cloud row already contains both sides, use them directly.
+  const byReg=new Map();
+  for(const f of flights){
+    const reg=f.reg||'';
+    if(!byReg.has(reg))byReg.set(reg,[]);
+    byReg.get(reg).push(f);
+  }
+  const combined=[];
+
+  for(const [reg,arr] of byReg){
+    // Sort by schedule time and pair nearest ARR -> DEP
+    const items=[...arr].sort((a,b)=>String(a.schedule_time||'').localeCompare(String(b.schedule_time||'')));
+    const used=new Set();
+    for(let i=0;i<items.length;i++){
+      if(used.has(i))continue;
+      const a=items[i];
+      const aDir=a.direction==='A'?'IN':(a.direction==='D'?'OUT':a.direction);
+      if(aDir==='IN'){
+        let j=-1;
+        for(let k=i+1;k<items.length;k++){
+          if(used.has(k))continue;
+          const bDir=items[k].direction==='A'?'IN':(items[k].direction==='D'?'OUT':items[k].direction);
+          if(bDir==='OUT'){j=k;break;}
+        }
+        const b=j>=0?items[j]:null;
+        if(j>=0)used.add(j);
+        combined.push({
+          arrFlight:a.flight||'', eta:hm(a.estimated_time)||hm(a.schedule_time), arrSpot:a.spot||'', org:a.origin||a.from||'',
+          depSpot:b?.spot||a.spot||'', depFlight:b?.flight||'', reg:reg||a.reg||'', std:b?(hm(b.estimated_time)||hm(b.schedule_time)):'',
+          dest:b?(b.destination||b.to||''):''
+        });
+      }else{
+        combined.push({
+          arrFlight:'',eta:'',arrSpot:'',org:'',depSpot:a.spot||'',depFlight:a.flight||'',reg:reg||a.reg||'',
+          std:hm(a.estimated_time)||hm(a.schedule_time),dest:a.destination||a.to||''
+        });
+      }
+      used.add(i);
+    }
+  }
+
+  jobs=combined.map(j=>{
+    const inStart=j.eta?shiftTime(j.eta,-inPre):'', inEnd=j.eta?shiftTime(j.eta,inPost):'';
+    const outStart=j.std?shiftTime(j.std,-outPre):'', outEnd=j.std?shiftTime(j.std,outPost):'';
+    return {...j,inStart,inEnd,outStart,outEnd};
+  }).sort((a,b)=>{
+    const aa=toMin(a.eta||a.std), bb=toMin(b.eta||b.std);
+    return (aa??9999)-(bb??9999);
+  });
   renderAll();
 }
 function crewOptions(selected){
@@ -197,15 +234,21 @@ function overlaps(a,b){const as=toMin(a.start),ae=toMin(a.end),bs=toMin(b.start)
 function crewConflicts(){
   const map=new Map();
   for(const j of jobs){
-    const crew=assignments[assignKey(j)]; if(!crew)continue;
-    if(!map.has(crew))map.set(crew,[]);
-    map.get(crew).push({...j});
+    const inCrew=assignments[assignKey(j,'IN')];
+    const outCrew=assignments[assignKey(j,'OUT')];
+    if(inCrew&&j.inStart&&j.inEnd){
+      if(!map.has(inCrew))map.set(inCrew,[]);
+      map.get(inCrew).push({start:j.inStart,end:j.inEnd,label:j.arrFlight||'ARR',key:`${jobKey(j)}|IN`});
+    }
+    if(outCrew&&j.outStart&&j.outEnd){
+      if(!map.has(outCrew))map.set(outCrew,[]);
+      map.get(outCrew).push({start:j.outStart,end:j.outEnd,label:j.depFlight||'DEP',key:`${jobKey(j)}|OUT`});
+    }
   }
   const bad=new Set();
   for(const [crew,arr] of map){
     for(let i=0;i<arr.length;i++)for(let k=i+1;k<arr.length;k++){
-      if(jobKey(arr[i])===jobKey(arr[k]))continue;
-      if(overlaps(arr[i],arr[k])){bad.add(`${crew}|${jobKey(arr[i])}`);bad.add(`${crew}|${jobKey(arr[k])}`);}
+      if(overlaps(arr[i],arr[k])){bad.add(`${crew}|${arr[i].key}`);bad.add(`${crew}|${arr[k].key}`);}
     }
   }
   return bad;
@@ -213,20 +256,40 @@ function crewConflicts(){
 function renderJobs(){
   const bad=crewConflicts();let assigned=0,conflictRows=0;
   $('#jobBody').innerHTML=jobs.length?jobs.map(j=>{
-    const crew=assignments[assignKey(j)]||'';
-    if(crew)assigned++;
-    const badRow=crew&&bad.has(`${crew}|${jobKey(j)}`);if(badRow)conflictRows++;
-    return `<tr><td>${j.dir}</td><td class="flight">${esc(j.flight)}</td><td>${esc(j.reg||'-')}</td><td class="spot">${esc(j.spot||'-')}</td><td class="time">${esc(j.base)}</td><td class="win">${esc(j.start)} ~ ${esc(j.end)}</td>
-      <td><select class="assign" data-key="${esc(assignKey(j))}">${crewOptions(crew)}</select></td>
-      <td>${badRow?'<span class="conflict">겹침</span>':(crew?'<span class="ok">배정</span>':'<span class="muted">미배정</span>')}</td></tr>`;
-  }).join(''):'<tr><td colspan="8" class="muted" style="padding:40px;text-align:center">운항현황을 불러와 주세요.</td></tr>';
+    const inCrew=assignments[assignKey(j,'IN')]||'';
+    const outCrew=assignments[assignKey(j,'OUT')]||'';
+    const memo=assignments[memoKey(j)]||'';
+    if(inCrew||outCrew)assigned++;
+    const badIn=inCrew&&bad.has(`${inCrew}|${jobKey(j)}|IN`);
+    const badOut=outCrew&&bad.has(`${outCrew}|${jobKey(j)}|OUT`);
+    const badRow=badIn||badOut;if(badRow)conflictRows++;
+    return `<tr>
+      <td class="flight">${esc(j.arrFlight||'-')}</td>
+      <td class="time">${esc(j.eta||'-')}</td>
+      <td class="spot">${esc(j.arrSpot||'-')}</td>
+      <td>${esc(j.org||'-')}</td>
+      <td class="spot">${esc(j.depSpot||'-')}</td>
+      <td class="flight">${esc(j.depFlight||'-')}</td>
+      <td>${esc(j.reg||'-')}</td>
+      <td class="time">${esc(j.std||'-')}</td>
+      <td>${esc(j.dest||'-')}</td>
+      <td><select class="assign" data-key="${esc(assignKey(j,'IN'))}">${crewOptions(inCrew)}</select></td>
+      <td><select class="assign" data-key="${esc(assignKey(j,'OUT'))}">${crewOptions(outCrew)}</select></td>
+      <td>${badRow?'<span class="conflict">겹침</span>':((inCrew||outCrew)?'<span class="ok">배정</span>':'<span class="muted">미배정</span>')}</td>
+      <td><input class="memo" data-memo="${esc(memoKey(j))}" value="${esc(memo)}" placeholder="비고 수기입력"></td>
+    </tr>`;
+  }).join(''):'<tr><td colspan="13" class="muted" style="padding:40px;text-align:center">운항현황을 불러와 주세요.</td></tr>';
+
   document.querySelectorAll('.assign').forEach(x=>x.onchange=()=>{assignments[x.dataset.key]=x.value;if(!x.value)delete assignments[x.dataset.key];saveAssignments();renderAll();});
+  document.querySelectorAll('.memo').forEach(x=>x.oninput=()=>{assignments[x.dataset.memo]=x.value;saveAssignments();});
+
   $('#kJobs').textContent=jobs.length;$('#kAssigned').textContent=assigned;$('#kUnassigned').textContent=Math.max(0,jobs.length-assigned);$('#kConflict').textContent=conflictRows;$('#jobBadge').textContent=`${jobs.length}건`;
 }
 function busyForCrew(id){
   const a=[];
   for(const j of jobs){
-    if(assignments[assignKey(j)]===id)a.push({start:j.start,end:j.end,flight:j.flight,dir:j.dir,spot:j.spot});
+    if(assignments[assignKey(j,'IN')]===id&&j.inStart&&j.inEnd)a.push({start:j.inStart,end:j.inEnd,flight:j.arrFlight||'ARR',dir:'IN',spot:j.arrSpot});
+    if(assignments[assignKey(j,'OUT')]===id&&j.outStart&&j.outEnd)a.push({start:j.outStart,end:j.outEnd,flight:j.depFlight||'DEP',dir:'OUT',spot:j.depSpot});
   }
   a.sort((x,y)=>toMin(x.start)-toMin(y.start));
   const merged=[];
@@ -252,7 +315,8 @@ function renderBreaks(){
       const st=toMin(j.start),en=toMin(j.end);
       if(st==null||en==null)return'';
       const left=timelinePos(st,start,end),right=timelinePos(en,start,end),width=Math.max(.7,right-left);
-      const isBad=bad.has(`${c.id}|${j.dir}|${j.flight}`);
+      const matchJob=jobs.find(x=>(j.dir==='IN'?(x.arrFlight===j.flight):(x.depFlight===j.flight))&&(j.dir==='IN'?x.arrSpot===j.spot:x.depSpot===j.spot));
+      const isBad=matchJob?bad.has(`${c.id}|${jobKey(matchJob)}|${j.dir}`):false;
       return `<div class="jobBar ${isBad?'conflictBar':''}" style="left:${left}%;width:${width}%" title="${esc(j.dir+' '+j.flight+' '+j.start+'~'+j.end+' SPOT '+(j.spot||'-'))}">${esc(j.flight)}</div>`;
     }).join('');
     const breaks=[];
