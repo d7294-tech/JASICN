@@ -50,6 +50,8 @@ main{padding:16px 18px 28px;max-width:1900px;margin:auto}.toolbar{display:flex;g
 .dailyBoard td.cellSelected{outline:3px solid #27d3ff!important;outline-offset:-3px}
 .dailyBoard td.manualCellColor{background:var(--manual-bg)!important}
 
+
+.dailyBoard tr.tow td{background:#b7d7ef!important}.dailyBoard tr.tow td:first-child,.dailyBoard tr.tow td:nth-child(2){font-weight:950}
 </style>
 </head>
 <body>
@@ -65,7 +67,7 @@ main{padding:16px 18px 28px;max-width:1900px;margin:auto}.toolbar{display:flex;g
     <div id="authLoading" class="auth-loading">로그인 상태 확인 중...</div>
   </div>
 </div>
-<header><div class="brand"><a href="index.html">JAS ADMIN</a></div><div class="subtitle">인원 / 조 운영</div><span class="ver">DRAFT v0.7.7 · SHARED SUMMARY SAVE</span><div class="spacer"></div><span id="authUser" class="rcmdate" style="display:none"></span><button id="logoutBtn" style="display:none;padding:6px 10px">로그아웃</button><div id="now"></div></header>
+<header><div class="brand"><a href="index.html">JAS ADMIN</a></div><div class="subtitle">인원 / 조 운영</div><span class="ver">DRAFT v0.7.8 · SOSAN 1/2/3</span><div class="spacer"></div><span id="authUser" class="rcmdate" style="display:none"></span><button id="logoutBtn" style="display:none;padding:6px 10px">로그아웃</button><div id="now"></div></header>
 <main>
   <div class="toolbar">
     <div class="dateNav"><button id="prevDay">◀</button><input id="opDate" class="dateinput" type="date"><button id="nextDay">▶</button><button id="todayBtn">오늘</button></div>
@@ -350,7 +352,7 @@ function groupNumber(g){const n=parseInt(normGroup(g),10);return Number.isFinite
 function buildAutoBoardRows(date){
   const day=selectedDayData(date);
   const byGroup=new Map();
-  const towMembers=[];
+  const towGroups=new Map([['소산1',[]],['소산2',[]],['소산3',[]]]);
 
   // 숫자 조(1조~24조)와 소산조를 분리한다.
   day.forEach(x=>{
@@ -416,16 +418,28 @@ function buildAutoBoardRows(date){
   const towPNames=towP.filter(x=>String(x.code||'').trim().toUpperCase()===towPCode).map(x=>x.name).slice(0,6);
   while(towANames.length<6)towANames.push('');
   while(towPNames.length<6)towPNames.push('');
+  const sosanRows=[];
+  for(const sg of ['소산1','소산2','소산3']){
+    const members=towGroups.get(sg)||[];
+    if(!members.length)continue;
+    members.sort((a,b)=>(a.crewSeq||999)-(b.crewSeq||999));
+    const code=mostCommonCode(members,x=>codeStatus(x)==='WORK').code||mostCommonCode(members,()=>true).code||'';
+    const names=members.map(x=>x.name||'').filter(Boolean);
+    while(names.length<6)names.push('');
+    sosanRows.push({group:sg,code,cls:'tow',names:names.slice(0,6),kind:'tow'});
+  }
+
 
   return [
     ...morning,
     ...holidayMorning,
+    ...sosanRows,
     {group:'오전 통제',code:'',cls:'control',names:Array(6).fill(''),manualOnly:true},
     {group:'오후 통제',code:'',cls:'control',names:Array(6).fill(''),manualOnly:true},
     ...afternoon,
     ...holidayAfternoon,
-    {group:'TOW',code:towACode,cls:'',names:towANames,kind:'tow'},
-    {group:'TOW',code:towPCode,cls:'',names:towPNames,kind:'tow'}
+    {group:'소산1',code:towACode,cls:'tow',names:towANames,kind:'tow'},
+    {group:'소산1',code:towPCode,cls:'tow',names:towPNames,kind:'tow'}
   ];
 }
 function rowKey(r,idx){return `${idx}|${r.group}|${r.code}|${r.kind||''}`;}
