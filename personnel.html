@@ -51,7 +51,7 @@ main{padding:16px 18px 28px;max-width:1900px;margin:auto}.toolbar{display:flex;g
     <div id="authLoading" class="auth-loading">로그인 상태 확인 중...</div>
   </div>
 </div>
-<header><div class="brand"><a href="index.html">JAS ADMIN</a></div><div class="subtitle">인원 / 조 운영</div><span class="ver">DRAFT v0.6 · REAL CREW AUTO</span><div class="spacer"></div><span id="authUser" class="rcmdate" style="display:none"></span><button id="logoutBtn" style="display:none;padding:6px 10px">로그아웃</button><div id="now"></div></header>
+<header><div class="brand"><a href="index.html">JAS ADMIN</a></div><div class="subtitle">인원 / 조 운영</div><span class="ver">DRAFT v0.6.1 · LOGIN FIX</span><div class="spacer"></div><span id="authUser" class="rcmdate" style="display:none"></span><button id="logoutBtn" style="display:none;padding:6px 10px">로그아웃</button><div id="now"></div></header>
 <main>
   <div class="toolbar">
     <div class="dateNav"><button id="prevDay">◀</button><input id="opDate" class="dateinput" type="date"><button id="nextDay">▶</button><button id="todayBtn">오늘</button></div>
@@ -287,7 +287,7 @@ function renderManualBoard(date){
 
 function render(){
   const sd=selectedDay();
-  if(!scheduleRows.length){$('#tbody').innerHTML='<tr><td colspan="9" class="empty">인원 SKD 파일을 업로드해 주세요.</td></tr>';['kTotal','kWork','kHolidayWork','kOff','kLeave','kUnknown'].forEach(id=>$('#'+id).textContent='0');$('#groupGrid').innerHTML='';$('#crewBody').innerHTML='<tr><td colspan="10" class="empty">인원 SKD 파일을 업로드해 주세요.</td></tr>';$('#crewBadge').textContent='0개 조';$('#rowBadge').textContent='0명';return;}
+  if(!scheduleRows.length){$('#tbody').innerHTML='<tr><td colspan="9" class="empty">인원 SKD 파일을 업로드해 주세요.</td></tr>';['kTotal','kWork','kHolidayWork','kOff','kLeave','kUnknown'].forEach(id=>$('#'+id).textContent='0');$('#groupGrid').innerHTML='';renderManualBoard(sd.date);$('#rowBadge').textContent='0명';return;}
   if(sd.year!==fileYear||sd.month!==fileMonth){$('#note').textContent=`업로드 파일은 ${fileYear}년 ${fileMonth}월 자료입니다. 현재 선택일 ${sd.date}은 해당 월이 아닙니다.`;}
   else $('#note').textContent=`${sd.date} 기준 · ${fileName} · 근무코드와 조 편성을 월간 SKD에서 자동 추출`;
   let data=scheduleRows.map(x=>{const code=(sd.year===fileYear&&sd.month===fileMonth)?(x.days[sd.day]||''):'';const status=codeStatus(code);const workTime=workTimeFor(code);return {...x,code,status,workTime};});
@@ -307,7 +307,6 @@ function renderGroups(data){
 
 function shiftDay(n){const d=new Date(($('#opDate').value||todayLocal())+'T00:00:00');d.setDate(d.getDate()+n);$('#opDate').value=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;render();}
 $('#opDate').value=todayLocal(); $('#prevDay').onclick=()=>shiftDay(-1);$('#nextDay').onclick=()=>shiftDay(1);$('#todayBtn').onclick=()=>{$('#opDate').value=todayLocal();render();};$('#opDate').onchange=render;$('#groupFilter').onchange=render;$('#statusFilter').onchange=render;$('#search').oninput=render;
-$('#resetCrewBtn').onclick=()=>{const d=selectedDay().date;if(confirm(d+' 수기 조 편성을 모두 지우고 SKD 기준으로 복원할까요?')){localStorage.removeItem(crewStoreKey(d));render();}};
 
 $('#boardSaveBtn').onclick=()=>{const d=selectedDay().date;collectBoardOverrides(d);renderManualBoard(d);alert(d+' 수기 수정사항을 저장했습니다.');};
 $('#boardResetBtn').onclick=()=>{const d=selectedDay().date;if(confirm(d+' 수기 수정사항만 지우고 SKD 자동편성으로 복원할까요?')){localStorage.removeItem(boardKey(d));renderManualBoard(d);}};
@@ -315,11 +314,11 @@ $('#boardResetBtn').onclick=()=>{const d=selectedDay().date;if(confirm(d+' 수�
 $('#skdFile').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;try{const ab=await f.arrayBuffer();const wb=XLSX.read(ab,{type:'array',cellDates:true});parseWorkbook(wb,f.name);localStorage.setItem('jas_personnel_last_name',f.name);}catch(err){alert('SKD 읽기 실패: '+err.message);}finally{e.target.value='';}});
 setInterval(()=>{$('#now').textContent=new Date().toLocaleString('ko-KR',{hour12:false})},1000);
 
-function showLogin(msg=''){document.getElementById('authOverlay').classList.remove('hidden');document.getElementById('authLoading').style.display='none';document.getElementById('loginMsg').textContent=msg;}
-async function enterApp(session){if(!session?.user){showLogin();return;}document.getElementById('authOverlay').classList.add('hidden');$('#authUser').textContent=session.user.email||'관리자';$('#authUser').style.display='inline-block';$('#logoutBtn').style.display='inline-block';}
-$('#loginForm').addEventListener('submit',async e=>{e.preventDefault();const btn=$('#loginBtn');btn.disabled=true;btn.textContent='로그인 중...';try{const {data,error}=await sb.auth.signInWithPassword({email:$('#loginEmail').value.trim(),password:$('#loginPassword').value});if(error)throw error;await enterApp(data.session);}catch(err){$('#loginMsg').textContent='로그인 실패: '+(err.message||err);}finally{btn.disabled=false;btn.textContent='로그인';}});
-$('#logoutBtn').onclick=async()=>{await sb.auth.signOut();showLogin('로그아웃되었습니다.');};
-(async()=>{const {data}=await sb.auth.getSession();if(data?.session)await enterApp(data.session);else showLogin();render();})();
+function showLogin(msg=''){document.getElementById('authOverlay')?.classList.remove('hidden');const loading=document.getElementById('authLoading');if(loading)loading.style.display='none';const m=document.getElementById('loginMsg');if(m)m.textContent=msg;}
+async function enterApp(session){if(!session?.user){showLogin();return;}document.getElementById('authOverlay')?.classList.add('hidden');if($('#authUser')){$('#authUser').textContent=session.user.email||'관리자';$('#authUser').style.display='inline-block';}if($('#logoutBtn'))$('#logoutBtn').style.display='inline-block';try{render();}catch(e){console.error('personnel render',e);}}
+$('#loginForm')?.addEventListener('submit',async e=>{e.preventDefault();const btn=$('#loginBtn');btn.disabled=true;btn.textContent='로그인 중...';$('#loginMsg').textContent='';try{const {data,error}=await sb.auth.signInWithPassword({email:$('#loginEmail').value.trim(),password:$('#loginPassword').value});if(error)throw error;await enterApp(data.session);}catch(err){$('#loginMsg').textContent='로그인 실패: '+(err.message||err);}finally{btn.disabled=false;btn.textContent='로그인';}});
+if($('#logoutBtn'))$('#logoutBtn').onclick=async()=>{await sb.auth.signOut();showLogin('로그아웃되었습니다.');};
+(async()=>{try{const {data,error}=await sb.auth.getSession();if(error)throw error;if(data?.session)await enterApp(data.session);else showLogin();}catch(e){showLogin('로그인 상태 확인 실패: '+(e.message||e));}})();
 </script>
 </body>
 </html>
