@@ -1,4 +1,4 @@
-const AIRLINES = ['7C','AK','KN','IT'];
+const AIRLINES = ['7C', 'AK', 'KN', 'IT'];
 
 const CLOSING_KEY = process.env.DATA_GO_KR_CLOSING_KEY || '';
 const PAX_KEY = process.env.DATA_GO_KR_PASSENGER_KEY || '';
@@ -49,14 +49,13 @@ const fmtTime = v => {
 
   const t = x.padStart(4, '0').slice(-4);
 
-  return `${t.slice(0,2)}:${t.slice(2)}`;
+  return `${t.slice(0, 2)}:${t.slice(2)}`;
 };
 
 const pickTime = (o, keys) =>
   fmtTime(pick(o, keys));
 
 const extractList = data => {
-
   if (Array.isArray(data)) return data;
 
   const cand = [
@@ -71,21 +70,14 @@ const extractList = data => {
   ];
 
   for (const x of cand) {
-
-    if (Array.isArray(x)) {
-      return x;
-    }
-
-    if (x && typeof x === 'object') {
-      return [x];
-    }
+    if (Array.isArray(x)) return x;
+    if (x && typeof x === 'object') return [x];
   }
 
   return [];
 };
 
 const parseKind = o => {
-
   const v = pick(
     o,
     [
@@ -103,14 +95,14 @@ const parseKind = o => {
   ).toUpperCase();
 
   if (
-    ['I','IN','A','ARR','ARRIVAL','도착'].includes(v) ||
+    ['I', 'IN', 'A', 'ARR', 'ARRIVAL', '도착'].includes(v) ||
     /ARR|도착/.test(v)
   ) {
     return 'A';
   }
 
   if (
-    ['O','OUT','D','DEP','DEPARTURE','출발'].includes(v) ||
+    ['O', 'OUT', 'D', 'DEP', 'DEPARTURE', '출발'].includes(v) ||
     /DEP|출발/.test(v)
   ) {
     return 'D';
@@ -120,7 +112,6 @@ const parseKind = o => {
 };
 
 const closingObj = x => {
-
   const rawNum = pick(
     x,
     [
@@ -139,10 +130,10 @@ const closingObj = x => {
 
   const line = pick(
     x,
-    ['msLine','airline','airlineCode']
+    ['msLine', 'airline', 'airlineCode']
   )
     .toUpperCase()
-    .replace(/\s+/g,'');
+    .replace(/\s+/g, '');
 
   let flight = normFlt(rawNum);
 
@@ -152,16 +143,15 @@ const closingObj = x => {
 
   const delay = pick(
     x,
-    ['msDelay','delay']
+    ['msDelay', 'delay']
   );
 
   const regul = pick(
     x,
-    ['msRegul','regul']
+    ['msRegul', 'regul']
   );
 
   return {
-
     kind: parseKind(x),
 
     flight,
@@ -276,7 +266,7 @@ const closingObj = x => {
       ]
     ),
 
-    remark: [regul,delay]
+    remark: [regul, delay]
       .filter(Boolean)
       .join(' / '),
 
@@ -285,7 +275,6 @@ const closingObj = x => {
 };
 
 const paxObj = (x, kind) => ({
-
   kind,
 
   flight: normFlt(
@@ -302,7 +291,7 @@ const paxObj = (x, kind) => ({
 
   airportCode: pick(
     x,
-    ['airportCode','cityCode']
+    ['airportCode', 'cityCode']
   ),
 
   sched: fmtTime(
@@ -327,7 +316,7 @@ const paxObj = (x, kind) => ({
 
   carousel: pick(
     x,
-    ['carousel','carouselNo']
+    ['carousel', 'carouselNo']
   ),
 
   gate: pick(
@@ -341,37 +330,34 @@ const paxObj = (x, kind) => ({
 
   remark: pick(
     x,
-    ['remark','status']
+    ['remark', 'status']
   ),
 
   raw: x
 });
 
-
 const kstNow = () =>
   new Date(
     Date.now() +
-    9 * 60 * 60 * 1000
+      9 * 60 * 60 * 1000
   );
 
 const todayKst = () => {
-
   const d = kstNow();
 
   return (
     `${d.getUTCFullYear()}-` +
-    `${String(d.getUTCMonth()+1).padStart(2,'0')}-` +
-    `${String(d.getUTCDate()).padStart(2,'0')}`
+    `${String(d.getUTCMonth() + 1).padStart(2, '0')}-` +
+    `${String(d.getUTCDate()).padStart(2, '0')}`
   );
 };
 
 const ymd = d =>
-  d.replaceAll('-','');
-
+  d.replaceAll('-', '');
 
 /* =========================================
-   API FETCH
-   HTTP 우선 → HTTPS fallback
+   FETCH
+   HTTP 우선 -> HTTPS fallback
    각 주소 최대 3회 재시도
 ========================================= */
 
@@ -379,7 +365,6 @@ async function fetchText(
   url,
   ms = 210000
 ) {
-
   const candidates = [
     String(url)
   ];
@@ -387,7 +372,6 @@ async function fetchText(
   if (
     String(url).startsWith('http://')
   ) {
-
     candidates.push(
       String(url).replace(
         /^http:\/\//,
@@ -398,16 +382,12 @@ async function fetchText(
 
   let lastErr = null;
 
-  for (
-    const candidate of candidates
-  ) {
-
+  for (const candidate of candidates) {
     for (
       let attempt = 1;
       attempt <= 3;
       attempt++
     ) {
-
       const ctl =
         new AbortController();
 
@@ -418,7 +398,6 @@ async function fetchText(
         );
 
       try {
-
         console.log(
           `FETCH ${attempt}/3 ${candidate}`
         );
@@ -430,7 +409,7 @@ async function fetchText(
               signal: ctl.signal,
 
               headers: {
-                'Accept':
+                Accept:
                   'application/json,text/plain,*/*'
               }
             }
@@ -440,37 +419,30 @@ async function fetchText(
           await r.text();
 
         if (!r.ok) {
-
           throw new Error(
-            `HTTP ${r.status}: ` +
-            text.slice(0,300)
+            `HTTP ${r.status}: ${text.slice(0, 300)}`
           );
         }
 
         return text;
-
       } catch (e) {
-
         lastErr = e;
 
         console.warn(
-          `Fetch failed (${attempt}/3): ` +
-          (e?.message || e)
+          `Fetch failed (${attempt}/3): ${
+            e?.message || e
+          }`
         );
 
         if (attempt < 3) {
-
-          await new Promise(
-            resolve =>
-              setTimeout(
-                resolve,
-                attempt * 3000
-              )
+          await new Promise(resolve =>
+            setTimeout(
+              resolve,
+              attempt * 3000
+            )
           );
         }
-
       } finally {
-
         clearTimeout(t);
       }
     }
@@ -484,12 +456,10 @@ async function fetchText(
   );
 }
 
-
 async function fetchJson(
   url,
   ms = 210000
 ) {
-
   const text =
     await fetchText(
       url,
@@ -497,25 +467,20 @@ async function fetchJson(
     );
 
   try {
-
     return JSON.parse(text);
-
   } catch {
-
     throw new Error(
       'Non-JSON response: ' +
-      text.slice(0,300)
+        text.slice(0, 300)
     );
   }
 }
-
 
 /* =========================================
    운항마감정보
 ========================================= */
 
 async function fetchClosing() {
-
   const base =
     new URL(
       'http://apis.data.go.kr/B551177/FlightClosingInfoSpot/getFlightClosingInfoSpot'
@@ -553,31 +518,27 @@ async function fetchClosing() {
 
   if (
     code &&
-    !['00','0'].includes(
+    !['00', '0'].includes(
       String(code)
     )
   ) {
-
     throw new Error(
-      `Closing API ${code}: ` +
-      (
+      `Closing API ${code}: ${
         data?.response?.header?.resultMsg ||
         data?.resultMsg ||
         ''
-      )
+      }`
     );
   }
 
   return extractList(data);
 }
 
-
 /* =========================================
    여객편 보강
 ========================================= */
 
 async function fetchPassenger(kind) {
-
   if (!PAX_KEY) {
     return [];
   }
@@ -629,29 +590,19 @@ async function fetchPassenger(kind) {
 
   if (
     code &&
-    !['00','0'].includes(
+    !['00', '0'].includes(
       String(code)
     )
   ) {
-
     throw new Error(
       `Passenger API ${kind} ${code}`
     );
   }
 
   return extractList(data)
-    .map(
-      x =>
-        paxObj(
-          x,
-          kind
-        )
-    )
-    .filter(
-      x => x.flight
-    );
+    .map(x => paxObj(x, kind))
+    .filter(x => x.flight);
 }
-
 
 /* =========================================
    SUPABASE REST
@@ -661,20 +612,17 @@ async function sb(
   path,
   init = {}
 ) {
-
   const r =
     await fetch(
       `${SUPABASE_URL}/rest/v1/${path}`,
       {
-
         ...init,
 
         headers: {
-
-          'apikey':
+          apikey:
             SUPABASE_SERVICE_ROLE_KEY,
 
-          'Authorization':
+          Authorization:
             `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
 
           'Content-Type':
@@ -689,10 +637,8 @@ async function sb(
     await r.text();
 
   if (!r.ok) {
-
     throw new Error(
-      `Supabase ${r.status}: ` +
-      text.slice(0,500)
+      `Supabase ${r.status}: ${text.slice(0, 500)}`
     );
   }
 
@@ -700,7 +646,6 @@ async function sb(
     ? JSON.parse(text)
     : null;
 }
-
 
 /* =========================================
    MAIN
@@ -721,7 +666,6 @@ console.log(
   date
 );
 
-
 /* 운항마감 API */
 
 const raw =
@@ -739,7 +683,6 @@ let flights =
         )
     );
 
-
 /* 날짜 필터 */
 
 const dated =
@@ -748,7 +691,6 @@ const dated =
   );
 
 if (dated.length) {
-
   const yy =
     target.slice(2);
 
@@ -758,7 +700,6 @@ if (dated.length) {
   flights =
     flights.filter(
       x => {
-
         const z =
           String(
             x.opDate || ''
@@ -779,28 +720,23 @@ if (dated.length) {
     );
 }
 
-
 /* 여객편 보강 */
 
 let paxA = [];
 let paxD = [];
 
 try {
-
-  [paxA,paxD] =
+  [paxA, paxD] =
     await Promise.all([
       fetchPassenger('A'),
       fetchPassenger('D')
     ]);
-
 } catch (e) {
-
   console.warn(
     'Passenger enrichment skipped:',
     e.message
   );
 }
-
 
 const mapA =
   new Map(
@@ -822,11 +758,9 @@ const mapD =
     )
   );
 
-
 flights =
   flights.map(
     x => {
-
       const p =
         (
           x.kind === 'A'
@@ -841,7 +775,6 @@ flights =
       }
 
       return {
-
         ...x,
 
         airportCode:
@@ -871,7 +804,6 @@ flights =
     }
   );
 
-
 /* =========================================
    기존 REG 보존
 ========================================= */
@@ -880,41 +812,40 @@ let existingRegs =
   new Map();
 
 try {
-
   const old =
     await sb(
       `jas_flights?operation_date=eq.${date}&select=flight,reg`,
       {
-        method:'GET'
+        method:
+          'GET'
       }
     );
 
   for (
     const x of old || []
   ) {
-
     if (
       x.flight &&
       x.reg
     ) {
-
       existingRegs.set(
-        normFlt(x.flight),
-        String(x.reg)
+        normFlt(
+          x.flight
+        ),
+        String(
+          x.reg
+        )
           .trim()
           .toUpperCase()
       );
     }
   }
-
 } catch (e) {
-
   console.warn(
     'Existing REG read failed:',
     e.message
   );
 }
-
 
 /* =========================================
    SUPABASE 저장 데이터
@@ -927,7 +858,6 @@ const now =
 const rows =
   flights.map(
     x => ({
-
       operation_date:
         date,
 
@@ -974,50 +904,48 @@ const rows =
     })
   );
 
-
 /* 데이터 0건이면 기존 CLOUD 보호 */
 
 if (!rows.length) {
-
   throw new Error(
     'No target airline rows returned; existing CLOUD data preserved.'
   );
 }
 
-
-/* 기존 당일 API 자료 삭제 */
+/* 기존 당일 자료 삭제 */
 
 await sb(
   `jas_flights?operation_date=eq.${date}`,
   {
-    method:'DELETE',
+    method:
+      'DELETE',
 
-    headers:{
-      'Prefer':
+    headers: {
+      Prefer:
         'return=minimal'
     }
   }
 );
-
 
 /* 새 자료 저장 */
 
 await sb(
   'jas_flights',
   {
+    method:
+      'POST',
 
-    method:'POST',
-
-    headers:{
-      'Prefer':
+    headers: {
+      Prefer:
         'return=minimal'
     },
 
     body:
-      JSON.stringify(rows)
+      JSON.stringify(
+        rows
+      )
   }
 );
-
 
 /* =========================================
    DAILY STATUS
@@ -1026,18 +954,17 @@ await sb(
 await sb(
   'jas_daily_status?on_conflict=operation_date',
   {
+    method:
+      'POST',
 
-    method:'POST',
-
-    headers:{
-      'Prefer':
+    headers: {
+      Prefer:
         'resolution=merge-duplicates,return=minimal'
     },
 
     body:
       JSON.stringify([
         {
-
           operation_date:
             date,
 
@@ -1053,7 +980,6 @@ await sb(
       ])
   }
 );
-
 
 console.log(
   `Saved ${rows.length} flights for ${date}`
