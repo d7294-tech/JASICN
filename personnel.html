@@ -23,6 +23,19 @@ main{padding:16px 18px 28px;max-width:1900px;margin:auto}.toolbar{display:flex;g
 .crewname{display:inline-block;background:#102b43;border:1px solid #31506d;border-radius:7px;padding:5px 7px;margin:2px;cursor:pointer}
 .crewname.hw{border-color:#9a4f7c;color:#ffb5db}.crewname.changed{border-color:#c18a27;color:#ffd36a}
 .editHint{font-size:11px;color:#8fa7bd}.unassigned{color:#ff9aa8}
+
+.dailyBoard{margin-bottom:14px;background:#fff;color:#111;border:1px solid #999;overflow:auto}
+.dailyBoard .boardTitle{font-size:26px;font-weight:900;text-align:center;padding:8px 10px;border-bottom:2px solid #111;background:#fff;color:#111}
+.dailyBoard table{border-collapse:collapse;border-spacing:0;min-width:980px;width:100%;font-size:14px;background:#fff;color:#111}
+.dailyBoard th,.dailyBoard td{position:static;border:1px solid #111;padding:6px 7px;text-align:center;background:#fff;color:#111;height:37px}
+.dailyBoard th{font-weight:900}.dailyBoard td.boardGroup{font-weight:900;width:70px}.dailyBoard td.boardCode{font-weight:900;width:72px}.dailyBoard td.nameCell{min-width:105px}
+.dailyBoard td[contenteditable="true"]{outline:none}.dailyBoard td[contenteditable="true"]:focus{box-shadow:inset 0 0 0 2px #27d3ff}.dailyBoard td.nameCell.vacancy{background:#fffdf0}.dailyBoard td.nameCell.manualOverride{box-shadow:inset 0 0 0 2px #ffbf3c}
+.dailyBoard tr.sky td{background:#b7d7ef}.dailyBoard tr.green td:first-child,.dailyBoard tr.green td:nth-child(2){background:#cce8b0}
+.dailyBoard tr.yellow td:first-child,.dailyBoard tr.yellow td:nth-child(2){background:#ffe699}.dailyBoard tr.orange td:first-child,.dailyBoard tr.orange td:nth-child(2){background:#f4b183}
+.dailyBoard tr.control td:first-child{background:#f4b183;font-weight:900}.dailyBoard tr.control td:nth-child(2){font-weight:900;text-align:left}
+.boardActions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:8px 10px;background:#f5f5f5;border-bottom:1px solid #aaa;color:#222}
+.boardActions button{background:#fff;color:#111;border:1px solid #777;padding:7px 10px}.boardActions .hint{font-size:12px;color:#555}
+
 </style>
 </head>
 <body>
@@ -38,7 +51,7 @@ main{padding:16px 18px 28px;max-width:1900px;margin:auto}.toolbar{display:flex;g
     <div id="authLoading" class="auth-loading">로그인 상태 확인 중...</div>
   </div>
 </div>
-<header><div class="brand"><a href="index.html">JAS ADMIN</a></div><div class="subtitle">인원 / 조 운영</div><span class="ver">DRAFT v0.3 · DAILY CREW</span><div class="spacer"></div><span id="authUser" class="rcmdate" style="display:none"></span><button id="logoutBtn" style="display:none;padding:6px 10px">로그아웃</button><div id="now"></div></header>
+<header><div class="brand"><a href="index.html">JAS ADMIN</a></div><div class="subtitle">인원 / 조 운영</div><span class="ver">DRAFT v0.5 · AUTO BASE + VACANCY MANUAL</span><div class="spacer"></div><span id="authUser" class="rcmdate" style="display:none"></span><button id="logoutBtn" style="display:none;padding:6px 10px">로그아웃</button><div id="now"></div></header>
 <main>
   <div class="toolbar">
     <div class="dateNav"><button id="prevDay">◀</button><input id="opDate" class="dateinput" type="date"><button id="nextDay">▶</button><button id="todayBtn">오늘</button></div>
@@ -58,11 +71,17 @@ main{padding:16px 18px 28px;max-width:1900px;margin:auto}.toolbar{display:flex;g
     <div class="kpi red"><div class="label">시간 미확인</div><div class="num" id="kUnknown">0</div></div>
   </section>
   <section class="groupgrid" id="groupGrid"></section>
-  <section class="panel crewpanel">
-    <div class="panel-head"><div class="panel-title">일자별 조 편성 요약</div><span id="crewBadge" class="badge">0개 조</span>
-      <div class="crewtools"><span class="editHint">이름 클릭 → 배치 조 변경 · 수기편성은 날짜별 저장</span><button id="resetCrewBtn">자동편성 복원</button></div>
+<section class="dailyBoard">
+    <div class="boardTitle" id="manualBoardTitle">선택일 조 편성표</div>
+    <div class="boardActions">
+      <button id="boardSaveBtn">수기수정 저장</button>
+      <button id="boardResetBtn">수기수정 초기화</button>
+      <span class="hint">기본 조원은 SKD의 조+순번으로 자동배치 · 결원/보충 칸만 수기 수정 · 날짜별 저장</span>
     </div>
-    <div class="tablewrap" style="max-height:420px"><table class="crewtable"><thead><tr><th>조</th><th>근무코드</th><th>1번</th><th>2번</th><th>3번</th><th>4번</th><th>5번</th><th>6번</th><th>7번</th><th>8번</th></tr></thead><tbody id="crewBody"></tbody></table></div>
+    <table>
+      <thead><tr><th style="width:70px">조</th><th style="width:80px">출근 코드</th><th colspan="8">명단</th></tr></thead>
+      <tbody id="manualBoardBody"></tbody>
+    </table>
   </section>
   <section class="panel">
     <div class="panel-head"><div class="panel-title">선택일 인원 현황</div><span id="rowBadge" class="badge">0명</span><div class="legend">근무코드 시간은 '근무타입' 시트 + 현장 지정코드 기준</div></div>
@@ -177,6 +196,108 @@ function populateGroupFilter(){
   if(groups.includes(old))sel.value=old;
 }
 function selectedDay(){const d=$('#opDate').value||todayLocal();const x=new Date(d+'T00:00:00');return {date:d,year:x.getFullYear(),month:x.getMonth()+1,day:x.getDate()};}
+
+const MANUAL_BOARD_TEMPLATE=[
+  {group:'3',code:'A3',cls:''},
+  {group:'8',code:'A4',cls:''},
+  {group:'1',code:'A53',cls:''},
+  {group:'2',code:'A53',cls:''},
+  {group:'4',code:'A53',cls:''},
+  {group:'5',code:'A53',cls:''},
+  {group:'6',code:'A53',cls:''},
+  {group:'7',code:'A53',cls:''},
+  {group:'20',code:'RA43',cls:'sky'},
+  {group:'23',code:'RA43',cls:'sky'},
+  {group:'오전 통제',code:'',cls:'control',manualOnly:true},
+  {group:'오후 통제',code:'',cls:'control',manualOnly:true},
+  {group:'9',code:'P13',cls:'green'},
+  {group:'16',code:'P13',cls:'green'},
+  {group:'10',code:'P133',cls:'yellow'},
+  {group:'11',code:'P133',cls:'yellow'},
+  {group:'12',code:'P14',cls:''},
+  {group:'13',code:'P14',cls:''},
+  {group:'15',code:'P14',cls:''},
+  {group:'14',code:'P15',cls:'orange'},
+  {group:'24',code:'RP14',cls:'sky'},
+  {group:'TOW',code:'A4',cls:''},
+  {group:'TOW',code:'P14',cls:''}
+];
+function boardKey(date){return 'jas_personnel_board_override_v2_'+date;}
+function normGroup(v){
+  const x=String(v??'').trim();
+  if(/^\d+\s*조$/i.test(x))return x.replace(/\s*조$/i,'');
+  return x;
+}
+function loadBoardOverrides(date){
+  try{
+    const x=JSON.parse(localStorage.getItem(boardKey(date))||'{}');
+    return x&&typeof x==='object'&&!Array.isArray(x)?x:{};
+  }catch{return{}}
+}
+function saveBoardOverrides(date,obj){localStorage.setItem(boardKey(date),JSON.stringify(obj));}
+function rowKey(row,idx){return `${idx}|${row.group}|${row.code}`;}
+function selectedDayData(date){
+  const d=new Date(date+'T00:00:00');
+  if(Number.isNaN(d.getTime()))return [];
+  const yy=d.getFullYear(), mm=d.getMonth()+1, dd=d.getDate();
+  return scheduleRows.map(x=>{
+    const code=(yy===fileYear&&mm===fileMonth)?(x.days?.[dd]||''):'';
+    return {...x,code,status:codeStatus(code)};
+  });
+}
+function modeCode(arr,fallback=''){
+  const counts=new Map();
+  arr.forEach(x=>{const c=String(x.code||'').trim().toUpperCase();if(c)counts.set(c,(counts.get(c)||0)+1);});
+  let best=fallback,bn=0;
+  for(const [c,n] of counts){if(n>bn){best=c;bn=n;}}
+  return best||fallback;
+}
+function autoMembersForRow(row,date){
+  if(row.manualOnly)return {code:row.code||'',names:[]};
+  const all=selectedDayData(date);
+  const g=normGroup(row.group);
+  let members=all.filter(x=>normGroup(x.group)===g);
+  const holidayRow=/^R[AP]/i.test(row.code||'');
+  if(holidayRow)members=members.filter(x=>x.status==='HOLIDAY_WORK');
+  else members=members.filter(x=>x.status==='WORK');
+  members.sort((a,b)=>(a.crewSeq||999)-(b.crewSeq||999)||String(a.name).localeCompare(String(b.name),'ko'));
+  return {code:modeCode(members,row.code||''),names:members.map(x=>x.name).slice(0,8)};
+}
+function collectBoardOverrides(date){
+  const current=loadBoardOverrides(date);
+  document.querySelectorAll('#manualBoardBody tr').forEach(tr=>{
+    const rk=tr.dataset.rowkey;if(!rk)return;
+    const autoCode=tr.dataset.autocode||'';
+    const code=tr.querySelector('.boardCode')?.textContent.trim()||'';
+    if(code!==autoCode)current[`${rk}|code`]=code; else delete current[`${rk}|code`];
+    [...tr.querySelectorAll('td.nameCell')].forEach((td,i)=>{
+      const auto=td.dataset.auto||'', val=td.textContent.trim(), key=`${rk}|${i}`;
+      if(val!==auto)current[key]=val; else delete current[key];
+    });
+  });
+  saveBoardOverrides(date,current);
+}
+function renderManualBoard(date){
+  const d=new Date(date+'T00:00:00'),days=['일','월','화','수','목','금','토'];
+  if(!Number.isNaN(d.getTime()))$('#manualBoardTitle').textContent=`${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일 ${days[d.getDay()]}요일`;
+  const ov=loadBoardOverrides(date);
+  $('#manualBoardBody').innerHTML=MANUAL_BOARD_TEMPLATE.map((r,idx)=>{
+    const rk=rowKey(r,idx), auto=autoMembersForRow(r,date), autoCode=auto.code||r.code||'';
+    const shownCode=Object.prototype.hasOwnProperty.call(ov,`${rk}|code`)?ov[`${rk}|code`]:autoCode;
+    const cells=Array.from({length:8},(_,i)=>{
+      const autoName=auto.names[i]||'', key=`${rk}|${i}`;
+      const shown=Object.prototype.hasOwnProperty.call(ov,key)?ov[key]:autoName;
+      const isOverride=Object.prototype.hasOwnProperty.call(ov,key);
+      const cls='nameCell'+(!autoName?' vacancy':'')+(isOverride?' manualOverride':'');
+      const title=!autoName?'결원/보충 수기입력 가능':(isOverride?'수기 수정됨':'SKD 자동편성');
+      return `<td class="${cls}" contenteditable="true" data-auto="${esc(autoName)}" title="${title}">${esc(shown)}</td>`;
+    }).join('');
+    return `<tr class="${esc(r.cls||'')}" data-rowkey="${esc(rk)}" data-autocode="${esc(autoCode)}">
+      <td class="boardGroup">${esc(r.group||'')}</td>
+      <td class="boardCode" contenteditable="true">${esc(shownCode)}</td>${cells}</tr>`;
+  }).join('');
+}
+
 function render(){
   const sd=selectedDay();
   if(!scheduleRows.length){$('#tbody').innerHTML='<tr><td colspan="9" class="empty">인원 SKD 파일을 업로드해 주세요.</td></tr>';['kTotal','kWork','kHolidayWork','kOff','kLeave','kUnknown'].forEach(id=>$('#'+id).textContent='0');$('#groupGrid').innerHTML='';$('#crewBody').innerHTML='<tr><td colspan="10" class="empty">인원 SKD 파일을 업로드해 주세요.</td></tr>';$('#crewBadge').textContent='0개 조';$('#rowBadge').textContent='0명';return;}
@@ -197,53 +318,13 @@ function renderGroups(data){
   $('#groupGrid').innerHTML=groups.map(g=>{const arr=data.filter(x=>x.bucket===g);const w=arr.filter(x=>x.status==='WORK').length,h=arr.filter(x=>x.status==='HOLIDAY_WORK').length,o=arr.filter(x=>x.status==='OFF').length,l=arr.filter(x=>x.status==='LEAVE').length;return `<div class="groupcard"><div class="grouphead"><span>${esc(g)}</span><span>${w+h}</span></div><div class="groupbar"><span class="mini">총 ${arr.length}</span><span class="mini">근무 ${w}</span><span class="mini">휴무근무 ${h}</span><span class="mini">휴무 ${o}</span><span class="mini">기타 ${l}</span></div></div>`;}).join('');
 }
 
-function crewStoreKey(date){return 'jas_personnel_crew_v1_'+date;}
-function loadCrewEdits(date){try{return JSON.parse(localStorage.getItem(crewStoreKey(date))||'{}')}catch{return{}}}
-function saveCrewEdits(date,obj){localStorage.setItem(crewStoreKey(date),JSON.stringify(obj));}
-function naturalGroup(a,b){
-  const na=parseInt(a),nb=parseInt(b);
-  if(!isNaN(na)&&!isNaN(nb))return na-nb;
-  return String(a).localeCompare(String(b),'ko');
-}
-function renderCrewSummary(data,date){
-  const edits=loadCrewEdits(date);
-  const active=data.filter(x=>x.status==='WORK'||x.status==='HOLIDAY_WORK');
-  const groups=[...new Set(scheduleRows.map(x=>x.group).filter(Boolean))].sort(naturalGroup);
-  const assigned=new Map(groups.map(g=>[g,[]]));
-  active.forEach(x=>{
-    const target=edits[x.empNo||x.name]||x.group;
-    if(!assigned.has(target))assigned.set(target,[]);
-    assigned.get(target).push({...x,assignedGroup:target,changed:target!==x.group});
-  });
-  // 기본은 조+순번 순. 휴무근무도 본인 조에 우선 유지한다.
-  for(const arr of assigned.values())arr.sort((a,b)=>(a.crewSeq||99)-(b.crewSeq||99)||a.name.localeCompare(b.name,'ko'));
-  const visible=[...assigned.entries()].filter(([g,a])=>a.length).sort((a,b)=>naturalGroup(a[0],b[0]));
-  $('#crewBadge').textContent=`${visible.length}개 조 · 출근 ${active.length}명`;
-  $('#crewBody').innerHTML=visible.map(([g,arr])=>{
-    const codes=[...new Set(arr.map(x=>x.code).filter(Boolean))].join(' / ');
-    const slots=Array.from({length:8},(_,i)=>{
-      const x=arr[i]; if(!x)return '<td></td>';
-      const id=esc(x.empNo||x.name);
-      const cls='crewname'+(x.status==='HOLIDAY_WORK'?' hw':'')+(x.changed?' changed':'');
-      return `<td><span class="${cls}" data-person="${id}" title="${esc(x.group)} ${x.crewSeq||''}번 · ${esc(x.code)}">${esc(x.name)}</span></td>`;
-    }).join('');
-    return `<tr><td class="group">${esc(g)}</td><td class="code">${esc(codes||'-')}</td>${slots}</tr>`;
-  }).join('')||'<tr><td colspan="10" class="empty">출근 편성 인원이 없습니다.</td></tr>';
-  document.querySelectorAll('.crewname').forEach(el=>el.onclick=()=>moveCrewPerson(el.dataset.person,date,data));
-}
-function moveCrewPerson(personId,date,data){
-  const x=data.find(v=>(v.empNo||v.name)===personId); if(!x)return;
-  const groups=[...new Set(scheduleRows.map(v=>v.group).filter(Boolean))].sort(naturalGroup);
-  const cur=loadCrewEdits(date)[personId]||x.group;
-  const target=prompt(`${x.name} 배치 조 변경\n현재: ${cur}\n\n배치할 조를 입력하세요.\n예: 3조, 20조, TOW, 교육`,cur);
-  if(target===null)return;
-  const t=target.trim(); if(!t)return;
-  const edits=loadCrewEdits(date); edits[personId]=t; saveCrewEdits(date,edits); render();
-}
-
 function shiftDay(n){const d=new Date(($('#opDate').value||todayLocal())+'T00:00:00');d.setDate(d.getDate()+n);$('#opDate').value=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;render();}
 $('#opDate').value=todayLocal(); $('#prevDay').onclick=()=>shiftDay(-1);$('#nextDay').onclick=()=>shiftDay(1);$('#todayBtn').onclick=()=>{$('#opDate').value=todayLocal();render();};$('#opDate').onchange=render;$('#groupFilter').onchange=render;$('#statusFilter').onchange=render;$('#search').oninput=render;
 $('#resetCrewBtn').onclick=()=>{const d=selectedDay().date;if(confirm(d+' 수기 조 편성을 모두 지우고 SKD 기준으로 복원할까요?')){localStorage.removeItem(crewStoreKey(d));render();}};
+
+$('#boardSaveBtn').onclick=()=>{const d=selectedDay().date;collectBoardOverrides(d);renderManualBoard(d);alert(d+' 수기 수정사항을 저장했습니다.');};
+$('#boardResetBtn').onclick=()=>{const d=selectedDay().date;if(confirm(d+' 수기 수정사항만 지우고 SKD 자동편성으로 복원할까요?')){localStorage.removeItem(boardKey(d));renderManualBoard(d);}};
+
 $('#skdFile').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;try{const ab=await f.arrayBuffer();const wb=XLSX.read(ab,{type:'array',cellDates:true});parseWorkbook(wb,f.name);localStorage.setItem('jas_personnel_last_name',f.name);}catch(err){alert('SKD 읽기 실패: '+err.message);}finally{e.target.value='';}});
 setInterval(()=>{$('#now').textContent=new Date().toLocaleString('ko-KR',{hour12:false})},1000);
 
