@@ -63,6 +63,21 @@ button,.btn,input,select{font:inherit}.btn,button{border:1px solid #2c5774;backg
 .memberLine:last-child{border-bottom:0}
 .memberEmpty{padding:16px 10px;text-align:center;color:#777;font-size:12px}
 
+
+.breakBar{cursor:pointer}
+.breakBar:hover{background:#194a31;border-color:#55a879}
+.restBar{position:absolute;top:8px;height:30px;border:1px solid #c48a22;background:#5a4314;color:#ffe29a;border-radius:6px;padding:5px 7px;font-size:10px;font-weight:950;overflow:hidden;white-space:nowrap;cursor:pointer;z-index:3}
+.restBar:hover{background:#6d5118}
+.breakEditor{position:fixed;z-index:9850;width:280px;background:#0f2237;border:1px solid #3a6283;border-radius:10px;box-shadow:0 15px 40px rgba(0,0,0,.48);display:none;padding:11px}
+.breakEditor.show{display:block}
+.breakEditorTitle{font-weight:950;margin-bottom:9px}
+.breakEditorRow{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.breakEditor label{font-size:10px;color:#92a9be;display:block;margin-bottom:4px}
+.breakEditor input{width:100%;background:#08182a;color:#fff;border:1px solid #31506d;border-radius:6px;padding:7px}
+.breakEditorActions{display:flex;gap:7px;margin-top:10px}
+.breakEditorActions button{flex:1;padding:7px 8px}
+.breakHint{font-size:10px;color:#8299ae;margin-top:7px;line-height:1.35}
+
 </style>
 </head>
 <body>
@@ -81,7 +96,7 @@ button,.btn,input,select{font:inherit}.btn,button{border:1px solid #2c5774;backg
 
 <header>
   <div class="brand"><a href="index.html">JAS ADMIN</a></div><div class="subtitle">잡 배정 / 조별 휴게시간</div>
-  <span class="ver">DRAFT v0.4.8 · CREW MEMBER POPUP</span><div class="spacer"></div><span id="userBadge" class="badge"></span>
+  <span class="ver">DRAFT v0.4.9 · BREAK ASSIGN</span><div class="spacer"></div><span id="userBadge" class="badge"></span>
 </header>
 
 <main>
@@ -506,6 +521,99 @@ function renderJobs(){
 
   $('#kJobs').textContent=jobs.length;$('#kAssigned').textContent=assigned;$('#kUnassigned').textContent=Math.max(0,jobs.length-assigned);$('#kConflict').textContent=conflictRows;$('#jobBadge').textContent=`${jobs.length}건`;
 }
+
+const BREAK_PREFIX='jas_job_break_v1_';
+let activeBreakEdit=null;
+
+function breakStorageKey(){
+  return BREAK_PREFIX+($('#opDate').value||todayLocal());
+}
+function loadBreakAssignments(){
+  try{
+    const x=JSON.parse(localStorage.getItem(breakStorageKey())||'{}');
+    return x&&typeof x==='object'&&!Array.isArray(x)?x:{};
+  }catch{return{};}
+}
+function saveBreakAssignments(obj){
+  localStorage.setItem(breakStorageKey(),JSON.stringify(obj||{}));
+}
+function crewBreaks(crewId){
+  const all=loadBreakAssignments();
+  const arr=Array.isArray(all[crewId])?all[crewId]:[];
+  return arr.map((x,i)=>({...x,index:i})).filter(x=>x.start&&x.end);
+}
+function intervalsOverlap(aStart,aEnd,bStart,bEnd){
+  const as=toMin(aStart),ae=toMin(aEnd),bs=toMin(bStart),be=toMin(bEnd);
+  if([as,ae,bs,be].some(v=>v==null))return false;
+  return Math.max(as,bs)<Math.min(ae,be);
+}
+function isBreakInsideFreeGap(crewId,start,end,ignoreIndex=null){
+  const st=toMin(start),en=toMin(end);
+  if(st==null||en==null||en<=st)return {ok:false,msg:'종료시간은 시작시간보다 뒤여야 합니다.'};
+
+  const {raw}=busyForCrew(crewId);
+  for(const j of raw){
+    if(intervalsOverlap(start,end,j.start,j.end))
+      return {ok:false,msg:`JOB ${j.flight} (${j.start}~${j.end})와 겹칩니다.`};
+  }
+  const br=crewBreaks(crewId);
+  for(const b of br){
+    if(ignoreIndex!==null && b.index===ignoreIndex)continue;
+    if(intervalsOverlap(start,end,b.start,b.end))
+      return {ok:false,msg:`기존 휴게 ${b.start}~${b.end}와 겹칩니다.`};
+  }
+  return {ok:true};
+}
+function closeBreakEditor(){
+  const p=$('#breakEditor'); if(!p)return;
+  p.classList.remove('show');p.setAttribute('aria-hidden','true');activeBreakEdit=null;
+}
+function positionBreakEditor(anchorEl){
+  const p=$('#breakEditor'); if(!p||!anchorEl)return;
+  const r=anchorEl.getBoundingClientRect(),w=280,pad=8;
+  let left=Math.min(r.left,window.innerWidth-w-pad);
+  let top=r.bottom+7;
+  if(top+230>window.innerHeight)top=Math.max(pad,r.top-230);
+  p.style.left=Math.max(pad,left)+'px';p.style.top=top+'px';
+}
+function openBreakEditor(crewId,start,end,anchorEl,index=null){
+  const crew=crews.find(c=>String(c.id)===String(crewId));
+  if(!crew)return;
+  activeBreakEdit={crewId,start,end,index};
+  $('#breakEditorTitle').textContent=(crew.displayName||crewDisplayName(crew.name))+' 휴게';
+  $('#breakStartInput').value=start||'';
+  $('#breakEndInput').value=end||'';
+  $('#breakDeleteBtn').style.display=index===null?'none':'block';
+  $('#breakHint').textContent=index===null?'휴게 가능 구간 안에서 시간을 지정하세요.':'저장된 휴게시간을 수정하거나 삭제할 수 있습니다.';
+  const p=$('#breakEditor');p.classList.add('show');p.setAttribute('aria-hidden','false');
+  positionBreakEditor(anchorEl);
+}
+function saveBreakFromEditor(){
+  if(!activeBreakEdit)return;
+  const {crewId,index}=activeBreakEdit;
+  const start=$('#breakStartInput').value,end=$('#breakEndInput').value;
+  const check=isBreakInsideFreeGap(crewId,start,end,index);
+  if(!check.ok){$('#breakHint').textContent=check.msg;return;}
+
+  const all=loadBreakAssignments();
+  const arr=Array.isArray(all[crewId])?[...all[crewId]]:[];
+  const rec={start,end};
+  if(index===null)arr.push(rec);else arr[index]=rec;
+  arr.sort((a,b)=>toMin(a.start)-toMin(b.start));
+  all[crewId]=arr;
+  saveBreakAssignments(all);
+  closeBreakEditor();renderBreaks();
+}
+function deleteBreakFromEditor(){
+  if(!activeBreakEdit||activeBreakEdit.index===null)return;
+  const {crewId,index}=activeBreakEdit;
+  const all=loadBreakAssignments(),arr=Array.isArray(all[crewId])?[...all[crewId]]:[];
+  arr.splice(index,1);
+  if(arr.length)all[crewId]=arr;else delete all[crewId];
+  saveBreakAssignments(all);
+  closeBreakEditor();renderBreaks();
+}
+
 function busyForCrew(id){
   const a=[];
   for(const j of jobs){
@@ -530,8 +638,11 @@ function renderBreaks(){
   $('#breakBadge').textContent=`${crews.length}개 조`;$('#kCrews').textContent=crews.length;
   const start=0,end=1440,bad=crewConflicts();
   const ticks=Array.from({length:25},(_,h)=>`<div class="timeTick" style="left:${h/24*100}%">${String(h%24).padStart(2,'0')}</div>`).join('');
+
   const rows=crews.map(c=>{
     const {raw,merged}=busyForCrew(c.id);
+    const savedBreaks=crewBreaks(c.id);
+
     const bars=raw.map(j=>{
       const st=toMin(j.start),en=toMin(j.end);
       if(st==null||en==null)return'';
@@ -540,21 +651,57 @@ function renderBreaks(){
       const isBad=matchJob?bad.has(`${c.id}|${jobKey(matchJob)}|${j.dir}`):false;
       return `<div class="jobBar ${isBad?'conflictBar':''}" style="left:${left}%;width:${width}%" title="${esc(j.dir+' '+j.flight+' '+j.start+'~'+j.end+' SPOT '+(j.spot||'-'))}">${esc(j.flight)}</div>`;
     }).join('');
-    const breaks=[];
+
+    // Occupied = JOB + already-entered rest
+    const occupied=[
+      ...merged.map(x=>({start:x.start,end:x.end})),
+      ...savedBreaks.map(x=>({start:x.start,end:x.end}))
+    ].sort((a,b)=>toMin(a.start)-toMin(b.start));
+
+    const mergedOccupied=[];
+    for(const x of occupied){
+      if(!mergedOccupied.length||toMin(x.start)>toMin(mergedOccupied.at(-1).end))mergedOccupied.push({...x});
+      else if(toMin(x.end)>toMin(mergedOccupied.at(-1).end))mergedOccupied.at(-1).end=x.end;
+    }
+
+    const gaps=[];
     let cur=0;
-    for(const b of merged){
+    for(const b of mergedOccupied){
       const bs=toMin(b.start),be=toMin(b.end);if(bs==null||be==null)continue;
-      if(bs-cur>=30)breaks.push([cur,bs]);
+      if(bs-cur>=30)gaps.push([cur,bs]);
       cur=Math.max(cur,be);
     }
-    if(1440-cur>=30)breaks.push([cur,1440]);
-    const breakBars=breaks.map(g=>{
+    if(1440-cur>=30)gaps.push([cur,1440]);
+
+    const breakBars=gaps.map(g=>{
       const left=g[0]/1440*100,width=(g[1]-g[0])/1440*100;
-      return `<div class="breakBar" style="left:${left}%;width:${width}%" title="휴게 가능 ${fmtMin(g[0])}~${fmtMin(g[1])}">${g[1]-g[0]>=60?`${fmtMin(g[0])}~${fmtMin(g[1])}`:''}</div>`;
+      const gs=fmtMin(g[0]),ge=fmtMin(g[1]);
+      return `<div class="breakBar" data-crew="${esc(c.id)}" data-start="${gs}" data-end="${ge}" style="left:${left}%;width:${width}%" title="휴게 가능 ${gs}~${ge} · 클릭해서 휴게 입력">${g[1]-g[0]>=60?`${gs}~${ge}`:'휴게 가능'}</div>`;
     }).join('');
-    return `<div class="timelineRow"><div class="timelineLabel">${esc(c.displayName||crewDisplayName(c.name))}<span class="crewMeta">${esc(c.code||'-')} · ${c.members.length}명</span></div><div class="track">${breakBars}${bars}</div></div>`;
+
+    const restBars=savedBreaks.map(b=>{
+      const st=toMin(b.start),en=toMin(b.end);if(st==null||en==null)return'';
+      const left=st/1440*100,width=Math.max(.8,(en-st)/1440*100);
+      return `<div class="restBar" data-crew="${esc(c.id)}" data-index="${b.index}" data-start="${esc(b.start)}" data-end="${esc(b.end)}" style="left:${left}%;width:${width}%" title="휴게 ${esc(b.start)}~${esc(b.end)} · 클릭해서 수정">휴게 ${esc(b.start)}~${esc(b.end)}</div>`;
+    }).join('');
+
+    return `<div class="timelineRow"><div class="timelineLabel">${esc(c.displayName||crewDisplayName(c.name))}<span class="crewMeta">${esc(c.code||'-')} · ${c.members.length}명</span></div><div class="track">${breakBars}${restBars}${bars}</div></div>`;
   }).join('');
+
   $('#timelineWrap').innerHTML=`<div class="timeline"><div class="timelineHeader"><div class="timelineLabel">조 / 시간</div><div class="timeAxis">${ticks}</div></div>${rows||'<div class="muted" style="padding:20px">해당일 출근조가 없습니다.</div>'}</div>`;
+
+  document.querySelectorAll('.breakBar').forEach(el=>{
+    el.onclick=e=>{
+      e.stopPropagation();
+      openBreakEditor(el.dataset.crew,el.dataset.start,el.dataset.end,el,null);
+    };
+  });
+  document.querySelectorAll('.restBar').forEach(el=>{
+    el.onclick=e=>{
+      e.stopPropagation();
+      openBreakEditor(el.dataset.crew,el.dataset.start,el.dataset.end,el,Number(el.dataset.index));
+    };
+  });
 }
 function renderAll(){renderJobs();renderBreaks();}
 async function reloadAll(){
@@ -564,6 +711,14 @@ function shiftDate(n){const d=new Date(($('#opDate').value||todayLocal())+'T00:0
 ['inPre','inPost','outPre','outPost'].forEach(id=>$('#'+id).onchange=buildJobs);
 $('#opDate').value=todayLocal();$('#prevDay').onclick=()=>shiftDate(-1);$('#nextDay').onclick=()=>shiftDate(1);$('#todayBtn').onclick=()=>{$('#opDate').value=todayLocal();reloadAll();};$('#reloadBtn').onclick=reloadAll;$('#opDate').onchange=reloadAll;
 $('#refreshRosterBtn').onclick=async()=>{await loadStoredSkd();renderAll();};
+$('#breakSaveBtn').onclick=saveBreakFromEditor;
+$('#breakDeleteBtn').onclick=deleteBreakFromEditor;
+$('#breakCancelBtn').onclick=closeBreakEditor;
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeBreakEditor();});
+document.addEventListener('click',e=>{
+  if($('#breakEditor')?.classList.contains('show') && !e.target.closest('#breakEditor') && !e.target.closest('.breakBar') && !e.target.closest('.restBar'))closeBreakEditor();
+});
+
 
 function showLogin(msg=''){
   document.getElementById('authOverlay')?.classList.remove('hidden');
@@ -617,6 +772,21 @@ showLogin('');
     <span id="memberPopoverCode" class="sub"></span>
   </div>
   <div id="memberPopoverBody" class="memberPopoverBody"></div>
+</div>
+
+
+<div id="breakEditor" class="breakEditor" aria-hidden="true">
+  <div id="breakEditorTitle" class="breakEditorTitle">휴게 입력</div>
+  <div class="breakEditorRow">
+    <div><label>시작</label><input id="breakStartInput" type="time" step="300"></div>
+    <div><label>종료</label><input id="breakEndInput" type="time" step="300"></div>
+  </div>
+  <div class="breakEditorActions">
+    <button id="breakSaveBtn" class="success">휴게 추가</button>
+    <button id="breakDeleteBtn" style="display:none">삭제</button>
+    <button id="breakCancelBtn">취소</button>
+  </div>
+  <div id="breakHint" class="breakHint">휴게 가능 구간 안에서 시간을 지정하세요.</div>
 </div>
 
 </body></html>
