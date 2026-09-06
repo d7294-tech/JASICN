@@ -81,6 +81,8 @@ button,.btn,input,select{font:inherit}.btn,button{border:1px solid #2c5774;backg
 
 .etaValue,.etdValue{color:#27d3ff!important;font-weight:950}
 
+
+#liveSaveBadge.saving{color:#ffd36a;border-color:#765620}#liveSaveBadge.saved{color:#5af0ad;border-color:#247a54}#liveSaveBadge.err{color:#ff8b98;border-color:#7b3540}
 </style>
 </head>
 <body data-build="0.4.10.1">
@@ -99,14 +101,14 @@ button,.btn,input,select{font:inherit}.btn,button{border:1px solid #2c5774;backg
 
 <header>
   <div class="brand"><a href="index.html">JAS ADMIN</a></div><div class="subtitle">잡 배정 / 조별 휴게시간</div>
-  <span class="ver">DRAFT v0.4.11 · STA/ETA STD/ETD</span><div class="spacer"></div><span id="userBadge" class="badge"></span>
+  <span class="ver">DRAFT v0.4.12 · LIVE AUTOSAVE</span><div class="spacer"></div><span id="userBadge" class="badge"></span>
 </header>
 
 <main>
   <div class="toolbar">
     <button id="prevDay">◀</button><input id="opDate" class="dateinput" type="date"><button id="nextDay">▶</button><button id="todayBtn">오늘</button>
     <button id="reloadBtn" class="primary">운항현황 불러오기</button>
-    <span id="flightSource" class="badge">CLOUD 대기</span><span id="rosterSource" class="badge">SKD 대기</span>
+    <span id="flightSource" class="badge">CLOUD 대기</span><span id="rosterSource" class="badge">SKD 대기</span><span id="liveSaveBadge" class="badge">자동저장 대기</span>
   </div>
   <div class="note">운항현황의 연결편을 한 줄로 표시하고 IN/OUT 각각 배정조를 지정합니다. 비고는 수기 입력하며 자동저장됩니다. 아래 차트는 IN/OUT 작업시간을 조별로 반영합니다.</div>
 
@@ -193,6 +195,101 @@ const todayLocal=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.g
 
 let flights=[],jobs=[],crews=[],assignments={};
 
+let liveSaveTimer=null;
+const JOB_DB_NAME='jas_job_assignment_db';
+const JOB_DB_VERSION=1;
+const JOB_DB_STORE='daily_state';
+
+function setLiveSaveState(state,text){
+  const b=$('#liveSaveBadge'); if(!b)return;
+  b.classList.remove('saving','saved','err');
+  if(state)b.classList.add(state);
+  b.textContent=text;
+}
+function openJobDb(){
+  return new Promise((resolve,reject)=>{
+    const r=indexedDB.open(JOB_DB_NAME,JOB_DB_VERSION);
+    r.onupgradeneeded=()=>{
+      const db=r.result;
+      if(!db.objectStoreNames.contains(JOB_DB_STORE))db.createObjectStore(JOB_DB_STORE);
+    };
+    r.onsuccess=()=>resolve(r.result);
+    r.onerror=()=>reject(r.error);
+  });
+}
+function currentJobState(){
+  const date=$('#opDate').value||todayLocal();
+  return {
+    date,
+    savedAt:Date.now(),
+    assignments:{...assignments},
+    breaks:loadBreakAssignments(),
+    emergency:loadManualCrewNames()
+  };
+}
+async function persistJobStateNow(){
+  const date=$('#opDate').value||todayLocal();
+  setLiveSaveState('saving','저장 중...');
+  try{
+    // Existing localStorage stores remain the primary fast store.
+    localStorage.setItem('jas_job_assign_v1_'+date,JSON.stringify(assignments));
+    const state=currentJobState();
+
+    // Duplicate the complete daily state into IndexedDB so it survives
+    // reloads/version swaps more robustly.
+    const db=await openJobDb();
+    await new Promise((resolve,reject)=>{
+      const tx=db.transaction(JOB_DB_STORE,'readwrite');
+      tx.objectStore(JOB_DB_STORE).put(state,date);
+      tx.oncomplete=resolve;
+      tx.onerror=()=>reject(tx.error);
+    });
+    db.close();
+
+    const t=new Date();
+    setLiveSaveState('saved',`자동저장 ${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}:${String(t.getSeconds()).padStart(2,'0')}`);
+  }catch(e){
+    console.error('실시간 저장 실패',e);
+    setLiveSaveState('err','자동저장 오류');
+  }
+}
+function scheduleLiveSave(delay=250){
+  clearTimeout(liveSaveTimer);
+  setLiveSaveState('saving','저장 중...');
+  liveSaveTimer=setTimeout(()=>persistJobStateNow(),delay);
+}
+async function restoreJobStateFromDb(){
+  const date=$('#opDate').value||todayLocal();
+  try{
+    const db=await openJobDb();
+    const state=await new Promise((resolve,reject)=>{
+      const tx=db.transaction(JOB_DB_STORE,'readonly');
+      const r=tx.objectStore(JOB_DB_STORE).get(date);
+      r.onsuccess=()=>resolve(r.result||null);
+      r.onerror=()=>reject(r.error);
+    });
+    db.close();
+    if(!state)return false;
+
+    if(state.assignments&&typeof state.assignments==='object'){
+      assignments=state.assignments;
+      localStorage.setItem('jas_job_assign_v1_'+date,JSON.stringify(assignments));
+    }
+    if(state.breaks&&typeof state.breaks==='object'){
+      localStorage.setItem(BREAK_PREFIX+date,JSON.stringify(state.breaks));
+    }
+    if(state.emergency&&typeof state.emergency==='object'){
+      localStorage.setItem(CREW_MANUAL_PREFIX+date,JSON.stringify(state.emergency));
+    }
+    setLiveSaveState('saved','저장본 복원');
+    return true;
+  }catch(e){
+    console.warn('IndexedDB 저장본 복원 실패',e);
+    return false;
+  }
+}
+
+
 function hm(v){if(!v)return'';const m=String(v).match(/(\d{1,2}):(\d{2})/);return m?`${m[1].padStart(2,'0')}:${m[2]}`:'';}
 function toMin(t){const m=hm(t).match(/(\d{2}):(\d{2})/);return m?Number(m[1])*60+Number(m[2]):null;}
 function fmtMin(n){n=(n%1440+1440)%1440;return `${String(Math.floor(n/60)).padStart(2,'0')}:${String(n%60).padStart(2,'0')}`;}
@@ -200,7 +297,10 @@ function shiftTime(t,delta){const x=toMin(t);return x==null?'':fmtMin(x+delta);}
 function jobKey(j){return `${j.arrFlight||''}|${j.depFlight||''}|${j.reg||''}`;}
 function assignKey(j,side){return `${jobKey(j)}|${side}`;}
 function memoKey(j){return `${jobKey(j)}|memo`;}
-function saveAssignments(){localStorage.setItem('jas_job_assign_v1_'+($('#opDate').value||todayLocal()),JSON.stringify(assignments));}
+function saveAssignments(){
+  localStorage.setItem('jas_job_assign_v1_'+($('#opDate').value||todayLocal()),JSON.stringify(assignments));
+  scheduleLiveSave(150);
+}
 function loadAssignments(){
   try{assignments=JSON.parse(localStorage.getItem('jas_job_assign_v1_'+($('#opDate').value||todayLocal()))||'{}')||{};}
   catch{assignments={};}
@@ -479,6 +579,7 @@ function loadManualCrewNames(){
 }
 function saveManualCrewNames(obj){
   localStorage.setItem(manualCrewKey($('#opDate').value||todayLocal()),JSON.stringify(obj||{}));
+  scheduleLiveSave(150);
 }
 function applyManualEmergencyNames(){
   const saved=loadManualCrewNames();
@@ -659,6 +760,7 @@ function loadBreakAssignments(){
 }
 function saveBreakAssignments(obj){
   localStorage.setItem(breakStorageKey(),JSON.stringify(obj||{}));
+  scheduleLiveSave(150);
 }
 function crewBreaks(crewId){
   const all=loadBreakAssignments();
@@ -828,11 +930,27 @@ function renderBreaks(){
 }
 function renderAll(){renderJobs();renderBreaks();}
 async function reloadAll(){
-  loadAssignments();await loadStoredSkd();await loadFlights();renderAttendance();renderAll();
+  loadAssignments();
+  await restoreJobStateFromDb();
+  await loadStoredSkd();
+  await loadFlights();
+  renderAttendance();
+  renderAll();
 }
 function shiftDate(n){const d=new Date(($('#opDate').value||todayLocal())+'T00:00:00');d.setDate(d.getDate()+n);$('#opDate').value=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;reloadAll();}
 ['inPre','inPost','outPre','outPost'].forEach(id=>$('#'+id).onchange=buildJobs);
 $('#opDate').value=todayLocal();$('#prevDay').onclick=()=>shiftDate(-1);$('#nextDay').onclick=()=>shiftDate(1);$('#todayBtn').onclick=()=>{$('#opDate').value=todayLocal();reloadAll();};$('#reloadBtn').onclick=reloadAll;$('#opDate').onchange=reloadAll;
+setInterval(()=>{if(document.visibilityState==='visible')persistJobStateNow();},5000);
+window.addEventListener('beforeunload',()=>{
+  try{
+    const date=$('#opDate').value||todayLocal();
+    localStorage.setItem('jas_job_assign_v1_'+date,JSON.stringify(assignments));
+  }catch{}
+});
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='hidden')persistJobStateNow();
+});
+
 $('#refreshRosterBtn').onclick=async()=>{await loadStoredSkd();renderAll();};
 document.addEventListener('click',e=>{
   if(e.target.closest('.memberCount'))return;
