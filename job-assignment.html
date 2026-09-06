@@ -78,6 +78,9 @@ button,.btn,input,select{font:inherit}.btn,button{border:1px solid #2c5774;backg
 .breakEditorActions button{flex:1;padding:7px 8px}
 .breakHint{font-size:10px;color:#8299ae;margin-top:7px;line-height:1.35}
 
+
+.etaValue,.etdValue{color:#27d3ff!important;font-weight:950}
+
 </style>
 </head>
 <body data-build="0.4.10.1">
@@ -96,7 +99,7 @@ button,.btn,input,select{font:inherit}.btn,button{border:1px solid #2c5774;backg
 
 <header>
   <div class="brand"><a href="index.html">JAS ADMIN</a></div><div class="subtitle">잡 배정 / 조별 휴게시간</div>
-  <span class="ver">DRAFT v0.4.10.4 · MEMBER POPUP DOM FIX</span><div class="spacer"></div><span id="userBadge" class="badge"></span>
+  <span class="ver">DRAFT v0.4.11 · STA/ETA STD/ETD</span><div class="spacer"></div><span id="userBadge" class="badge"></span>
 </header>
 
 <main>
@@ -131,7 +134,7 @@ button,.btn,input,select{font:inherit}.btn,button{border:1px solid #2c5774;backg
 <section class="panel">
     <div class="panel-head"><div class="panel-title">운항 JOB 배정</div><span id="jobBadge" class="badge">0건</span><div class="legend">IN/OUT 각각 조 배정 · 비고 수기입력 · 중복 자동경고</div></div>
     <div class="tablewrap" style="max-height:430px"><table>
-      <thead><tr><th>ARR FLT</th><th>ETA</th><th>도착 SPOT</th><th>FROM</th><th>출발 SPOT</th><th>DEP FLT</th><th>REG</th><th>STD</th><th>TO</th><th>IN</th><th>OUT</th><th>상태</th><th>비고</th></tr></thead>
+      <thead><tr><th>ARR FLT</th><th>STA</th><th>ETA</th><th>도착 SPOT</th><th>FROM</th><th>출발 SPOT</th><th>DEP FLT</th><th>REG</th><th>STD</th><th>ETD</th><th>TO</th><th>IN</th><th>OUT</th><th>상태</th><th>비고</th></tr></thead>
       <tbody id="jobBody"></tbody>
     </table></div>
   </section>
@@ -304,7 +307,6 @@ function airport3(v){
 function buildJobs(){
   const inPre=Number($('#inPre').value||15),inPost=Number($('#inPost').value||25),outPre=Number($('#outPre').value||60),outPost=Number($('#outPost').value||10);
 
-  // Try to combine ARR/DEP records by REG. If the cloud row already contains both sides, use them directly.
   const byReg=new Map();
   for(const f of flights){
     const reg=f.reg||'';
@@ -314,13 +316,14 @@ function buildJobs(){
   const combined=[];
 
   for(const [reg,arr] of byReg){
-    // Sort by schedule time and pair nearest ARR -> DEP
     const items=[...arr].sort((a,b)=>String(a.schedule_time||'').localeCompare(String(b.schedule_time||'')));
     const used=new Set();
+
     for(let i=0;i<items.length;i++){
       if(used.has(i))continue;
       const a=items[i];
       const aDir=a.direction==='A'?'IN':(a.direction==='D'?'OUT':a.direction);
+
       if(aDir==='IN'){
         let j=-1;
         for(let k=i+1;k<items.length;k++){
@@ -330,15 +333,27 @@ function buildJobs(){
         }
         const b=j>=0?items[j]:null;
         if(j>=0)used.add(j);
+
         combined.push({
-          arrFlight:a.flight||'', eta:hm(a.estimated_time)||hm(a.schedule_time), arrSpot:a.spot||'', org:airport3(a.airport_code||a.airportCode||a.origin||a.from||a.org||a.raw_data?.airportCode||a.raw_data?.cityCode||''),
-          depSpot:b?.spot||a.spot||'', depFlight:b?.flight||'', reg:reg||a.reg||'', std:b?(hm(b.estimated_time)||hm(b.schedule_time)):'',
+          arrFlight:a.flight||'',
+          sta:hm(a.schedule_time),
+          eta:hm(a.estimated_time)||hm(a.schedule_time),
+          arrSpot:a.spot||'',
+          org:airport3(a.airport_code||a.airportCode||a.origin||a.from||a.org||a.raw_data?.airportCode||a.raw_data?.cityCode||''),
+          depSpot:b?.spot||a.spot||'',
+          depFlight:b?.flight||'',
+          reg:reg||a.reg||'',
+          std:b?hm(b.schedule_time):'',
+          etd:b?(hm(b.estimated_time)||hm(b.schedule_time)):'',
           dest:b?airport3(b.airport_code||b.airportCode||b.destination||b.to||b.dest||b.raw_data?.airportCode||b.raw_data?.cityCode||''):''
         });
       }else{
         combined.push({
-          arrFlight:'',eta:'',arrSpot:'',org:'',depSpot:a.spot||'',depFlight:a.flight||'',reg:reg||a.reg||'',
-          std:hm(a.estimated_time)||hm(a.schedule_time),dest:airport3(a.airport_code||a.airportCode||a.destination||a.to||a.dest||a.raw_data?.airportCode||a.raw_data?.cityCode||'')
+          arrFlight:'',sta:'',eta:'',arrSpot:'',org:'',
+          depSpot:a.spot||'',depFlight:a.flight||'',reg:reg||a.reg||'',
+          std:hm(a.schedule_time),
+          etd:hm(a.estimated_time)||hm(a.schedule_time),
+          dest:airport3(a.airport_code||a.airportCode||a.destination||a.to||a.dest||a.raw_data?.airportCode||a.raw_data?.cityCode||'')
         });
       }
       used.add(i);
@@ -346,11 +361,14 @@ function buildJobs(){
   }
 
   jobs=combined.map(j=>{
-    const inStart=j.eta?shiftTime(j.eta,-inPre):'', inEnd=j.eta?shiftTime(j.eta,inPost):'';
-    const outStart=j.std?shiftTime(j.std,-outPre):'', outEnd=j.std?shiftTime(j.std,outPost):'';
+    // IN job uses ETA, OUT job uses ETD
+    const inBase=j.eta||j.sta;
+    const outBase=j.etd||j.std;
+    const inStart=inBase?shiftTime(inBase,-inPre):'', inEnd=inBase?shiftTime(inBase,inPost):'';
+    const outStart=outBase?shiftTime(outBase,-outPre):'', outEnd=outBase?shiftTime(outBase,outPost):'';
     return {...j,inStart,inEnd,outStart,outEnd};
   }).sort((a,b)=>{
-    const aa=toMin(a.eta||a.std), bb=toMin(b.eta||b.std);
+    const aa=toMin(a.eta||a.sta||a.etd||a.std), bb=toMin(b.eta||b.sta||b.etd||b.std);
     return (aa??9999)-(bb??9999);
   });
   renderAll();
@@ -604,20 +622,22 @@ function renderJobs(){
     const badRow=badIn||badOut;if(badRow)conflictRows++;
     return `<tr>
       <td class="flight">${esc(j.arrFlight||'-')}</td>
-      <td class="time">${esc(j.eta||'-')}</td>
+      <td class="time">${esc(j.sta||'-')}</td>
+      <td class="time etaValue">${esc(j.eta||'-')}</td>
       <td class="spot">${esc(j.arrSpot||'-')}</td>
       <td>${esc(j.org||'-')}</td>
       <td class="spot">${esc(j.depSpot||'-')}</td>
       <td class="flight">${esc(j.depFlight||'-')}</td>
       <td>${esc(j.reg||'-')}</td>
       <td class="time">${esc(j.std||'-')}</td>
+      <td class="time etdValue">${esc(j.etd||'-')}</td>
       <td>${esc(j.dest||'-')}</td>
       <td><select class="assign" data-key="${esc(assignKey(j,'IN'))}">${crewOptions(inCrew)}</select></td>
       <td><select class="assign" data-key="${esc(assignKey(j,'OUT'))}">${crewOptions(outCrew)}</select></td>
       <td>${badRow?'<span class="conflict">겹침</span>':((inCrew||outCrew)?'<span class="ok">배정</span>':'<span class="muted">미배정</span>')}</td>
       <td><input class="memo" data-memo="${esc(memoKey(j))}" value="${esc(memo)}" placeholder="비고 수기입력"></td>
     </tr>`;
-  }).join(''):'<tr><td colspan="13" class="muted" style="padding:40px;text-align:center">운항현황을 불러와 주세요.</td></tr>';
+  }).join(''):'<tr><td colspan="15" class="muted" style="padding:40px;text-align:center">운항현황을 불러와 주세요.</td></tr>';
 
   document.querySelectorAll('.assign').forEach(x=>x.onchange=()=>{assignments[x.dataset.key]=x.value;if(!x.value)delete assignments[x.dataset.key];saveAssignments();renderAll();});
   document.querySelectorAll('.memo').forEach(x=>x.oninput=()=>{assignments[x.dataset.memo]=x.value;saveAssignments();});
