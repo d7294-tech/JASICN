@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>JAS ADMIN - 인원 / 조 운영</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--bg:#071426;--panel:#0d1d31;--panel2:#122840;--line:#243d58;--text:#eaf3ff;--muted:#8da5bf;--cyan:#27d3ff;--green:#42e69d;--amber:#ffbf3c;--red:#ff6373;--purple:#a78bfa;--blue:#4da3ff}
+*{box-sizing:border-box} body{margin:0;background:linear-gradient(180deg,#071426,#08111f);color:var(--text);font-family:Inter,"Noto Sans KR","Malgun Gothic",sans-serif;min-height:100vh}
+header{height:64px;padding:0 20px;display:flex;align-items:center;gap:18px;border-bottom:1px solid var(--line);background:#081526;position:sticky;top:0;z-index:5}.brand{font-weight:900;letter-spacing:.8px;color:var(--cyan);font-size:20px}.brand a{color:inherit;text-decoration:none}.subtitle{color:#b8c8d9;font-weight:800}.spacer{flex:1}.ver{font-size:11px;color:#6f8aa2;border:1px solid #29425c;padding:3px 7px;border-radius:8px}.rcmdate{font-size:11px;color:#9db2c7;border:1px solid #29425c;padding:5px 8px;border-radius:8px}
+main{padding:16px 18px 28px;max-width:1900px;margin:auto}.toolbar{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin-bottom:12px}button,.btn{border:1px solid #2c5774;background:#10263c;color:white;border-radius:8px;padding:9px 13px;font-weight:800;cursor:pointer}button:hover,.btn:hover{background:#17334d}.primary{background:#0b7198;border-color:#1199c8}.primary:hover{background:#0d83af}input[type=file]{display:none}.dateinput,.search,.select{background:#0c1c2e;border:1px solid var(--line);color:white;border-radius:8px;padding:9px 10px;font-weight:800;outline:none}.dateNav{display:flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:9px;padding:4px;background:#0b1c2e}.dateNav button{padding:5px 9px}.search{min-width:230px}.select{min-width:150px}.note{font-size:12px;color:var(--muted);margin:4px 0 12px}
+.kpis{display:grid;grid-template-columns:repeat(6,minmax(115px,1fr));gap:10px;margin-bottom:14px}.kpi{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:13px 14px}.kpi .label{font-size:12px;color:var(--muted);font-weight:700}.kpi .num{font-size:27px;font-weight:900;margin-top:2px}.cyan .num{color:var(--cyan)}.green .num{color:var(--green)}.amber .num{color:var(--amber)}.red .num{color:var(--red)}.purple .num{color:var(--purple)}
+.groupgrid{display:grid;grid-template-columns:repeat(3,minmax(220px,1fr));gap:10px;margin-bottom:14px}.groupcard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px}.grouphead{display:flex;justify-content:space-between;align-items:center;font-weight:900;margin-bottom:8px}.grouphead span:last-child{font-size:20px;color:var(--cyan)}.groupbar{display:flex;gap:6px;flex-wrap:wrap}.mini{font-size:11px;padding:4px 7px;border:1px solid #31506d;border-radius:999px;color:#bcd0e2;background:#10243a}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}.panel-head{display:flex;align-items:center;padding:13px 15px;border-bottom:1px solid var(--line);background:#0d2035;gap:10px}.panel-title{font-weight:900}.badge{font-size:11px;border:1px solid #31506d;border-radius:20px;padding:3px 8px;color:#adc2d6}.legend{margin-left:auto;font-size:11px;color:#8fa7bd}.tablewrap{overflow:auto;max-height:calc(100vh - 330px)}table{width:100%;border-collapse:separate;border-spacing:0;min-width:1200px;font-size:13px}th{position:sticky;top:0;background:#10263b;color:#9eb7cd;text-align:left;padding:10px 8px;border-bottom:1px solid var(--line);z-index:2;font-size:11px}td{padding:9px 8px;border-bottom:1px solid #17304a;white-space:nowrap}tbody tr:hover td{background:#10263a}.name{font-weight:900;color:#eaf3ff}.code{font-weight:950;color:#ffd36a}.time{font-variant-numeric:tabular-nums;font-weight:800;color:#9fe8ff}.group{font-weight:900;color:#cbbcff}.off{color:#718aa1}.leave{color:#ffcc7a}.work{color:#67e9aa}.holidaywork{color:#ff9dcf}.empty{padding:45px!important;text-align:center;color:var(--muted)}
+.pill{font-size:10px;font-weight:900;padding:3px 7px;border-radius:999px;border:1px solid #36536e}.pill-work{color:#6fe8af;background:#123b2a;border-color:#247a54}.pill-off{color:#8da5bf;background:#132235}.pill-leave{color:#ffd36a;background:#3a2a0f;border-color:#765620}.pill-holiday{color:#ffb5db;background:#49213a;border-color:#7d3b63}
+.auth-overlay{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 30%,#102943 0,#071426 55%,#050d18 100%);padding:20px}.auth-overlay.hidden{display:none}.login-card{width:min(420px,94vw);background:#0d1d31;border:1px solid #294866;border-radius:18px;padding:28px;box-shadow:0 24px 70px rgba(0,0,0,.45)}.login-logo{font-size:26px;font-weight:950;letter-spacing:1px;color:var(--cyan);margin-bottom:4px}.login-sub{color:#9fb4c8;font-size:13px;margin-bottom:24px}.login-card label{display:block;color:#a9bfd4;font-size:12px;font-weight:800;margin:12px 0 6px}.login-card input{width:100%;background:#08182a;border:1px solid #2a4965;color:white;border-radius:9px;padding:12px;outline:none}.login-card button{width:100%;margin-top:18px;background:#0b7198;border-color:#1199c8;padding:12px}.login-msg{min-height:20px;margin-top:12px;font-size:12px;color:#ff9aa8}.auth-loading{color:#9fb4c8;text-align:center;font-size:13px;margin-top:10px}
+@media(max-width:1100px){.kpis{grid-template-columns:repeat(3,1fr)}.groupgrid{grid-template-columns:1fr}.legend{display:none}}@media(max-width:650px){.kpis{grid-template-columns:repeat(2,1fr)}header .subtitle{display:none}}
+</style>
+</head>
+<body>
+<div id="authOverlay" class="auth-overlay">
+  <div class="login-card">
+    <div class="login-logo">JAS ADMIN</div>
+    <div class="login-sub">ICN RAMP OPERATION MANAGEMENT · 관리자 로그인</div>
+    <form id="loginForm">
+      <label>EMAIL</label><input id="loginEmail" type="email" autocomplete="username" required>
+      <label>PASSWORD</label><input id="loginPassword" type="password" autocomplete="current-password" required>
+      <button id="loginBtn" type="submit">로그인</button><div id="loginMsg" class="login-msg"></div>
+    </form>
+    <div id="authLoading" class="auth-loading">로그인 상태 확인 중...</div>
+  </div>
+</div>
+<header><div class="brand"><a href="index.html">JAS ADMIN</a></div><div class="subtitle">인원 / 조 운영</div><span class="ver">DRAFT v0.1 · SKD VIEWER</span><div class="spacer"></div><span id="authUser" class="rcmdate" style="display:none"></span><button id="logoutBtn" style="display:none;padding:6px 10px">로그아웃</button><div id="now"></div></header>
+<main>
+  <div class="toolbar">
+    <div class="dateNav"><button id="prevDay">◀</button><input id="opDate" class="dateinput" type="date"><button id="nextDay">▶</button><button id="todayBtn">오늘</button></div>
+    <label class="btn primary" for="skdFile">인원 SKD 업로드</label><input id="skdFile" type="file" accept=".xlsx,.xls,.xlsm">
+    <span id="fileBadge" class="rcmdate">SKD 미업로드</span>
+    <select id="groupFilter" class="select"><option value="">전체 구분</option></select>
+    <select id="statusFilter" class="select"><option value="">전체 상태</option><option value="WORK">근무</option><option value="HOLIDAY_WORK">휴무근무</option><option value="OFF">휴무</option><option value="LEAVE">휴가/기타</option></select>
+    <input id="search" class="search" placeholder="성명 / 조 / 직무 / 근무코드 검색">
+  </div>
+  <div id="note" class="note">월간 SKD를 업로드하면 선택 날짜 기준 근무자와 조 편성을 자동으로 표시합니다. RA/RP 계열은 휴무근무로 집계합니다.</div>
+  <section class="kpis">
+    <div class="kpi cyan"><div class="label">총 인원</div><div class="num" id="kTotal">0</div></div>
+    <div class="kpi green"><div class="label">근무</div><div class="num" id="kWork">0</div></div>
+    <div class="kpi purple"><div class="label">휴무근무</div><div class="num" id="kHolidayWork">0</div></div>
+    <div class="kpi amber"><div class="label">휴무</div><div class="num" id="kOff">0</div></div>
+    <div class="kpi amber"><div class="label">휴가/기타</div><div class="num" id="kLeave">0</div></div>
+    <div class="kpi red"><div class="label">시간 미확인</div><div class="num" id="kUnknown">0</div></div>
+  </section>
+  <section class="groupgrid" id="groupGrid"></section>
+  <section class="panel">
+    <div class="panel-head"><div class="panel-title">선택일 인원 현황</div><span id="rowBadge" class="badge">0명</span><div class="legend">근무코드 시간은 '근무타입' 시트 + 현장 지정코드 기준</div></div>
+    <div class="tablewrap"><table><thead><tr><th>구분/조</th><th>성명</th><th>사번</th><th>직급</th><th>직책</th><th>직무</th><th>근무코드</th><th>근무시간</th><th>상태</th></tr></thead><tbody id="tbody"></tbody></table></div>
+  </section>
+</main>
+<script>
+const SUPABASE_URL='https://yblzvrfkohppnrxeorce.supabase.co';
+const SUPABASE_KEY='sb_publishable_1P8VyOOWWTf41F__nOYuUw_GKo-DiKu';
+const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const $=s=>document.querySelector(s);
+const todayLocal=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`};
+const esc=v=>String(v??'').replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]));
+let roster=[], scheduleRows=[], workTimes=new Map(), fileYear=0,fileMonth=0,fileName='';
+
+const TIME_OVERRIDES={
+  'A2':['02:00','11:00'], 'A3':['03:00','12:00'], 'P13':['13:00','22:00'],
+  'RA43':['04:30',''], 'RP14':['14:00','']
+};
+const LEAVE_CODES=new Set(['L','AL','SL','교육','출장','병가','육휴','파견','퇴사']);
+function norm(v){return String(v??'').trim();}
+function xTime(v){
+  if(v==null||v==='')return'';
+  if(v instanceof Date)return `${String(v.getHours()).padStart(2,'0')}:${String(v.getMinutes()).padStart(2,'0')}`;
+  if(typeof v==='number'&&v>=0&&v<1){const m=Math.round(v*24*60)%1440;return `${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`;}
+  const s=String(v).trim(); const m=s.match(/(\d{1,2}):(\d{2})/); return m?`${m[1].padStart(2,'0')}:${m[2]}`:s;
+}
+function codeStatus(code){
+  const c=norm(code).toUpperCase();
+  if(!c)return 'LEAVE';
+  if(/^R[AP]/.test(c))return 'HOLIDAY_WORK';
+  if(c==='R'||c==='OFF'||c==='휴'||c==='휴무')return 'OFF';
+  if(LEAVE_CODES.has(c)||/^(H|L)/.test(c))return 'LEAVE';
+  return 'WORK';
+}
+function statusLabel(s){return s==='WORK'?'근무':s==='HOLIDAY_WORK'?'휴무근무':s==='OFF'?'휴무':'휴가/기타';}
+function statusPill(s){const cls=s==='WORK'?'pill-work':s==='HOLIDAY_WORK'?'pill-holiday':s==='OFF'?'pill-off':'pill-leave';return `<span class="pill ${cls}">${statusLabel(s)}</span>`;}
+function workTimeFor(code){
+  const c=norm(code).toUpperCase();
+  if(TIME_OVERRIDES[c]){const [a,b]=TIME_OVERRIDES[c];return b?`${a}~${b}`:`${a}~`;}
+  if(workTimes.has(c)){const [a,b]=workTimes.get(c);return a||b?`${a||''}${a||b?'~':''}${b||''}`:'';}
+  // 휴무근무는 RA43 -> A43, RP14 -> P14처럼 원 코드 시간도 보조 참조
+  if(/^R[AP]/.test(c)){const base=c.slice(1);if(workTimes.has(base)){const [a,b]=workTimes.get(base);return `${a||''}${a||b?'~':''}${b||''}`;}}
+  return'';
+}
+function groupBucket(g){
+  const x=norm(g);
+  if(/^\d+조$/.test(x)){const n=parseInt(x,10);if(n<=8)return'1 GROUP';if(n<=16)return'2 GROUP';return'3 GROUP';}
+  if(/^소산/.test(x))return'소산';
+  if(x==='관리')return'Office';
+  return x||'기타';
+}
+function parseWorkbook(wb,name){
+  fileName=name||'SKD'; roster=[];scheduleRows=[];workTimes=new Map();
+  const dir=wb.Sheets['직원명단'];
+  const dirRows=dir?XLSX.utils.sheet_to_json(dir,{header:1,defval:'',raw:true}):[];
+  const emp=new Map();
+  for(let i=2;i<dirRows.length;i++){
+    const r=dirRows[i]; const nm=norm(r[0]); if(!nm)continue;
+    emp.set(nm,{name:nm,empNo:norm(r[1]),rank:norm(r[2]),position:norm(r[3]),job:norm(r[4])});
+  }
+  const wt=wb.Sheets['근무타입']; const wtRows=wt?XLSX.utils.sheet_to_json(wt,{header:1,defval:'',raw:true}):[];
+  for(let i=2;i<wtRows.length;i++){
+    const code=norm(wtRows[i][1]).toUpperCase(); if(!code)continue;
+    workTimes.set(code,[xTime(wtRows[i][2]),xTime(wtRows[i][3])]);
+  }
+  Object.entries(TIME_OVERRIDES).forEach(([k,v])=>workTimes.set(k,v));
+  const ws=wb.Sheets['09월스케쥴']||wb.Sheets[wb.SheetNames.find(n=>/스케쥴|스케줄/i.test(n))];
+  if(!ws)throw new Error('스케쥴 시트를 찾지 못했습니다.');
+  const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:true});
+  fileYear=Number(rows?.[0]?.[4])||new Date().getFullYear(); fileMonth=Number(rows?.[0]?.[5])||new Date().getMonth()+1;
+  let currentGroup='';
+  for(let i=9;i<Math.min(rows.length,220);i++){
+    const r=rows[i]; const groupMark=norm(r[1]); const name=norm(r[6]);
+    if(groupMark)currentGroup=groupMark;
+    if(!name)continue;
+    const info=emp.get(name)||{name,empNo:norm(r[2]),rank:norm(r[7]),position:norm(r[8]),job:norm(r[9])};
+    const days=[]; for(let d=1;d<=31;d++)days[d]=norm(r[9+d]);
+    scheduleRows.push({...info,group:currentGroup||'기타',bucket:groupBucket(currentGroup),days});
+  }
+  $('#fileBadge').textContent=`${fileName} · ${fileYear}.${String(fileMonth).padStart(2,'0')}`;
+  populateGroupFilter(); render();
+}
+function populateGroupFilter(){
+  const sel=$('#groupFilter'),old=sel.value; const groups=[...new Set(scheduleRows.map(x=>x.bucket))].filter(Boolean);
+  sel.innerHTML='<option value="">전체 구분</option>'+groups.map(g=>`<option value="${esc(g)}">${esc(g)}</option>`).join('');
+  if(groups.includes(old))sel.value=old;
+}
+function selectedDay(){const d=$('#opDate').value||todayLocal();const x=new Date(d+'T00:00:00');return {date:d,year:x.getFullYear(),month:x.getMonth()+1,day:x.getDate()};}
+function render(){
+  const sd=selectedDay();
+  if(!scheduleRows.length){$('#tbody').innerHTML='<tr><td colspan="9" class="empty">인원 SKD 파일을 업로드해 주세요.</td></tr>';['kTotal','kWork','kHolidayWork','kOff','kLeave','kUnknown'].forEach(id=>$('#'+id).textContent='0');$('#groupGrid').innerHTML='';$('#rowBadge').textContent='0명';return;}
+  if(sd.year!==fileYear||sd.month!==fileMonth){$('#note').textContent=`업로드 파일은 ${fileYear}년 ${fileMonth}월 자료입니다. 현재 선택일 ${sd.date}은 해당 월이 아닙니다.`;}
+  else $('#note').textContent=`${sd.date} 기준 · ${fileName} · 근무코드와 조 편성을 월간 SKD에서 자동 추출`;
+  let data=scheduleRows.map(x=>{const code=(sd.year===fileYear&&sd.month===fileMonth)?(x.days[sd.day]||''):'';const status=codeStatus(code);const workTime=workTimeFor(code);return {...x,code,status,workTime};});
+  const total=data.length, work=data.filter(x=>x.status==='WORK').length, hw=data.filter(x=>x.status==='HOLIDAY_WORK').length, off=data.filter(x=>x.status==='OFF').length, leave=data.filter(x=>x.status==='LEAVE').length, unknown=data.filter(x=>(x.status==='WORK'||x.status==='HOLIDAY_WORK')&&!x.workTime).length;
+  $('#kTotal').textContent=total;$('#kWork').textContent=work;$('#kHolidayWork').textContent=hw;$('#kOff').textContent=off;$('#kLeave').textContent=leave;$('#kUnknown').textContent=unknown;
+  renderGroups(data);
+  const gf=$('#groupFilter').value,sf=$('#statusFilter').value,q=$('#search').value.trim().toUpperCase();
+  data=data.filter(x=>(!gf||x.bucket===gf)&&(!sf||x.status===sf)&&(!q||[x.name,x.group,x.bucket,x.rank,x.position,x.job,x.code].some(v=>norm(v).toUpperCase().includes(q))));
+  $('#rowBadge').textContent=`${data.length}명`;
+  $('#tbody').innerHTML=data.length?data.map(x=>`<tr><td class="group">${esc(x.group)}</td><td class="name">${esc(x.name)}</td><td>${esc(x.empNo||'-')}</td><td>${esc(x.rank||'-')}</td><td>${esc(x.position||'-')}</td><td>${esc(x.job||'-')}</td><td class="code ${x.status==='HOLIDAY_WORK'?'holidaywork':x.status==='OFF'?'off':x.status==='LEAVE'?'leave':'work'}">${esc(x.code||'-')}</td><td class="time">${esc(x.workTime||'-')}</td><td>${statusPill(x.status)}</td></tr>`).join(''):'<tr><td colspan="9" class="empty">조건에 맞는 인원이 없습니다.</td></tr>';
+}
+function renderGroups(data){
+  const order=['1 GROUP','2 GROUP','3 GROUP','소산','Office','신입','병가','육휴','파견','퇴사','기타'];
+  const groups=[...new Set(data.map(x=>x.bucket))].sort((a,b)=>{const ia=order.indexOf(a),ib=order.indexOf(b);return (ia<0?99:ia)-(ib<0?99:ib)||a.localeCompare(b);});
+  $('#groupGrid').innerHTML=groups.map(g=>{const arr=data.filter(x=>x.bucket===g);const w=arr.filter(x=>x.status==='WORK').length,h=arr.filter(x=>x.status==='HOLIDAY_WORK').length,o=arr.filter(x=>x.status==='OFF').length,l=arr.filter(x=>x.status==='LEAVE').length;return `<div class="groupcard"><div class="grouphead"><span>${esc(g)}</span><span>${w+h}</span></div><div class="groupbar"><span class="mini">총 ${arr.length}</span><span class="mini">근무 ${w}</span><span class="mini">휴무근무 ${h}</span><span class="mini">휴무 ${o}</span><span class="mini">기타 ${l}</span></div></div>`;}).join('');
+}
+function shiftDay(n){const d=new Date(($('#opDate').value||todayLocal())+'T00:00:00');d.setDate(d.getDate()+n);$('#opDate').value=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;render();}
+$('#opDate').value=todayLocal(); $('#prevDay').onclick=()=>shiftDay(-1);$('#nextDay').onclick=()=>shiftDay(1);$('#todayBtn').onclick=()=>{$('#opDate').value=todayLocal();render();};$('#opDate').onchange=render;$('#groupFilter').onchange=render;$('#statusFilter').onchange=render;$('#search').oninput=render;
+$('#skdFile').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;try{const ab=await f.arrayBuffer();const wb=XLSX.read(ab,{type:'array',cellDates:true});parseWorkbook(wb,f.name);localStorage.setItem('jas_personnel_last_name',f.name);}catch(err){alert('SKD 읽기 실패: '+err.message);}finally{e.target.value='';}});
+setInterval(()=>{$('#now').textContent=new Date().toLocaleString('ko-KR',{hour12:false})},1000);
+
+function showLogin(msg=''){document.getElementById('authOverlay').classList.remove('hidden');document.getElementById('authLoading').style.display='none';document.getElementById('loginMsg').textContent=msg;}
+async function enterApp(session){if(!session?.user){showLogin();return;}document.getElementById('authOverlay').classList.add('hidden');$('#authUser').textContent=session.user.email||'관리자';$('#authUser').style.display='inline-block';$('#logoutBtn').style.display='inline-block';}
+$('#loginForm').addEventListener('submit',async e=>{e.preventDefault();const btn=$('#loginBtn');btn.disabled=true;btn.textContent='로그인 중...';try{const {data,error}=await sb.auth.signInWithPassword({email:$('#loginEmail').value.trim(),password:$('#loginPassword').value});if(error)throw error;await enterApp(data.session);}catch(err){$('#loginMsg').textContent='로그인 실패: '+(err.message||err);}finally{btn.disabled=false;btn.textContent='로그인';}});
+$('#logoutBtn').onclick=async()=>{await sb.auth.signOut();showLogin('로그아웃되었습니다.');};
+(async()=>{const {data}=await sb.auth.getSession();if(data?.session)await enterApp(data.session);else showLogin();render();})();
+</script>
+</body>
+</html>
