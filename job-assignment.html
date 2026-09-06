@@ -54,7 +54,7 @@ button,.btn,input,select{font:inherit}.btn,button{border:1px solid #2c5774;backg
 
 .attRow .n.memberCount{cursor:pointer;color:#dff4ff;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px}
 .attRow .n.memberCount:hover{color:#27d3ff}
-.memberPopover{position:fixed;z-index:20000;width:250px;max-height:280px;overflow:auto;background:#fffdf2;color:#111;border:1px solid #6d7a86;border-radius:8px;box-shadow:0 12px 34px rgba(0,0,0,.42);display:none}
+.memberPopover{position:fixed;z-index:30000;width:250px;max-height:280px;overflow:auto;background:#fffdf2;color:#111;border:1px solid #6d7a86;border-radius:8px;box-shadow:0 12px 34px rgba(0,0,0,.42);display:none}
 .memberPopover.show{display:block}
 .memberPopoverHead{display:flex;align-items:center;gap:8px;padding:9px 10px;background:#f3f0df;border-bottom:1px solid #b9b39f;font-weight:900}
 .memberPopoverHead .sub{margin-left:auto;font-size:11px;font-weight:700;color:#555}
@@ -96,7 +96,7 @@ button,.btn,input,select{font:inherit}.btn,button{border:1px solid #2c5774;backg
 
 <header>
   <div class="brand"><a href="index.html">JAS ADMIN</a></div><div class="subtitle">잡 배정 / 조별 휴게시간</div>
-  <span class="ver">DRAFT v0.4.10.3 · MEMBER POPUP HARD FIX</span><div class="spacer"></div><span id="userBadge" class="badge"></span>
+  <span class="ver">DRAFT v0.4.10.4 · MEMBER POPUP DOM FIX</span><div class="spacer"></div><span id="userBadge" class="badge"></span>
 </header>
 
 <main>
@@ -149,13 +149,20 @@ button,.btn,input,select{font:inherit}.btn,button{border:1px solid #2c5774;backg
 </div>
 </main>
 
+
 <div id="breakEditor" class="breakEditor" aria-hidden="true">
   <div id="breakEditorTitle" class="breakEditorTitle">휴게 입력</div>
   <div class="breakEditorRow">
     <div><label>시작</label><input id="breakStartInput" type="time" step="300"></div>
     <div><label>종료</label><input id="breakEndInput" type="time" step="300"></div>
   </div>
-
+  <div class="breakEditorActions">
+    <button id="breakSaveBtn" class="success" type="button">휴게 추가</button>
+    <button id="breakDeleteBtn" type="button" style="display:none">삭제</button>
+    <button id="breakCancelBtn" type="button">취소</button>
+  </div>
+  <div id="breakHint" class="breakHint">휴게 가능 구간 안에서 시간을 지정하세요.</div>
+</div>
 
 <div id="memberPopover" class="memberPopover" aria-hidden="true">
   <div class="memberPopoverHead">
@@ -466,7 +473,7 @@ function applyManualEmergencyNames(){
 }
 function closeMemberPopover(){
   const p=$('#memberPopover'); if(!p)return;
-  p.classList.remove('show'); p.style.display='none'; p.setAttribute('aria-hidden','true'); activeMemberCrewId='';
+  p.classList.remove('show');p.style.display='none';p.setAttribute('aria-hidden','true');activeMemberCrewId='';
 }
 function openMemberPopoverById(crewId,anchorEl){ return openMemberPopover(crewId,anchorEl); }
 function openMemberPopover(crewId,anchorEl){
@@ -807,22 +814,6 @@ function shiftDate(n){const d=new Date(($('#opDate').value||todayLocal())+'T00:0
 ['inPre','inPost','outPre','outPost'].forEach(id=>$('#'+id).onchange=buildJobs);
 $('#opDate').value=todayLocal();$('#prevDay').onclick=()=>shiftDate(-1);$('#nextDay').onclick=()=>shiftDate(1);$('#todayBtn').onclick=()=>{$('#opDate').value=todayLocal();reloadAll();};$('#reloadBtn').onclick=reloadAll;$('#opDate').onchange=reloadAll;
 $('#refreshRosterBtn').onclick=async()=>{await loadStoredSkd();renderAll();};
-function bindMemberPopoverDelegation(){
-  const list=$('#attendanceList');
-  if(!list)return;
-
-  const openFromEvent=e=>{
-    const cnt=e.target.closest('.memberCount');
-    if(!cnt)return;
-    e.preventDefault();
-    e.stopPropagation();
-    openMemberPopover(cnt.dataset.crewid,cnt);
-  };
-
-  list.addEventListener('click',openFromEvent);
-}
-bindMemberPopoverDelegation();
-
 document.addEventListener('click',e=>{
   if(e.target.closest('.memberCount'))return;
   if(!e.target.closest('#memberPopover'))closeMemberPopover();
@@ -911,13 +902,4 @@ showLogin('');
   }
 })();
 </script>
-
-<div class="breakEditorActions">
-    <button id="breakSaveBtn" class="success">휴게 추가</button>
-    <button id="breakDeleteBtn" style="display:none">삭제</button>
-    <button id="breakCancelBtn">취소</button>
-  </div>
-  <div id="breakHint" class="breakHint">휴게 가능 구간 안에서 시간을 지정하세요.</div>
-</div>
-
 </body></html>
