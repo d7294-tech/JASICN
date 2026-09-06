@@ -67,7 +67,7 @@ main{padding:16px 18px 28px;max-width:1900px;margin:auto}.toolbar{display:flex;g
     <div id="authLoading" class="auth-loading">로그인 상태 확인 중...</div>
   </div>
 </div>
-<header><div class="brand"><a href="index.html">JAS ADMIN</a></div><div class="subtitle">인원 / 조 운영</div><span class="ver">DRAFT v0.7.8 · SOSAN 1/2/3</span><div class="spacer"></div><span id="authUser" class="rcmdate" style="display:none"></span><button id="logoutBtn" style="display:none;padding:6px 10px">로그아웃</button><div id="now"></div></header>
+<header><div class="brand"><a href="index.html">JAS ADMIN</a></div><div class="subtitle">인원 / 조 운영</div><span class="ver">DRAFT v0.7.8.1 · SOSAN 1/2/3 FIX</span><div class="spacer"></div><span id="authUser" class="rcmdate" style="display:none"></span><button id="logoutBtn" style="display:none;padding:6px 10px">로그아웃</button><div id="now"></div></header>
 <main>
   <div class="toolbar">
     <div class="dateNav"><button id="prevDay">◀</button><input id="opDate" class="dateinput" type="date"><button id="nextDay">▶</button><button id="todayBtn">오늘</button></div>
@@ -352,16 +352,17 @@ function groupNumber(g){const n=parseInt(normGroup(g),10);return Number.isFinite
 function buildAutoBoardRows(date){
   const day=selectedDayData(date);
   const byGroup=new Map();
-  const towGroups=new Map([['소산1',[]],['소산2',[]],['소산3',[]]]);
+  const sosanGroups=new Map([['소산1',[]],['소산2',[]],['소산3',[]]]);
 
-  // 숫자 조(1조~24조)와 소산조를 분리한다.
   day.forEach(x=>{
-    const raw=String(x.group||'').trim();
+    const raw=String(x.group||'').trim().replace(/\s+/g,'');
     const g=normGroup(raw);
-    if(x.bucket==='소산'){
-      towMembers.push(x);
+
+    if(/^소산[123]$/.test(raw)){
+      sosanGroups.get(raw).push(x);
       return;
     }
+
     if(!/^\d+$/.test(g))return;
     if(!byGroup.has(g))byGroup.set(g,[]);
     byGroup.get(g).push(x);
@@ -372,33 +373,34 @@ function buildAutoBoardRows(date){
   for(const [g,members] of [...byGroup.entries()].sort((a,b)=>Number(a[0])-Number(b[0]))){
     members.sort((a,b)=>(a.crewSeq||999)-(b.crewSeq||999));
 
-    // 해당 날짜 실제 근무자 중 대표 출근코드를 잡고, 원래 순번 위치를 유지한다.
     const active=members.filter(x=>x.status==='WORK' && !/^R[AP]/i.test(String(x.code||'').trim()));
     if(active.length){
       const workCode=mostCommonCode(active,()=>true).code || String(active[0].code||'').trim().toUpperCase();
       const names=Array(6).fill('');
       members.slice(0,6).forEach((x,i)=>{
-        if(String(x.code||'').trim().toUpperCase()===workCode) names[i]=x.name||'';
+        if(String(x.code||'').trim().toUpperCase()===workCode)names[i]=x.name||'';
       });
       const row={group:g,code:workCode,cls:'',names,kind:'normal'};
-      // 날짜가 바뀔 때마다 실제 출근코드로 오전/오후를 다시 분류한다.
-      // 조 번호에 고정하지 않아 1~24조 어느 조든 해당 날짜 근무가 있으면 표시된다.
-      if(/^P/i.test(workCode)) afternoon.push(row); else morning.push(row);
+      if(/^P/i.test(workCode))afternoon.push(row); else morning.push(row);
     }
 
-    // 휴무근무는 날짜마다 실제 RA/RP 코드 기준으로 별도 행 생성.
     const ra=members.filter(x=>/^RA/i.test(String(x.code||'').trim()));
     if(ra.length){
-      const code=mostCommonCode(ra,c=>/^RA/i.test(c)).code || String(ra[0].code||'RA43').trim().toUpperCase();
+      const code=mostCommonCode(ra,c=>/^RA/i.test(c)).code || 'RA43';
       const names=Array(6).fill('');
-      members.slice(0,6).forEach((x,i)=>{if(/^RA/i.test(String(x.code||'').trim()))names[i]=x.name||'';});
+      members.slice(0,6).forEach((x,i)=>{
+        if(/^RA/i.test(String(x.code||'').trim()))names[i]=x.name||'';
+      });
       holidayMorning.push({group:g,code,cls:'sky',names,kind:'holiday'});
     }
+
     const rp=members.filter(x=>/^RP/i.test(String(x.code||'').trim()));
     if(rp.length){
-      const code=mostCommonCode(rp,c=>/^RP/i.test(c)).code || String(rp[0].code||'RP14').trim().toUpperCase();
+      const code=mostCommonCode(rp,c=>/^RP/i.test(c)).code || 'RP14';
       const names=Array(6).fill('');
-      members.slice(0,6).forEach((x,i)=>{if(/^RP/i.test(String(x.code||'').trim()))names[i]=x.name||'';});
+      members.slice(0,6).forEach((x,i)=>{
+        if(/^RP/i.test(String(x.code||'').trim()))names[i]=x.name||'';
+      });
       holidayAfternoon.push({group:g,code,cls:'sky',names,kind:'holiday'});
     }
   }
@@ -408,38 +410,29 @@ function buildAutoBoardRows(date){
   holidayMorning.sort((a,b)=>Number(a.group)-Number(b.group));
   holidayAfternoon.sort((a,b)=>Number(a.group)-Number(b.group));
 
-  // TOW는 별도 조가 아니라 SKD에서 '소산'으로 분류된 인원이다. 선택 날짜의 실제 근무코드 기준으로 A/P를 나눠 표시한다.
-  towMembers.sort((a,b)=>String(a.group).localeCompare(String(b.group),'ko')||(a.crewSeq||999)-(b.crewSeq||999));
-  const towA=towMembers.filter(x=>x.status==='WORK' && /^A/i.test(String(x.code||'').trim()));
-  const towP=towMembers.filter(x=>x.status==='WORK' && /^P/i.test(String(x.code||'').trim()));
-  const towACode=mostCommonCode(towA,c=>/^A/i.test(c)).code||'A4';
-  const towPCode=mostCommonCode(towP,c=>/^P/i.test(c)).code||'P14';
-  const towANames=towA.filter(x=>String(x.code||'').trim().toUpperCase()===towACode).map(x=>x.name).slice(0,6);
-  const towPNames=towP.filter(x=>String(x.code||'').trim().toUpperCase()===towPCode).map(x=>x.name).slice(0,6);
-  while(towANames.length<6)towANames.push('');
-  while(towPNames.length<6)towPNames.push('');
   const sosanRows=[];
   for(const sg of ['소산1','소산2','소산3']){
-    const members=towGroups.get(sg)||[];
+    const members=sosanGroups.get(sg)||[];
     if(!members.length)continue;
     members.sort((a,b)=>(a.crewSeq||999)-(b.crewSeq||999));
-    const code=mostCommonCode(members,x=>codeStatus(x)==='WORK').code||mostCommonCode(members,()=>true).code||'';
-    const names=members.map(x=>x.name||'').filter(Boolean);
+    const active=members.filter(x=>x.status==='WORK');
+    const code=mostCommonCode(active,()=>true).code || '';
+    const names=active.map(x=>x.name||'').filter(Boolean).slice(0,6);
     while(names.length<6)names.push('');
-    sosanRows.push({group:sg,code,cls:'tow',names:names.slice(0,6),kind:'tow'});
+    if(names.some(Boolean)){
+      sosanRows.push({group:sg,code,cls:'tow',names,kind:'tow'});
+    }
   }
-
 
   return [
     ...morning,
     ...holidayMorning,
-    ...sosanRows,
+    ...sosanRows.filter(r=>/^A|^RA/i.test(r.code)),
     {group:'오전 통제',code:'',cls:'control',names:Array(6).fill(''),manualOnly:true},
     {group:'오후 통제',code:'',cls:'control',names:Array(6).fill(''),manualOnly:true},
     ...afternoon,
     ...holidayAfternoon,
-    {group:'소산1',code:towACode,cls:'tow',names:towANames,kind:'tow'},
-    {group:'소산1',code:towPCode,cls:'tow',names:towPNames,kind:'tow'}
+    ...sosanRows.filter(r=>/^P|^RP/i.test(r.code))
   ];
 }
 function rowKey(r,idx){return `${idx}|${r.group}|${r.code}|${r.kind||''}`;}
