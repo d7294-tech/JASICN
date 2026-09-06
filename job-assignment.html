@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>JAS ADMIN - 잡 배정 / 휴게시간</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--bg:#071426;--panel:#0d1d31;--line:#243d58;--text:#eaf3ff;--muted:#8da5bf;--cyan:#27d3ff;--green:#42e69d;--amber:#ffbf3c;--red:#ff6373;--purple:#a78bfa}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(180deg,#071426,#08111f);color:var(--text);font-family:Inter,"Noto Sans KR","Malgun Gothic",sans-serif;min-height:100vh}
+header{height:64px;display:flex;align-items:center;gap:15px;padding:0 20px;border-bottom:1px solid var(--line);background:#081526;position:sticky;top:0;z-index:20}.brand a{color:var(--cyan);text-decoration:none;font-size:20px;font-weight:950}.subtitle{font-weight:900}.ver{font-size:11px;color:#8ba3b8;border:1px solid #29425c;border-radius:8px;padding:4px 7px}.spacer{flex:1}
+main{max-width:1900px;margin:auto;padding:16px 18px 30px}.toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+button,.btn,input,select{font:inherit}.btn,button{border:1px solid #2c5774;background:#10263c;color:#fff;border-radius:8px;padding:9px 12px;font-weight:850;cursor:pointer}.primary{background:#0b7198;border-color:#1199c8}
+.dateinput,.select{background:#0c1c2e;border:1px solid var(--line);color:#fff;border-radius:8px;padding:9px 10px;font-weight:800}.note{font-size:12px;color:var(--muted);margin:0 0 12px}
+.kpis{display:grid;grid-template-columns:repeat(5,minmax(140px,1fr));gap:10px;margin-bottom:14px}.kpi{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:13px}.kpi .label{font-size:11px;color:var(--muted);font-weight:800}.kpi .num{font-size:26px;font-weight:950;margin-top:3px}.cyan .num{color:var(--cyan)}.green .num{color:var(--green)}.amber .num{color:var(--amber)}.red .num{color:var(--red)}.purple .num{color:var(--purple)}
+.grid{display:block}.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}.panel-head{display:flex;align-items:center;gap:9px;padding:12px 14px;background:#0d2035;border-bottom:1px solid var(--line)}.panel-title{font-weight:950}.badge{font-size:11px;border:1px solid #31506d;border-radius:20px;padding:3px 8px;color:#adc2d6}.legend{margin-left:auto;font-size:11px;color:#8fa7bd}
+.tablewrap{overflow:auto;max-height:calc(100vh - 300px)}table{width:100%;border-collapse:separate;border-spacing:0;font-size:12px;min-width:1180px}th{position:sticky;top:0;z-index:2;background:#10263b;color:#a7bed1;text-align:left;border-bottom:1px solid var(--line);padding:9px 7px;font-size:11px}td{padding:8px 7px;border-bottom:1px solid #17304a;white-space:nowrap}tbody tr:hover td{background:#10263a}
+.flight{font-weight:950}.time{font-variant-numeric:tabular-nums}.win{font-size:11px;color:#9fe8ff}.spot{font-weight:900;color:#ffd36a}.conflict{color:#ff8996;font-weight:950}.ok{color:#67e9aa;font-weight:900}.muted{color:#7891a8}
+.assign{background:#0b1c2e;color:#fff;border:1px solid #31506d;border-radius:6px;padding:5px 6px;min-width:92px}.breakList{padding:10px 12px}.crewbox{border:1px solid #26435e;border-radius:10px;padding:10px;margin-bottom:9px;background:#0b1b2e}.crewhead{display:flex;align-items:center;gap:8px;margin-bottom:6px}.crewname{font-weight:950;color:#cbbcff}.shift{font-size:11px;color:#8fa7bd}.gap{display:inline-block;margin:3px 4px 0 0;border:1px solid #31506d;border-radius:999px;padding:4px 7px;font-size:11px;color:#bfe6ff}.gap.good{border-color:#347656;color:#7ee9b4}.gap.short{color:#8aa0b2}
+.rulebox{display:grid;grid-template-columns:repeat(4,minmax(120px,1fr));gap:8px;margin-bottom:12px}.rule{background:#0b1b2e;border:1px solid var(--line);border-radius:10px;padding:8px}.rule label{display:block;font-size:10px;color:#8da5bf;margin-bottom:4px}.rule input{width:100%;background:#08182a;border:1px solid #31506d;color:#fff;border-radius:6px;padding:7px}
+.auth-overlay{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:#06111e;padding:20px}.auth-overlay.hidden{display:none}.login-card{width:min(420px,94vw);background:#0d1d31;border:1px solid #294866;border-radius:18px;padding:28px}.login-logo{font-size:26px;font-weight:950;color:var(--cyan)}.login-sub{color:#9fb4c8;font-size:13px;margin:5px 0 18px}.login-card label{display:block;font-size:11px;color:#9fb4c8;margin:10px 0 5px}.login-card input{width:100%;background:#08182a;border:1px solid #2a4965;color:#fff;border-radius:8px;padding:11px}.login-card button{width:100%;margin-top:16px}.msg{font-size:12px;color:#ff9aa8;min-height:20px;margin-top:10px}
+@media(max-width:1200px){.grid{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(3,1fr)}}@media(max-width:700px){.kpis{grid-template-columns:repeat(2,1fr)}.rulebox{grid-template-columns:repeat(2,1fr)}}
+
+.timelinePanel{margin-top:14px}
+.timelineWrap{overflow:auto;background:#09192a;padding:0 0 14px}
+.timeline{min-width:1400px}
+.timelineHeader,.timelineRow{display:grid;grid-template-columns:120px 1fr;min-height:46px;border-bottom:1px solid #17304a}
+.timelineLabel{position:sticky;left:0;z-index:4;background:#0d2035;border-right:1px solid #29425c;padding:10px 9px;font-weight:900}
+.timelineHeader .timelineLabel{z-index:6}
+.timeAxis{position:relative;height:42px;background:#0c1c2e}
+.timeTick{position:absolute;top:0;bottom:0;border-left:1px solid #29425c;font-size:10px;color:#8da5bf;padding:4px 0 0 4px}
+.track{position:relative;height:46px;background:repeating-linear-gradient(to right,#0b1b2e 0,#0b1b2e calc(4.166666% - 1px),#17304a calc(4.166666% - 1px),#17304a 4.166666%)}
+.jobBar{position:absolute;top:8px;height:30px;border:1px solid #2b7ba2;background:#123a55;border-radius:6px;padding:5px 7px;font-size:10px;font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;min-width:18px}
+.jobBar.conflictBar{border-color:#d85b68;background:#55222b;color:#ffd1d6}
+.breakBar{position:absolute;top:12px;height:22px;border:1px dashed #347656;background:#123525;border-radius:5px;font-size:9px;color:#8fe8b7;padding:3px 5px;overflow:hidden;white-space:nowrap}
+.crewMeta{display:block;font-size:10px;color:#8da5bf;font-weight:700;margin-top:3px}
+
+</style>
+</head>
+<body>
+<div id="authOverlay" class="auth-overlay">
+  <div class="login-card">
+    <div class="login-logo">JAS ADMIN</div>
+    <div class="login-sub">잡 배정 / 조별 휴게시간</div>
+    <form id="loginForm">
+      <label>EMAIL</label><input id="loginEmail" type="email" required>
+      <label>PASSWORD</label><input id="loginPassword" type="password" required>
+      <button id="loginBtn" type="submit" class="primary">로그인</button>
+      <div id="loginMsg" class="msg"></div>
+    </form>
+  </div>
+</div>
+
+<header>
+  <div class="brand"><a href="index.html">JAS ADMIN</a></div><div class="subtitle">잡 배정 / 조별 휴게시간</div>
+  <span class="ver">DRAFT v0.2 · SINGLE CREW + TIMELINE</span><div class="spacer"></div><span id="userBadge" class="badge"></span>
+</header>
+
+<main>
+  <div class="toolbar">
+    <button id="prevDay">◀</button><input id="opDate" class="dateinput" type="date"><button id="nextDay">▶</button><button id="todayBtn">오늘</button>
+    <button id="reloadBtn" class="primary">운항현황 불러오기</button>
+    <span id="flightSource" class="badge">CLOUD 대기</span><span id="rosterSource" class="badge">SKD 대기</span>
+  </div>
+  <div class="note">운항현황 CLOUD + 인원/조 운영의 해당일 출근조를 사용합니다. 운항편당 조 1개만 수기 배정하며, 아래 시간대 차트에서 조별 작업/휴게 가능시간을 함께 확인합니다.</div>
+
+  <div class="rulebox">
+    <div class="rule"><label>IN 시작 (분)</label><input id="inPre" type="number" value="15"></div>
+    <div class="rule"><label>IN 종료 (분)</label><input id="inPost" type="number" value="25"></div>
+    <div class="rule"><label>OUT 시작 (분)</label><input id="outPre" type="number" value="60"></div>
+    <div class="rule"><label>OUT 종료 (분)</label><input id="outPost" type="number" value="10"></div>
+  </div>
+
+  <section class="kpis">
+    <div class="kpi cyan"><div class="label">운항 JOB</div><div class="num" id="kJobs">0</div></div>
+    <div class="kpi green"><div class="label">배정 완료</div><div class="num" id="kAssigned">0</div></div>
+    <div class="kpi amber"><div class="label">미배정</div><div class="num" id="kUnassigned">0</div></div>
+    <div class="kpi red"><div class="label">시간 충돌</div><div class="num" id="kConflict">0</div></div>
+    <div class="kpi purple"><div class="label">출근 조</div><div class="num" id="kCrews">0</div></div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><div class="panel-title">운항 JOB 배정</div><span id="jobBadge" class="badge">0건</span><div class="legend">운항편당 조 1개 배정 · 중복 자동경고</div></div>
+    <div class="tablewrap" style="max-height:430px"><table>
+      <thead><tr><th>구분</th><th>편명</th><th>REG</th><th>SPOT</th><th>기준시간</th><th>작업시간</th><th>배정 조</th><th>상태</th></tr></thead>
+      <tbody id="jobBody"></tbody>
+    </table></div>
+  </section>
+
+  <section class="panel timelinePanel">
+    <div class="panel-head">
+      <div class="panel-title">조별 시간대 차트</div>
+      <span id="breakBadge" class="badge">0개 조</span>
+      <div class="legend">가로축 시간 · JOB=작업 · 빈 구간=휴게 가능시간</div>
+    </div>
+    <div id="timelineWrap" class="timelineWrap"></div>
+  </section>
+</main>
+
+<script>
+const SUPABASE_URL='https://yblzvrfkohppnrxeorce.supabase.co';
+const SUPABASE_KEY='sb_publishable_1P8VyOOWWTf41F__nOYuUw_GKo-DiKu';
+const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const $=s=>document.querySelector(s);
+const esc=v=>String(v??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const todayLocal=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`};
+
+let flights=[],jobs=[],crews=[],assignments={};
+
+function hm(v){if(!v)return'';const m=String(v).match(/(\d{1,2}):(\d{2})/);return m?`${m[1].padStart(2,'0')}:${m[2]}`:'';}
+function toMin(t){const m=hm(t).match(/(\d{2}):(\d{2})/);return m?Number(m[1])*60+Number(m[2]):null;}
+function fmtMin(n){n=(n%1440+1440)%1440;return `${String(Math.floor(n/60)).padStart(2,'0')}:${String(n%60).padStart(2,'0')}`;}
+function shiftTime(t,delta){const x=toMin(t);return x==null?'':fmtMin(x+delta);}
+function jobKey(j){return `${j.dir}|${j.flight}`;}
+function assignKey(j){return jobKey(j);}
+function saveAssignments(){localStorage.setItem('jas_job_assign_v1_'+($('#opDate').value||todayLocal()),JSON.stringify(assignments));}
+function loadAssignments(){
+  try{
+    assignments=JSON.parse(localStorage.getItem('jas_job_assign_v1_'+($('#opDate').value||todayLocal()))||'{}')||{};
+    const migrated={};
+    for(const [k,v] of Object.entries(assignments)){
+      if(k.endsWith('|bag')||k.endsWith('|cargo')){const nk=k.replace(/\|(bag|cargo)$/,'');if(v&&!migrated[nk])migrated[nk]=v;}
+      else migrated[k]=v;
+    }
+    assignments=migrated;
+  }catch{assignments={};}
+}
+
+async function openSkdDb(){
+  return new Promise((resolve,reject)=>{
+    const r=indexedDB.open('jas_personnel_db',1);
+    r.onupgradeneeded=()=>{if(!r.result.objectStoreNames.contains('files'))r.result.createObjectStore('files');};
+    r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);
+  });
+}
+async function loadStoredSkd(){
+  try{
+    const db=await openSkdDb();
+    const saved=await new Promise((resolve,reject)=>{const tx=db.transaction('files','readonly');const r=tx.objectStore('files').get('last_skd');r.onsuccess=()=>resolve(r.result||null);r.onerror=()=>reject(r.error);});
+    db.close();
+    if(!saved?.bytes){$('#rosterSource').textContent='SKD 없음';crews=[];return;}
+    const wb=XLSX.read(saved.bytes,{type:'array',cellDates:true});
+    parseCrews(wb);
+    $('#rosterSource').textContent='SKD 자동복원';
+  }catch(e){console.error(e);$('#rosterSource').textContent='SKD 오류';crews=[];}
+}
+function codeStatus(c){c=String(c||'').trim().toUpperCase();if(!c)return'OFF';if(/^R[AP]/.test(c))return'WORK';if(['R','RR','OFF','휴','휴무','HL','L','ML','BL','UL','PL','SL','C'].includes(c))return'OFF';return'WORK';}
+function parseCrews(wb){
+  const ws=wb.Sheets['09월스케쥴']||wb.Sheets[wb.SheetNames.find(n=>/스케쥴|스케줄/i.test(n))]; if(!ws){crews=[];return;}
+  const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:true});
+  const yy=Number(rows?.[0]?.[4])||new Date().getFullYear(), mm=Number(rows?.[0]?.[5])||new Date().getMonth()+1;
+  const d=new Date(($('#opDate').value||todayLocal())+'T00:00:00'), day=d.getDate();
+  const groups=new Map(); let g='';
+  for(let i=9;i<Math.min(rows.length,240);i++){
+    const r=rows[i], mark=String(r[1]??'').trim(), name=String(r[6]??'').trim(); if(mark)g=mark;if(!name)continue;
+    const code=(d.getFullYear()===yy&&d.getMonth()+1===mm)?String(r[9+day]??'').trim():'';
+    if(codeStatus(code)!=='WORK')continue;
+    if(!groups.has(g))groups.set(g,[]);
+    groups.get(g).push({name,code});
+  }
+  crews=[...groups.entries()].filter(([g,a])=>a.length&&(/^\d+\s*조$/.test(g)||/^소산/.test(g))).map(([g,a])=>({id:g,name:g,members:a.map(x=>x.name),code:mode(a.map(x=>x.code)),shift:shiftForCode(mode(a.map(x=>x.code)))}));
+}
+function mode(arr){const m={};for(const x of arr){if(!x)continue;m[x]=(m[x]||0)+1}return Object.entries(m).sort((a,b)=>b[1]-a[1])[0]?.[0]||'';}
+function shiftForCode(c){
+  c=String(c||'').toUpperCase();
+  const fixed={A2:['02:00','11:00'],A3:['03:00','12:00'],P13:['13:00','22:00'],RA43:['04:30','13:30'],RP14:['14:00','23:00']};
+  if(fixed[c])return fixed[c];
+  const ma=c.match(/^A(\d{1,2})(\d?)$/); if(ma){let h=Number(ma[1]);if(h>23)h=Math.floor(h/10);return [String(h).padStart(2,'0')+':00',fmtMin(h*60+9*60)];}
+  const mp=c.match(/^P(\d{1,2})(\d?)$/); if(mp){let h=Number(mp[1]);if(h>23)h=Math.floor(h/10);return [String(h).padStart(2,'0')+':00',fmtMin(h*60+9*60)];}
+  return ['',''];
+}
+async function loadFlights(){
+  const date=$('#opDate').value||todayLocal();
+  $('#flightSource').textContent='CLOUD 조회중';
+  const {data,error}=await sb.from('jas_flights').select('*').eq('operation_date',date).order('schedule_time');
+  if(error)throw error;
+  flights=data||[];
+  $('#flightSource').textContent=`CLOUD ${flights.length}편`;
+  buildJobs();
+}
+function buildJobs(){
+  const inPre=Number($('#inPre').value||15),inPost=Number($('#inPost').value||25),outPre=Number($('#outPre').value||60),outPost=Number($('#outPost').value||10);
+  jobs=flights.map(f=>{
+    const dir=f.direction==='A'?'IN':'OUT';
+    const base=dir==='IN'?(hm(f.estimated_time)||hm(f.schedule_time)):(hm(f.estimated_time)||hm(f.schedule_time));
+    const start=dir==='IN'?shiftTime(base,-inPre):shiftTime(base,-outPre);
+    const end=dir==='IN'?shiftTime(base,inPost):shiftTime(base,outPost);
+    return {dir,flight:f.flight||'',reg:f.reg||'',spot:f.spot||'',base,start,end};
+  }).filter(x=>x.base).sort((a,b)=>toMin(a.start)-toMin(b.start));
+  renderAll();
+}
+function crewOptions(selected){
+  return `<option value="">-</option>`+crews.map(c=>`<option value="${esc(c.id)}" ${c.id===selected?'selected':''}>${esc(c.name)}</option>`).join('');
+}
+function overlaps(a,b){const as=toMin(a.start),ae=toMin(a.end),bs=toMin(b.start),be=toMin(b.end);return as!=null&&bs!=null&&Math.max(as,bs)<Math.min(ae,be);}
+function crewConflicts(){
+  const map=new Map();
+  for(const j of jobs){
+    const crew=assignments[assignKey(j)]; if(!crew)continue;
+    if(!map.has(crew))map.set(crew,[]);
+    map.get(crew).push({...j});
+  }
+  const bad=new Set();
+  for(const [crew,arr] of map){
+    for(let i=0;i<arr.length;i++)for(let k=i+1;k<arr.length;k++){
+      if(jobKey(arr[i])===jobKey(arr[k]))continue;
+      if(overlaps(arr[i],arr[k])){bad.add(`${crew}|${jobKey(arr[i])}`);bad.add(`${crew}|${jobKey(arr[k])}`);}
+    }
+  }
+  return bad;
+}
+function renderJobs(){
+  const bad=crewConflicts();let assigned=0,conflictRows=0;
+  $('#jobBody').innerHTML=jobs.length?jobs.map(j=>{
+    const crew=assignments[assignKey(j)]||'';
+    if(crew)assigned++;
+    const badRow=crew&&bad.has(`${crew}|${jobKey(j)}`);if(badRow)conflictRows++;
+    return `<tr><td>${j.dir}</td><td class="flight">${esc(j.flight)}</td><td>${esc(j.reg||'-')}</td><td class="spot">${esc(j.spot||'-')}</td><td class="time">${esc(j.base)}</td><td class="win">${esc(j.start)} ~ ${esc(j.end)}</td>
+      <td><select class="assign" data-key="${esc(assignKey(j))}">${crewOptions(crew)}</select></td>
+      <td>${badRow?'<span class="conflict">겹침</span>':(crew?'<span class="ok">배정</span>':'<span class="muted">미배정</span>')}</td></tr>`;
+  }).join(''):'<tr><td colspan="8" class="muted" style="padding:40px;text-align:center">운항현황을 불러와 주세요.</td></tr>';
+  document.querySelectorAll('.assign').forEach(x=>x.onchange=()=>{assignments[x.dataset.key]=x.value;if(!x.value)delete assignments[x.dataset.key];saveAssignments();renderAll();});
+  $('#kJobs').textContent=jobs.length;$('#kAssigned').textContent=assigned;$('#kUnassigned').textContent=Math.max(0,jobs.length-assigned);$('#kConflict').textContent=conflictRows;$('#jobBadge').textContent=`${jobs.length}건`;
+}
+function busyForCrew(id){
+  const a=[];
+  for(const j of jobs){
+    if(assignments[assignKey(j)]===id)a.push({start:j.start,end:j.end,flight:j.flight,dir:j.dir,spot:j.spot});
+  }
+  a.sort((x,y)=>toMin(x.start)-toMin(y.start));
+  const merged=[];
+  for(const x of a){
+    if(!merged.length||toMin(x.start)>toMin(merged.at(-1).end))merged.push({...x});
+    else if(toMin(x.end)>toMin(merged.at(-1).end))merged.at(-1).end=x.end;
+  }
+  return {raw:a,merged};
+}
+function timelinePos(minute,start,end){
+  let m=minute,s=start,e=end;
+  if(e<=s)e+=1440;
+  if(m<s-360)m+=1440;
+  return Math.max(0,Math.min(100,(m-s)/(e-s)*100));
+}
+function renderBreaks(){
+  $('#breakBadge').textContent=`${crews.length}개 조`;$('#kCrews').textContent=crews.length;
+  const start=0,end=1440,bad=crewConflicts();
+  const ticks=Array.from({length:25},(_,h)=>`<div class="timeTick" style="left:${h/24*100}%">${String(h%24).padStart(2,'0')}</div>`).join('');
+  const rows=crews.map(c=>{
+    const {raw,merged}=busyForCrew(c.id);
+    const bars=raw.map(j=>{
+      const st=toMin(j.start),en=toMin(j.end);
+      if(st==null||en==null)return'';
+      const left=timelinePos(st,start,end),right=timelinePos(en,start,end),width=Math.max(.7,right-left);
+      const isBad=bad.has(`${c.id}|${j.dir}|${j.flight}`);
+      return `<div class="jobBar ${isBad?'conflictBar':''}" style="left:${left}%;width:${width}%" title="${esc(j.dir+' '+j.flight+' '+j.start+'~'+j.end+' SPOT '+(j.spot||'-'))}">${esc(j.flight)}</div>`;
+    }).join('');
+    const breaks=[];
+    let cur=0;
+    for(const b of merged){
+      const bs=toMin(b.start),be=toMin(b.end);if(bs==null||be==null)continue;
+      if(bs-cur>=30)breaks.push([cur,bs]);
+      cur=Math.max(cur,be);
+    }
+    if(1440-cur>=30)breaks.push([cur,1440]);
+    const breakBars=breaks.map(g=>{
+      const left=g[0]/1440*100,width=(g[1]-g[0])/1440*100;
+      return `<div class="breakBar" style="left:${left}%;width:${width}%" title="휴게 가능 ${fmtMin(g[0])}~${fmtMin(g[1])}">${g[1]-g[0]>=60?`${fmtMin(g[0])}~${fmtMin(g[1])}`:''}</div>`;
+    }).join('');
+    return `<div class="timelineRow"><div class="timelineLabel">${esc(c.name)}<span class="crewMeta">${esc(c.code||'-')} · ${c.members.length}명</span></div><div class="track">${breakBars}${bars}</div></div>`;
+  }).join('');
+  $('#timelineWrap').innerHTML=`<div class="timeline"><div class="timelineHeader"><div class="timelineLabel">조 / 시간</div><div class="timeAxis">${ticks}</div></div>${rows||'<div class="muted" style="padding:20px">해당일 출근조가 없습니다.</div>'}</div>`;
+}
+function renderAll(){renderJobs();renderBreaks();}
+async function reloadAll(){
+  loadAssignments();await loadStoredSkd();await loadFlights();renderAll();
+}
+function shiftDate(n){const d=new Date(($('#opDate').value||todayLocal())+'T00:00:00');d.setDate(d.getDate()+n);$('#opDate').value=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;reloadAll();}
+['inPre','inPost','outPre','outPost'].forEach(id=>$('#'+id).onchange=buildJobs);
+$('#opDate').value=todayLocal();$('#prevDay').onclick=()=>shiftDate(-1);$('#nextDay').onclick=()=>shiftDate(1);$('#todayBtn').onclick=()=>{$('#opDate').value=todayLocal();reloadAll();};$('#reloadBtn').onclick=reloadAll;$('#opDate').onchange=reloadAll;
+
+function showLogin(msg=''){document.getElementById('authOverlay').classList.remove('hidden');$('#loginMsg').textContent=msg;}
+async function enterApp(session){if(!session?.user)return showLogin();document.getElementById('authOverlay').classList.add('hidden');$('#userBadge').textContent=session.user.email||'관리자';await reloadAll();}
+$('#loginForm').addEventListener('submit',async e=>{e.preventDefault();const b=$('#loginBtn');b.disabled=true;b.textContent='로그인 중...';try{const {data,error}=await sb.auth.signInWithPassword({email:$('#loginEmail').value.trim(),password:$('#loginPassword').value});if(error)throw error;await enterApp(data.session);}catch(e){showLogin('로그인 실패: '+(e.message||e));}finally{b.disabled=false;b.textContent='로그인';}});
+(async()=>{try{const {data}=await sb.auth.getSession();if(data?.session)await enterApp(data.session);else showLogin();}catch{showLogin();}})();
+</script>
+</body></html>
