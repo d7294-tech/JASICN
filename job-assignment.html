@@ -96,7 +96,7 @@ button,.btn,input,select{font:inherit}.btn,button{border:1px solid #2c5774;backg
 
 <header>
   <div class="brand"><a href="index.html">JAS ADMIN</a></div><div class="subtitle">잡 배정 / 조별 휴게시간</div>
-  <span class="ver">DRAFT v0.4.9.2 · LOGIN FIX</span><div class="spacer"></div><span id="userBadge" class="badge"></span>
+  <span class="ver">DRAFT v0.4.9.3 · LOGIN RUNTIME FIX</span><div class="spacer"></div><span id="userBadge" class="badge"></span>
 </header>
 
 <main>
@@ -148,6 +148,13 @@ button,.btn,input,select{font:inherit}.btn,button{border:1px solid #2c5774;backg
   </div>
 </div>
 </main>
+
+<div id="breakEditor" class="breakEditor" aria-hidden="true">
+  <div id="breakEditorTitle" class="breakEditorTitle">휴게 입력</div>
+  <div class="breakEditorRow">
+    <div><label>시작</label><input id="breakStartInput" type="time" step="300"></div>
+    <div><label>종료</label><input id="breakEndInput" type="time" step="300"></div>
+  </div>
 
 <script>
 const SUPABASE_URL='https://yblzvrfkohppnrxeorce.supabase.co';
@@ -711,9 +718,9 @@ function shiftDate(n){const d=new Date(($('#opDate').value||todayLocal())+'T00:0
 ['inPre','inPost','outPre','outPost'].forEach(id=>$('#'+id).onchange=buildJobs);
 $('#opDate').value=todayLocal();$('#prevDay').onclick=()=>shiftDate(-1);$('#nextDay').onclick=()=>shiftDate(1);$('#todayBtn').onclick=()=>{$('#opDate').value=todayLocal();reloadAll();};$('#reloadBtn').onclick=reloadAll;$('#opDate').onchange=reloadAll;
 $('#refreshRosterBtn').onclick=async()=>{await loadStoredSkd();renderAll();};
-$('#breakSaveBtn').onclick=saveBreakFromEditor;
-$('#breakDeleteBtn').onclick=deleteBreakFromEditor;
-$('#breakCancelBtn').onclick=closeBreakEditor;
+$('#breakSaveBtn')?.addEventListener('click',saveBreakFromEditor);
+$('#breakDeleteBtn')?.addEventListener('click',deleteBreakFromEditor);
+$('#breakCancelBtn')?.addEventListener('click',closeBreakEditor);
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeBreakEditor();});
 document.addEventListener('click',e=>{
   if($('#breakEditor')?.classList.contains('show') && !e.target.closest('#breakEditor') && !e.target.closest('.breakBar') && !e.target.closest('.restBar'))closeBreakEditor();
@@ -799,13 +806,7 @@ showLogin('');
 </div>
 
 
-<div id="breakEditor" class="breakEditor" aria-hidden="true">
-  <div id="breakEditorTitle" class="breakEditorTitle">휴게 입력</div>
-  <div class="breakEditorRow">
-    <div><label>시작</label><input id="breakStartInput" type="time" step="300"></div>
-    <div><label>종료</label><input id="breakEndInput" type="time" step="300"></div>
-  </div>
-  <div class="breakEditorActions">
+<div class="breakEditorActions">
     <button id="breakSaveBtn" class="success">휴게 추가</button>
     <button id="breakDeleteBtn" style="display:none">삭제</button>
     <button id="breakCancelBtn">취소</button>
