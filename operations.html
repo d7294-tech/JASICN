@@ -127,6 +127,7 @@ let liveLastSuccess='';
 let liveDayToken='';
 const LIVE_REFRESH_MS=5*60*1000;
 const LIVE_LAST_PREFIX='jas_admin_live_last_v1_';
+const FINAL_PREFIX='jas_admin_final_v1_';
 function showLogin(message=''){
   document.getElementById('authOverlay')?.classList.remove('hidden');
   const loading=document.getElementById('authLoading'); if(loading)loading.style.display='none';
@@ -243,7 +244,7 @@ function applyLdmText(){
   saveLoadAssignments($('#opDate').value||todayLocal()); render(); renderLdmResults(results);
   $('#ldmMsg').textContent=`${records.length}건 분석 · ${ok}건 적용 · ${records.length-ok}건 미매칭`;
 }
-function openLdmModal(){$('#ldmModal')?.classList.add('show');$('#ldmModal')?.setAttribute('aria-hidden','false');setTimeout(()=>$('#ldmText')?.focus(),50);}
+function openLdmModal(){const date=$('#opDate')?.value||todayLocal();if(isPastDate(date)){alert('마감된 과거 운항현황은 수정할 수 없습니다.');return;}$('#ldmModal')?.classList.add('show');$('#ldmModal')?.setAttribute('aria-hidden','false');setTimeout(()=>$('#ldmText')?.focus(),50);}
 function closeLdmModal(){$('#ldmModal')?.classList.remove('show');$('#ldmModal')?.setAttribute('aria-hidden','true');}
 
 function snapKey(date){return SNAP_PREFIX+date}
@@ -287,11 +288,23 @@ async function importBackup(file){
   for(const [date,val] of Object.entries(data.snapshots||{})){if(/^\d{4}-\d{2}-\d{2}$/.test(date)){localStorage.setItem(snapKey(date),JSON.stringify(val));sc++;}}
   updateStorageStats();onDateChanged();$('#backupNote').className='small storageok';$('#backupNote').textContent=`복원 완료 · RCM ${rc}일 / API ${sc}일`;
 }
-function setMode(mode,label){const b=$('#modeBadge'); if(!b)return; b.className='modebadge '+(mode==='LIVE'?'mode-live':mode==='STORED'?'mode-stored':mode==='PLAN'?'mode-plan':'mode-empty'); b.textContent=label||mode;}
+function setMode(mode,label){const b=$('#modeBadge'); if(!b)return; b.className='modebadge '+(mode==='LIVE'?'mode-live':(mode==='STORED'||mode==='FINAL')?'mode-stored':mode==='PLAN'?'mode-plan':'mode-empty'); b.textContent=label||mode;}
+function finalKey(date){return FINAL_PREFIX+date;}
+function isPastDate(date){return !!date && date<todayLocal();}
+function isFinalDate(date){return isPastDate(date) || localStorage.getItem(finalKey(date))==='1';}
+function markFinal(date){if(date)localStorage.setItem(finalKey(date),'1');}
+function applyDateLock(date){
+  const locked=isPastDate(date);
+  const sync=$('#syncBtn'); if(sync)sync.disabled=locked||date!==todayLocal();
+  const ldm=$('#ldmBtn'); if(ldm){ldm.disabled=locked;ldm.title=locked?'마감된 과거일은 수정할 수 없습니다.':'';}
+  const rcm=$('#rcmFile'); if(rcm)rcm.disabled=locked;
+  const sample=$('#sampleRcmBtn'); if(sample)sample.disabled=locked;
+  if(locked) closeLdmModal?.();
+}
 function clearRcmState(){regMap=new Map();pairMap=new Map();reversePairMap=new Map();rcmDetailMap=new Map();rcmDepDetailMap=new Map();rcmAppliedDate='';updateRcmDateBadge();}
 function saveRcmForDate(date,fileName='RCM'){if(!date)return;const payload={date,fileName,savedAt:new Date().toISOString(),reg:[...regMap.entries()],pairs:[...pairMap.entries()],details:[...rcmDetailMap.entries()],depDetails:[...rcmDepDetailMap.entries()]};localStorage.setItem(rcmKey(date),JSON.stringify(payload));updateStorageStats();}
 function loadRcmForDate(date){clearRcmState();try{const raw=localStorage.getItem(rcmKey(date));if(!raw)return null;const x=JSON.parse(raw);if(Array.isArray(x.reg))regMap=new Map(x.reg);if(Array.isArray(x.pairs)){pairMap=new Map(x.pairs);reversePairMap=new Map(x.pairs.map(([a,d])=>[d,a]));}if(Array.isArray(x.details))rcmDetailMap=new Map(x.details);if(Array.isArray(x.depDetails))rcmDepDetailMap=new Map(x.depDetails);else{for(const det of rcmDetailMap.values()){const df=normFlt(det?.dep_flt||'');if(df)rcmDepDetailMap.set(df,det);}}rcmAppliedDate=date;updateRcmDateBadge(x.fileName||'RCM');return x;}catch(e){clearRcmState();return null;}}
-function saveSnapshot(date){if(!date||date!==todayLocal()||(!arrivals.length&&!departures.length))return;const payload={date,savedAt:new Date().toISOString(),arrivals,departures};localStorage.setItem(snapKey(date),JSON.stringify(payload));updateStorageStats();}
+function saveSnapshot(date,force=false){if(!date||(!force&&date!==todayLocal())||(!arrivals.length&&!departures.length))return;const payload={date,savedAt:new Date().toISOString(),arrivals,departures,final:!!force};localStorage.setItem(snapKey(date),JSON.stringify(payload));if(force)markFinal(date);updateStorageStats();}
 function loadSnapshot(date){try{const raw=localStorage.getItem(snapKey(date));if(!raw)return false;const x=JSON.parse(raw);arrivals=Array.isArray(x.arrivals)?x.arrivals:[];departures=Array.isArray(x.departures)?x.departures:[];buildTurns();render();const when=x.savedAt?new Date(x.savedAt).toLocaleString('ko-KR',{hour12:false}):'';setMode('STORED','저장자료');$('#apiNote').className='note';$('#apiNote').textContent=`${date} 저장자료 불러옴 · 저장시각 ${when||'-'} · 총 ${arrivals.length+departures.length}편${rcmAppliedDate===date?' · 해당일 RCM 적용':' · RCM 없음'}`;return true;}catch(e){return false;}}
 function rcmObj(detail,kind){
  const isA=kind==='A'; const flight=isA?detail.arr_flt:detail.dep_flt;
@@ -330,7 +343,7 @@ function parseRcm(sheet){
  }
  return {m,pairs,rev,details,depDetails};
 }
-$('#rcmFile').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;try{const ab=await f.arrayBuffer();const wb=XLSX.read(ab,{type:'array'});const sn=wb.SheetNames.includes('ICN')?'ICN':wb.SheetNames[0];const x=parseRcm(wb.Sheets[sn]);clearRcmState();regMap=x.m;pairMap=x.pairs;reversePairMap=x.rev;rcmDetailMap=x.details||new Map();rcmDepDetailMap=x.depDetails||new Map();rcmAppliedDate=$('#opDate').value||todayLocal();saveRcmForDate(rcmAppliedDate,f.name||'RCM');await cloudSaveRcm(rcmAppliedDate,f.name||'RCM');updateRcmDateBadge(f.name||'RCM');buildTurns();render();$('#apiNote').className='note apiok';$('#apiNote').textContent=`RCM 저장 완료 · ${f.name} → ${rcmAppliedDate} 전용 · REG ${regMap.size}편 · ARR↔DEP 연결 ${pairMap.size}건 · TOW ${[...new Map([...rcmDetailMap.values()].map(z=>[(z.arr_flt||'')+'|'+(z.dep_flt||''),z])).values()].filter(z=>z.is_tow).length}건 · L/O ${[...new Map([...rcmDetailMap.values()].map(z=>[(z.arr_flt||'')+'|'+(z.dep_flt||''),z])).values()].filter(z=>z.is_lo).length}건 · 다른 날짜로 이동하면 자동 해제`;e.target.value='';}catch(err){showErr('RCM 읽기 실패',err.message)}});
+$('#rcmFile').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;const selectedDate=$('#opDate').value||todayLocal();if(isPastDate(selectedDate)){alert('마감된 과거 날짜에는 RCM을 다시 적용할 수 없습니다.');e.target.value='';return;}try{const ab=await f.arrayBuffer();const wb=XLSX.read(ab,{type:'array'});const sn=wb.SheetNames.includes('ICN')?'ICN':wb.SheetNames[0];const x=parseRcm(wb.Sheets[sn]);clearRcmState();regMap=x.m;pairMap=x.pairs;reversePairMap=x.rev;rcmDetailMap=x.details||new Map();rcmDepDetailMap=x.depDetails||new Map();rcmAppliedDate=$('#opDate').value||todayLocal();saveRcmForDate(rcmAppliedDate,f.name||'RCM');await cloudSaveRcm(rcmAppliedDate,f.name||'RCM');updateRcmDateBadge(f.name||'RCM');buildTurns();render();$('#apiNote').className='note apiok';$('#apiNote').textContent=`RCM 저장 완료 · ${f.name} → ${rcmAppliedDate} 전용 · REG ${regMap.size}편 · ARR↔DEP 연결 ${pairMap.size}건 · TOW ${[...new Map([...rcmDetailMap.values()].map(z=>[(z.arr_flt||'')+'|'+(z.dep_flt||''),z])).values()].filter(z=>z.is_tow).length}건 · L/O ${[...new Map([...rcmDetailMap.values()].map(z=>[(z.arr_flt||'')+'|'+(z.dep_flt||''),z])).values()].filter(z=>z.is_lo).length}건 · 다른 날짜로 이동하면 자동 해제`;e.target.value='';}catch(err){showErr('RCM 읽기 실패',err.message)}});
 $('#sampleRcmBtn').onclick=loadSampleRcm;
 
 function selectedAirlines(){return [...document.querySelectorAll('#airlineFilters input:checked')].map(x=>x.value)}
@@ -648,13 +661,28 @@ function startAutoLive(){
     await syncApi({silent:true});
   },LIVE_REFRESH_MS);
 }
-function checkLiveDayRollover(){
+async function finalizeDate(date){
+  if(!date||date>=todayLocal()||localStorage.getItem(finalKey(date))==='1')return;
+  try{
+    // If the page was displaying this date at midnight, preserve the last LIVE state exactly as-is.
+    if(($('#opDate')?.value||'')===date && (arrivals.length||departures.length)){
+      saveSnapshot(date,true);
+      await cloudSaveFlights(date);
+    }else{
+      // If the browser was closed at midnight, the latest CLOUD snapshot is already the final source.
+      markFinal(date);
+    }
+  }catch(e){console.warn('finalize date',date,e);markFinal(date);}
+}
+async function checkLiveDayRollover(){
   const nowDay=todayLocal();
   if(!liveDayToken){liveDayToken=nowDay;return;}
   if(nowDay===liveDayToken)return;
-  const wasLiveDate=$('#opDate').value===liveDayToken;
+  const prevDay=liveDayToken;
+  const wasLiveDate=$('#opDate').value===prevDay;
+  await finalizeDate(prevDay);
   liveDayToken=nowDay; liveLastSuccess='';
-  if(wasLiveDate){$('#opDate').value=nowDay;onDateChanged().then(()=>{updateLiveStamp(nowDay);if($('#autoLive')?.checked)setTimeout(()=>syncApi({silent:true}),1500);});}
+  if(wasLiveDate){$('#opDate').value=nowDay;await onDateChanged();updateLiveStamp(nowDay);if($('#autoLive')?.checked)setTimeout(()=>syncApi({silent:true}),1500);}
 }
 function showErr(title,msg){const e=$('#errbox');e.style.display='block';e.textContent=title+'\n'+msg}function hideErr(){$('#errbox').style.display='none';$('#errbox').textContent=''}
 function sourceBadge(x){return x?.source==='RCM'?'<span class="source src-only">RCM ONLY</span>':'<span class="source src-api">API</span>'}
@@ -775,13 +803,15 @@ function commonVal(av,dv,cls){const a=String(av||'').trim(),d=String(dv||'').tri
 function fmtOutTime(t){const d=t.d;if(!d)return'-';let v=d.est||d.sched||'';if(!v)return'-';return esc(v);}
 function regCellHtml(t){
   const flights=[t.a?.flight,t.d?.flight].filter(Boolean);
+  const selectedDate=$('#opDate')?.value||todayLocal();
   const editable=flights.some(f=>{const p=prefix(f);return p==='AK'||p==='KN'||p==='IT';});
-  if(!editable) return `${esc(t.reg||'-')}${t.reg?'<span class="source src-rcm">RCM</span>':''}`;
+  if(!editable || isPastDate(selectedDate)) return `${esc(t.reg||'-')}${t.reg?'<span class="source src-rcm">'+(editable?'수기':'RCM')+'</span>':''}`;
   const arr=esc(t.a?.flight||''), dep=esc(t.d?.flight||'');
   return `<input class="reginput" data-arr="${arr}" data-dep="${dep}" value="${esc(t.reg||'')}" placeholder="REG 입력" maxlength="10"><span class="regmanual">수기</span>`;
 }
 async function saveManualRegTurn(arrFlt,depFlt,value){
   const date=$('#opDate').value||todayLocal();
+  if(isPastDate(date)){alert('마감된 과거 운항현황은 수정할 수 없습니다.');return;}
   const reg=String(value||'').trim().toUpperCase();
   const flights=[normFlt(arrFlt),normFlt(depFlt)].filter(f=>f&&prefix(f)!=='7C');
   for(const f of flights){if(reg)manualRegMap.set(f,reg);else manualRegMap.delete(f);}
@@ -995,18 +1025,18 @@ async function onDateChanged(){
   try{ savedRcm=await cloudLoadRcm(date); if(!savedRcm) savedRcm=!!loadRcmForDate(date); }catch(e){ savedRcm=!!loadRcmForDate(date); $('#cloudBadge').textContent='CLOUD 오류'; }
   try{
     const hasCloudFlights=await cloudLoadFlights(date);
-    if(hasCloudFlights){setMode(date===today?'LIVE':'STORED',date===today?'오늘 CLOUD':'CLOUD 저장자료');$('#syncBtn').disabled=date!==today;$('#apiNote').className='note apiok';$('#apiNote').textContent=`${date} CLOUD 자료 불러옴 · ${savedRcm?'RCM 적용':'RCM 없음'}`;return;}
+    if(hasCloudFlights){if(date<today){markFinal(date);setMode('FINAL','FINAL');applyDateLock(date);$('#apiNote').className='note apiok';$('#apiNote').textContent=`${date} FINAL 마감본 · 마지막 CLOUD 저장자료 고정 · API 재갱신/RCM/LDM/수기REG 수정 잠금`; }else{setMode(date===today?'LIVE':'STORED',date===today?'오늘 CLOUD':'CLOUD 저장자료');applyDateLock(date);$('#apiNote').className='note apiok';$('#apiNote').textContent=`${date} CLOUD 자료 불러옴 · ${savedRcm?'RCM 적용':'RCM 없음'}`;}return;}
   }catch(e){$('#cloudBadge').textContent='CLOUD 오류';}
-  if(date===today){render();setMode('LIVE','오늘 LIVE');$('#syncBtn').disabled=false;updateLiveStamp(date);$('#apiNote').className='note apiok';$('#apiNote').textContent=`${date} 오늘 LIVE 모드 · ${savedRcm?'RCM 보정 적용':'RCM 없음'} · LIVE 수동 갱신 또는 5분 자동갱신 시 로컬+CLOUD 저장 · 운항편은 API 기준 · RCM은 7C REG/연결/L/O/TOW만 보정 · AK/KN/IT REG는 표에서 수기입력 · L/O OUT=당일 RCM DEP / L/O IN=익일 RCM ARR 기준 · AK/KN 퀵턴 유지 · 수기 잡배정은 날짜별 로컬 저장 · 충돌은 같은 조의 IN/OUT 작업시간 중복 기준`;return;}
-  $('#syncBtn').disabled=true;
-  if(date<today){if(loadSnapshot(date))return;render();setMode('STORED','저장본 없음');$('#apiNote').className='note warn';$('#apiNote').textContent=`${date} API 저장자료 없음 · ${savedRcm?'RCM은 연결/TOW 보정자료로만 저장됨':'RCM 없음'}`;return;}
-  render();setMode('PLAN','계획자료');$('#apiNote').className='note warn';$('#apiNote').textContent=`${date} 미래일 · API 자료 없음 · ${savedRcm?'RCM은 연결/TOW 보정자료로만 저장됨':'RCM 없음'}`;
+  if(date===today){render();setMode('LIVE','오늘 LIVE');applyDateLock(date);updateLiveStamp(date);$('#apiNote').className='note apiok';$('#apiNote').textContent=`${date} 오늘 LIVE 모드 · ${savedRcm?'RCM 보정 적용':'RCM 없음'} · LIVE 수동 갱신 또는 5분 자동갱신 시 로컬+CLOUD 저장 · 운항편은 API 기준 · RCM은 7C REG/연결/L/O/TOW만 보정 · AK/KN/IT REG는 표에서 수기입력 · L/O OUT=당일 RCM DEP / L/O IN=익일 RCM ARR 기준 · AK/KN 퀵턴 유지 · LDM BAG/CGO 자동집계 · 과거일은 FINAL 고정 저장`;return;}
+  applyDateLock(date);
+  if(date<today){if(loadSnapshot(date)){markFinal(date);setMode('FINAL','FINAL');applyDateLock(date);$('#apiNote').className='note apiok';$('#apiNote').textContent=`${date} FINAL 마감본 · 로컬 최종 저장자료 고정`;return;}render();setMode('FINAL','FINAL · 저장본 없음');$('#apiNote').className='note warn';$('#apiNote').textContent=`${date} 마감일 · 저장된 API 자료 없음 · ${savedRcm?'RCM만 존재':'RCM 없음'}`;return;}
+  render();applyDateLock(date);setMode('PLAN','계획자료');$('#apiNote').className='note warn';$('#apiNote').textContent=`${date} 미래일 · API 자료 없음 · ${savedRcm?'RCM은 연결/TOW 보정자료로만 저장됨':'RCM 없음'}`;
 }
 $('#opDate').value=todayLocal();
 $('#prevDay').onclick=()=>shiftOpDate(-1);$('#nextDay').onclick=()=>shiftOpDate(1);$('#todayBtn').onclick=()=>{$('#opDate').value=todayLocal();onDateChanged();};$('#opDate').addEventListener('change',onDateChanged);$('#cloudMigrateBtn').onclick=migrateLocalToCloud;$('#cloudReloadBtn').onclick=()=>onDateChanged();
 $('#backupBtn').onclick=exportBackup;$('#restoreFile').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;try{await importBackup(f)}catch(err){showErr('백업 복원 실패',err.message)}finally{e.target.value='';}});
 $('#cloudBackupFile').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;try{$('#backupNote').className='small';$('#backupNote').textContent='백업파일 CLOUD 이전 중...';await importBackupDirectToCloud(f)}catch(err){showErr('백업파일 CLOUD 이전 실패',err.message)}finally{e.target.value='';}});
-$('#syncBtn').onclick=()=>syncApi({silent:false});$('#autoLive').addEventListener('change',()=>{startAutoLive();if($('#autoLive').checked&&($('#opDate').value||todayLocal())===todayLocal())syncApi({silent:true});});document.addEventListener('visibilitychange',()=>{if(!document.hidden&&$('#autoLive')?.checked){const date=$('#opDate').value||todayLocal();const last=localStorage.getItem(liveLastKey(date));if(date===todayLocal()&&(!last||Date.now()-new Date(last).getTime()>=LIVE_REFRESH_MS))syncApi({silent:true});}});$('#copyKeyBtn').onclick=()=>{$('#paxApiKey').value=$('#apiKey').value;};$('#clearBtn').onclick=()=>{arrivals=[];departures=[];turns=[];allApiArrivals=[];allApiDepartures=[];allApiLoadedAt='';paxArrMap=new Map();paxDepMap=new Map();hideErr();render();setMode($('#opDate').value===todayLocal()?'LIVE':'','대기');$('#apiNote').className='note';$('#apiNote').textContent='화면 API 값 초기화됨 · 선택일 RCM 저장본은 유지';};$('#search').addEventListener('input',render);document.querySelectorAll('#airlineFilters input').forEach(x=>x.addEventListener('change',()=>{if(arrivals.length||departures.length){const active=selectedAirlines();arrivals=arrivals.filter(x=>active.includes(prefix(x.flight)));departures=departures.filter(x=>active.includes(prefix(x.flight)));buildTurns()}render()}));
+$('#syncBtn').onclick=()=>syncApi({silent:false});$('#autoLive').addEventListener('change',()=>{startAutoLive();if($('#autoLive').checked&&($('#opDate').value||todayLocal())===todayLocal())syncApi({silent:true});});document.addEventListener('visibilitychange',()=>{if(!document.hidden&&$('#autoLive')?.checked){const date=$('#opDate').value||todayLocal();const last=localStorage.getItem(liveLastKey(date));if(date===todayLocal()&&(!last||Date.now()-new Date(last).getTime()>=LIVE_REFRESH_MS))syncApi({silent:true});}});$('#copyKeyBtn').onclick=()=>{$('#paxApiKey').value=$('#apiKey').value;};$('#clearBtn').onclick=()=>{if(isPastDate($('#opDate').value||todayLocal())){alert('FINAL 마감본은 초기화할 수 없습니다.');return;}arrivals=[];departures=[];turns=[];allApiArrivals=[];allApiDepartures=[];allApiLoadedAt='';paxArrMap=new Map();paxDepMap=new Map();hideErr();render();setMode($('#opDate').value===todayLocal()?'LIVE':'','대기');$('#apiNote').className='note';$('#apiNote').textContent='화면 API 값 초기화됨 · 선택일 RCM 저장본은 유지';};$('#search').addEventListener('input',render);document.querySelectorAll('#airlineFilters input').forEach(x=>x.addEventListener('change',()=>{if(arrivals.length||departures.length){const active=selectedAirlines();arrivals=arrivals.filter(x=>active.includes(prefix(x.flight)));departures=departures.filter(x=>active.includes(prefix(x.flight)));buildTurns()}render()}));
 // LOGIN FIX: bind authentication handlers before any optional dashboard startup code.
 // This ensures a rendering/startup error cannot prevent the login form from working.
 $('#loginForm').addEventListener('submit',async e=>{
