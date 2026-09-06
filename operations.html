@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>JAS ADMIN - 운항현황 v6.6.5 · LIGHT UI REBUILD</title>
+<title>JAS ADMIN - 운항현황 v6.7.0 · API REG AUTO PAIR</title>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
@@ -344,15 +344,15 @@ body.light-theme .tag{
   </div>
 </div>
 
-<header><a class="jasBrandLink" href="index.html"><img class="jasBrandLogo" src="data:image/png;base64,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" alt="JAS"></a><div class="subtitle">운항 현황</div><span class="ver">v6.6.5 · LIGHT UI REBUILD</span><div class="spacer"></div><span id="authUser" class="rcmdate" style="display:none"></span><button id="logoutBtn" style="display:none;padding:6px 10px">로그아웃</button><div id="now"></div><button id="themeToggle" class="themeToggle" type="button"><span id="themeIcon">☾</span><span id="themeLabel">다크 모드</span></button></header>
+<header><a class="jasBrandLink" href="index.html"><img class="jasBrandLogo" src="data:image/png;base64,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" alt="JAS"></a><div class="subtitle">운항 현황</div><span class="ver">v6.7.1 · DETAIL REG LIVE</span><div class="spacer"></div><span id="authUser" class="rcmdate" style="display:none"></span><button id="logoutBtn" style="display:none;padding:6px 10px">로그아웃</button><div id="now"></div><button id="themeToggle" class="themeToggle" type="button"><span id="themeIcon">☾</span><span id="themeLabel">다크 모드</span></button></header>
 <main>
   <div class="toolbar">
     <div class="dateNav"><button id="prevDay" title="이전 날짜">◀</button><input id="opDate" class="dateinput" type="date"><button id="nextDay" title="다음 날짜">▶</button><button id="todayBtn">오늘</button></div><span id="modeBadge" class="modebadge mode-empty">대기</span>
-    <label class="btn primary" for="rcmFile">RCM 업로드 (REG)</label><input id="rcmFile" type="file" accept=".xlsx,.xls" />
-    <button id="sampleRcmBtn">제공 RCM REG 복원</button><button id="cloudMigrateBtn">기존자료 → CLOUD 이전</button><button id="cloudReloadBtn">CLOUD 새로고침</button><span id="cloudBadge" class="rcmdate">CLOUD 연결 대기</span><span id="rcmDateBadge" class="rcmdate">RCM 적용일 미지정</span>
+    <label class="btn primary" for="rcmFile">RCM 업로드 (보정)</label><input id="rcmFile" type="file" accept=".xlsx,.xls" />
+    <button id="sampleRcmBtn">제공 RCM 보정 복원</button><button id="cloudMigrateBtn">기존자료 → CLOUD 이전</button><button id="cloudReloadBtn">CLOUD 새로고침</button><span id="cloudBadge" class="rcmdate">CLOUD 연결 대기</span><span id="rcmDateBadge" class="rcmdate">RCM 적용일 미지정</span>
     <input id="apiKey" class="keyinput" type="password" placeholder="① 운항마감정보 인증키" autocomplete="off" />
-    <input id="paxApiKey" class="keyinput" type="password" placeholder="② 여객편 운항현황 인증키 (추가 승인 필요)" autocomplete="off" />
-    <button id="copyKeyBtn" title="두 API에 같은 개인 인증키를 사용">①키 → ②키</button>
+    <input id="paxApiKey" class="keyinput" type="password" placeholder="② 항공기 상세조회 인증키 (REG)" autocomplete="off" />
+    <button id="copyKeyBtn" title="공공데이터포털 인증키를 상세조회에도 복사">①키 → ②키</button>
     <button id="syncBtn" class="success">LIVE 갱신·저장</button>
     <button id="ldmBtn" class="ldmbtn">LDM 붙여넣기</button>
     <label class="chip" title="오늘 화면에서 5분마다 API를 자동 갱신하고 로컬/CLOUD에 저장"><input id="autoLive" type="checkbox" checked>LIVE 자동 5분</label>
@@ -374,7 +374,7 @@ body.light-theme .tag{
     <button id="backupBtn" class="backupbtn">전체 백업</button>
     <label class="btn restorebtn" for="restoreFile">백업 복원</label><input id="restoreFile" type="file" accept=".json,application/json" />
     <label class="btn success" for="cloudBackupFile">백업파일 → CLOUD</label><input id="cloudBackupFile" type="file" accept=".json,application/json" />
-    <span id="backupNote" class="small">RCM/API 저장자료만 백업 · 인증키 제외 · 기존 RCM은 재업로드 시 L/O/TOW 상세 보정 활성</span>
+    <span id="backupNote" class="small">API 운항+REG 자동연결 · RCM은 연결/L/O/TOW 예외 보정 · 저장자료 백업 · 인증키 제외</span>
   </div>
   <div id="apiNote" class="note">오늘 = API LIVE · 날짜 변경 시 기존 RCM 즉시 해제 · 선택일에 저장된 RCM만 자동 적용</div>
   <div id="errbox" class="errbox"></div>
@@ -693,10 +693,12 @@ function closingObj(x){
  const gate=pick(x,['msSspot','sSpot','sspot','gate','gateNo','gateNumber','gatenumber']);
  const airportCode=pick(x,['airportCode','cityCode','airport','org','des','origin','destination','depAirport','arrAirport','msOrg','msDes']);
  const carousel=pick(x,['carousel','carouselNo','baggageClaim','baggageClaimNo','claim','claimNo','baggageCarousel']);
+ // 항공기 운항 현황 상세조회 API의 등록기호 필드명 변형을 폭넓게 수용
+ const reg=pick(x,['aircraftReg','aircraftRegNo','aircraftRegistration','registration','regNo','regNumber','acReg','acRegNo','airReg','airRegNo','aircraftRegister','aircraftRegistrationNumber','msReg','msRegNo']).toUpperCase().replace(/\s+/g,'');
  const delay=pick(x,['msDelay','delay']);
  const regul=pick(x,['msRegul','regul']);
  const remark=[regul,delay].filter(Boolean).join(' / ');
- return {kind,flight,line,opDate,airportCode,sched,est,actual,spot,gate,carousel,remark,raw:x};
+ return {kind,flight,line,opDate,airportCode,sched,est,actual,spot,gate,carousel,reg,remark,raw:x};
 }
 function responseItems(data){
  const list=extractList(data);
@@ -762,6 +764,38 @@ async function fetchPassengerEndpoint(key,kind){
  if(code && !['00','0'].includes(String(code))) throw new Error(`여객편 API ${kind==='A'?'ARR':'DEP'} ${code}: ${msg||'오류'}`);
  return extractPassengerItems(data).map(x=>paxObj(x,kind)).filter(x=>x.flight && AIRLINES.includes(prefix(x.flight)));
 }
+async function fetchDetailEndpoint(key,kind,date){
+ const endpoint=kind==='A'?'getFltArrivalsDeOdp':'getFltDeparturesDeOdp';
+ const base='https://apis.data.go.kr/B551177/statusOfAllFltDeOdp/'+endpoint;
+ const ymd=String(date||'').replace(/-/g,'');
+ const params=`&searchdtCode=S&searchDate=${ymd}&searchFrom=0000&searchTo=2400&type=json&numOfRows=1000&pageNo=1`;
+ const url=base+'?serviceKey='+keyForQuery(key)+params;
+ let res; try{res=await fetch(url,{method:'GET',cache:'no-store'})}catch(e){throw new Error('상세조회 API 네트워크/CORS 오류: '+e.message)}
+ const text=await res.text();
+ if(!res.ok)throw new Error(`상세조회 ${kind==='A'?'ARR':'DEP'} HTTP ${res.status} · ${text.slice(0,300).replace(/<[^>]+>/g,' ').replace(/\s+/g,' ')}`);
+ let data; try{data=JSON.parse(text)}catch{throw new Error('상세조회 API JSON 응답 오류: '+text.slice(0,250).replace(/<[^>]+>/g,' ').replace(/\s+/g,' '))}
+ const code=data?.response?.header?.resultCode??data?.resultCode;
+ const msg=data?.response?.header?.resultMsg??data?.resultMsg;
+ if(code && !['00','0'].includes(String(code)))throw new Error(`상세조회 ${kind==='A'?'ARR':'DEP'} ${code}: ${msg||'오류'}`);
+ return extractList(data).map(x=>closingObj({...x,msIo:kind==='A'?'A':'D'})).filter(x=>x.flight);
+}
+async function detailFetch(key,date){
+ const [ar,dp]=await Promise.all([fetchDetailEndpoint(key,'A',date),fetchDetailEndpoint(key,'D',date)]);
+ return {ar,dp};
+}
+function mergeDetail(base,supp){
+ if(!supp)return base;
+ return {...base,
+   airportCode:supp.airportCode||base.airportCode,
+   sched:supp.sched||base.sched, est:supp.est||base.est,
+   spot:supp.spot||base.spot, gate:supp.gate||base.gate,
+   carousel:supp.carousel||base.carousel,
+   reg:supp.reg||base.reg,
+   remark:supp.remark||base.remark,
+   detailRaw:supp.raw
+ };
+}
+function detailMap(rows){const m=new Map(); for(const x of rows||[]){if(x.flight&&!m.has(x.flight))m.set(x.flight,x)} return m;}
 async function passengerFetch(key){
  const [ar,dp]=await Promise.all([fetchPassengerEndpoint(key,'A'),fetchPassengerEndpoint(key,'D')]);
  return {ar,dp};
@@ -777,7 +811,8 @@ function mergePassenger(base, supp){
    gate:base.gate||supp.gate,
    remark:supp.remark||base.remark,
    terminal:supp.terminal||'',
-   master:supp.master||''
+   master:supp.master||'',
+   reg:supp.reg||base.reg||''
  };
 }
 function buildPassengerMaps(ar,dp){
@@ -809,12 +844,43 @@ function detailForFlights(a,d){
  if(d?.flight && rcmDetailMap.has(d.flight)) return rcmDetailMap.get(d.flight);
  return null;
 }
+function apiRegForFlight(f){
+ const fl=normFlt(f); if(!fl)return'';
+ const x=arrivals.find(z=>z.flight===fl)||departures.find(z=>z.flight===fl)||allApiArrivals.find(z=>z.flight===fl)||allApiDepartures.find(z=>z.flight===fl);
+ return String(x?.reg||'').trim().toUpperCase();
+}
 function regForFlight(f){
  const fl=normFlt(f); if(!fl)return'';
- const p=prefix(fl);
- // RCM REG is authoritative only for 7C. AK/KN/IT use manual REG.
- if(p && p!=='7C') return manualRegForFlight(fl);
- return regMap.get(fl)||carryInMap.get(fl)?.reg||'';
+ // 수기 > RCM 보정 > API REG > 전일 L/O carry 순서
+ const manual=manualRegForFlight(fl); if(manual)return manual;
+ const rcm=regMap.get(fl); if(rcm)return rcm;
+ const api=apiRegForFlight(fl); if(api)return api;
+ return carryInMap.get(fl)?.reg||'';
+}
+function regSourceForTurn(t){
+ const fs=[t?.a?.flight,t?.d?.flight].filter(Boolean).map(normFlt);
+ if(fs.some(f=>manualRegForFlight(f)))return '수기';
+ if(fs.some(f=>regMap.get(f)))return 'RCM';
+ if(fs.some(f=>apiRegForFlight(f)))return 'API';
+ return '';
+}
+function findApiRegDep(a,usedDep){
+ const reg=String(a?.reg||apiRegForFlight(a?.flight)||'').trim().toUpperCase();
+ if(!reg)return null;
+ const am=mins(a.est||a.sched);
+ let best=null,bestGap=1e9;
+ for(const d of departures){
+   if(usedDep.has(d))continue;
+   const dr=String(d.reg||apiRegForFlight(d.flight)||'').trim().toUpperCase();
+   if(!dr||dr!==reg)continue;
+   const dm=mins(d.est||d.sched);
+   if(am>=9999||dm>=9999)continue;
+   const gap=dm-am;
+   if(gap<0)continue;
+   // 긴 체류도 L/O 가능성이 있으므로 상한을 두지 않는다. 같은 REG의 다음 DEP를 선택.
+   if(gap<bestGap){best=d;bestGap=gap;}
+ }
+ return best;
 }
 function isQuickTurnAirline(f){const p=prefix(f);return p==='AK'||p==='KN';}
 function isLoDetail(detail){
@@ -865,7 +931,7 @@ function buildTurns(){
   const depByFlight=new Map();
   for(const d of departures){if(!depByFlight.has(d.flight))depByFlight.set(d.flight,[]);depByFlight.get(d.flight).push(d);}
 
-  // API is the flight master. RCM is used only for REG / connection / L-O / TOW.
+  // API is the flight master and REG sequence auto-pairs ARR/DEP. RCM overrides connection / L-O / TOW exceptions.
   // Never create a selected-day ARR/DEP row from RCM alone.
   for(const a of arrivals){
     if(usedArr.has(a))continue;
@@ -879,7 +945,11 @@ function buildTurns(){
       if(linked){const list=depByFlight.get(linked)||[];d=list.find(x=>!usedDep.has(x))||null;}
     }
 
-    // Preserve the existing AK/KN quick-turn fallback.
+    // RCM exact connection이 없으면 API REG 시퀀스로 자동 연결.
+    // 동일 REG의 ARR 이후 가장 먼저 나가는 미사용 DEP를 연결하며 긴 간격도 허용한다(L/O 가능).
+    if(!d) d=findApiRegDep(a,usedDep);
+
+    // REG가 없는 AK/KN에 한해 기존 quick-turn fallback 유지.
     if(!d) d=findQuickTurnDep(a,usedDep);
     if(d){usedDep.add(d); if(!detail)detail=detailForFlights(a,d)||detailForFlights(null,d);}
     usedArr.add(a);
@@ -920,7 +990,7 @@ async function syncApi(opts={}){
  const key=$('#apiKey').value.trim();
  if(!key){if(!silent)alert('① 운항마감정보 일반 인증키를 입력해 주세요.');else $('#liveStamp').textContent='자동갱신 대기 · API키 필요';return false}
  const pkey=$('#paxApiKey').value.trim();
- localStorage.setItem('jas_icn_api_key_v35',key); if(pkey)localStorage.setItem('jas_icn_pax_api_key_v35',pkey);
+ localStorage.setItem('jas_icn_api_key_v35',key); if(pkey){localStorage.setItem('jas_icn_pax_api_key_v35',pkey);localStorage.setItem('jas_icn_detail_api_key_v1',pkey);}
  hideErr(); const b=$('#syncBtn'); liveRefreshRunning=true; b.disabled=true; b.textContent='LIVE 갱신 중...';
  $('#apiNote').className='note'; $('#apiNote').textContent='① 운항마감정보 LIVE 조회 중...';
  let paxWarning='';
@@ -932,12 +1002,13 @@ async function syncApi(opts={}){
    allApiArrivals=[...sp.ar]; allApiDepartures=[...sp.dp]; allApiLoadedAt=new Date().toISOString();
    let ar=sp.ar.filter(x=>active.includes(prefix(x.flight))), dp=sp.dp.filter(x=>active.includes(prefix(x.flight)));
    if(pkey){
-     $('#apiNote').textContent='② 여객편 운항현황 조회 및 병합 중...';
+     $('#apiNote').textContent='② 항공기 상세조회 API 조회 중 · REG 병합...';
      try{
-       const px=await passengerFetch(pkey); buildPassengerMaps(px.ar,px.dp);
-       ar=ar.map(x=>mergePassenger(x,paxArrMap.get(x.flight))); dp=dp.map(x=>mergePassenger(x,paxDepMap.get(x.flight)));
+       const dx=await detailFetch(pkey,selectedDate), am=detailMap(dx.ar), dm=detailMap(dx.dp);
+       ar=ar.map(x=>mergeDetail(x,am.get(x.flight))); dp=dp.map(x=>mergeDetail(x,dm.get(x.flight)));
+       buildPassengerMaps(dx.ar,dx.dp);
      }catch(e){paxWarning=e.message; buildPassengerMaps([],[]);}
-   }else{buildPassengerMaps([],[]); paxWarning='② 여객편 운항현황 키 미입력: FROM/TO/수취대/ETA·ETD 보강 생략';}
+   }else{buildPassengerMaps([],[]); paxWarning='② 상세조회 API 키 미입력: REG/FROM/TO/ETA·ETD 보강 생략';}
    arrivals=ar; departures=dp; buildTurns(); render();
    saveSnapshot(selectedDate);
    await cloudSaveFlights(selectedDate);
@@ -947,8 +1018,9 @@ async function syncApi(opts={}){
    updateLiveStamp(selectedDate);
    const spots=[...arrivals,...departures].filter(x=>x.spot).length;
    const enriched=[...arrivals,...departures].filter(x=>x.airportCode||x.carousel||x.est).length;
+   const apiRegs=[...arrivals,...departures].filter(x=>x.reg).length;
    $('#apiNote').className='note '+(paxWarning?'warn':'apiok');
-   $('#apiNote').textContent=`${selectedDate} LIVE 갱신 완료 · 운항마감 전체 ${fetched.total}건 / 대상 ${arrivals.length+departures.length}편 · ARR ${arrivals.length} / DEP ${departures.length} · SPOT ${spots} · 여객정보 보강 ${enriched} · 로컬 + CLOUD 저장 완료${paxWarning?' · '+paxWarning:''}`;
+   $('#apiNote').textContent=`${selectedDate} LIVE 갱신 완료 · 운항마감 전체 ${fetched.total}건 / 대상 ${arrivals.length+departures.length}편 · ARR ${arrivals.length} / DEP ${departures.length} · SPOT ${spots} · 상세정보 보강 ${enriched} · API REG ${apiRegs}편 · 로컬 + CLOUD 저장 완료${paxWarning?' · '+paxWarning:''}`;
    return true;
  }catch(err){
    if(!silent)showErr('LIVE 갱신 실패',err.message); else console.warn('auto live refresh',err);
@@ -1110,7 +1182,7 @@ function regCellHtml(t){
   const flights=[t.a?.flight,t.d?.flight].filter(Boolean);
   const selectedDate=$('#opDate')?.value||todayLocal();
   const editable=flights.some(f=>{const p=prefix(f);return p==='AK'||p==='KN'||p==='IT';});
-  if(!editable || isPastDate(selectedDate)) return `${esc(t.reg||'-')}${t.reg?'<span class="source src-rcm">'+(editable?'수기':'RCM')+'</span>':''}`;
+  if(!editable || isPastDate(selectedDate)){const src=regSourceForTurn(t);return `${esc(t.reg||'-')}${t.reg&&src?'<span class="source '+(src==='API'?'src-api':'src-rcm')+'">'+src+'</span>':''}`;}
   const arr=esc(t.a?.flight||''), dep=esc(t.d?.flight||'');
   return `<input class="reginput" data-arr="${arr}" data-dep="${dep}" value="${esc(t.reg||'')}" placeholder="REG 입력" maxlength="10"><span class="regmanual">수기</span>`;
 }
@@ -1371,7 +1443,7 @@ sb.auth.onAuthStateChange((event,session)=>{
 // Non-auth dashboard startup is isolated so it cannot break login binding.
 try{
   const saved=localStorage.getItem('jas_icn_api_key_v35')||localStorage.getItem('jas_icn_api_key_v34')||localStorage.getItem('jas_icn_api_key_v33')||localStorage.getItem('jas_icn_api_key_v3');if(saved)$('#apiKey').value=saved;
-  const psaved=localStorage.getItem('jas_icn_pax_api_key_v35')||localStorage.getItem('jas_icn_pax_api_key_v34');if(psaved)$('#paxApiKey').value=psaved;
+  const psaved=localStorage.getItem('jas_icn_detail_api_key_v1')||localStorage.getItem('jas_icn_pax_api_key_v35')||localStorage.getItem('jas_icn_pax_api_key_v34');if(psaved)$('#paxApiKey').value=psaved;
   liveDayToken=todayLocal();updateLiveStamp(todayLocal());startAutoLive();
   setInterval(()=>{const n=$('#now');if(n)n.textContent=new Date().toLocaleString('ko-KR',{hour12:false});checkLiveDayRollover();},1000);
   updateStorageStats();$('#cloudBadge').textContent='CLOUD 연결';render();
