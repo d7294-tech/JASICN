@@ -36,6 +36,12 @@ main{padding:16px 18px 28px;max-width:1900px;margin:auto}.toolbar{display:flex;g
 .boardActions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:8px 10px;background:#f5f5f5;border-bottom:1px solid #aaa;color:#222}
 .boardActions button{background:#fff;color:#111;border:1px solid #777;padding:7px 10px}.boardActions .hint{font-size:12px;color:#555}
 
+
+.summaryModal{position:fixed;inset:0;z-index:9500;background:rgba(2,8,16,.78);display:none;align-items:flex-start;justify-content:center;padding:28px}
+.summaryModal.show{display:flex}.summaryCard{width:min(1100px,96vw);max-height:92vh;overflow:auto;background:#0d1d31;border:1px solid #31506d;border-radius:14px;box-shadow:0 25px 80px rgba(0,0,0,.55)}
+.summaryHead{display:flex;align-items:center;gap:12px;padding:12px 14px;background:#0d2035;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:4}
+.summaryTitle{font-size:16px;font-weight:950}.summaryActions{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+
 </style>
 </head>
 <body>
@@ -51,12 +57,13 @@ main{padding:16px 18px 28px;max-width:1900px;margin:auto}.toolbar{display:flex;g
     <div id="authLoading" class="auth-loading">로그인 상태 확인 중...</div>
   </div>
 </div>
-<header><div class="brand"><a href="index.html">JAS ADMIN</a></div><div class="subtitle">인원 / 조 운영</div><span class="ver">DRAFT v0.6.3 · CREW BOARD FIX</span><div class="spacer"></div><span id="authUser" class="rcmdate" style="display:none"></span><button id="logoutBtn" style="display:none;padding:6px 10px">로그아웃</button><div id="now"></div></header>
+<header><div class="brand"><a href="index.html">JAS ADMIN</a></div><div class="subtitle">인원 / 조 운영</div><span class="ver">DRAFT v0.7 · SUMMARY MODAL</span><div class="spacer"></div><span id="authUser" class="rcmdate" style="display:none"></span><button id="logoutBtn" style="display:none;padding:6px 10px">로그아웃</button><div id="now"></div></header>
 <main>
   <div class="toolbar">
     <div class="dateNav"><button id="prevDay">◀</button><input id="opDate" class="dateinput" type="date"><button id="nextDay">▶</button><button id="todayBtn">오늘</button></div>
     <label class="btn primary" for="skdFile">인원 SKD 업로드</label><input id="skdFile" type="file" accept=".xlsx,.xls,.xlsm">
     <span id="fileBadge" class="rcmdate">SKD 미업로드</span>
+    <button id="summaryBtn" class="primary">일자별 요약 보기</button>
     <select id="groupFilter" class="select"><option value="">전체 구분</option></select>
     <select id="statusFilter" class="select"><option value="">전체 상태</option><option value="WORK">근무</option><option value="HOLIDAY_WORK">휴무근무</option><option value="OFF">휴무</option><option value="LEAVE">휴가/기타</option></select>
     <input id="search" class="search" placeholder="성명 / 조 / 직무 / 근무코드 검색">
@@ -71,23 +78,35 @@ main{padding:16px 18px 28px;max-width:1900px;margin:auto}.toolbar{display:flex;g
     <div class="kpi red"><div class="label">시간 미확인</div><div class="num" id="kUnknown">0</div></div>
   </section>
   <section class="groupgrid" id="groupGrid"></section>
-<section class="dailyBoard">
-    <div class="boardTitle" id="manualBoardTitle">선택일 조 편성표</div>
-    <div class="boardActions">
-      <button id="boardSaveBtn">수기보정 저장</button>
-      <button id="boardResetBtn">수기보정 초기화</button>
-      <span class="hint">SKD 실제 조 + 조내 순번으로 자동배치 · 휴무/휴가/휴근 이탈 시 해당 순번은 빈칸 · 빈칸만 수기 보충 가능</span>
-    </div>
-    <table>
-      <thead><tr><th style="width:70px">조</th><th style="width:80px">출근 코드</th><th colspan="6">명단</th></tr></thead>
-      <tbody id="manualBoardBody"></tbody>
-    </table>
-  </section>
-  <section class="panel">
+<section class="panel">
     <div class="panel-head"><div class="panel-title">선택일 인원 현황</div><span id="rowBadge" class="badge">0명</span><div class="legend">근무코드 시간은 '근무타입' 시트 + 현장 지정코드 기준</div></div>
     <div class="tablewrap"><table><thead><tr><th>구분/조</th><th>성명</th><th>사번</th><th>직급</th><th>직책</th><th>직무</th><th>근무코드</th><th>근무시간</th><th>상태</th></tr></thead><tbody id="tbody"></tbody></table></div>
   </section>
 </main>
+
+<div id="summaryModal" class="summaryModal" aria-hidden="true">
+  <div class="summaryCard">
+    <div class="summaryHead">
+      <div class="summaryTitle">일자별 조 편성 요약</div>
+      <div class="summaryActions">
+        <button id="boardSaveBtn">수기보정 저장</button>
+        <button id="boardResetBtn">수기보정 초기화</button>
+        <button id="summaryCloseBtn">닫기</button>
+      </div>
+    </div>
+    <div class="dailyBoard">
+      <div class="boardTitle" id="manualBoardTitle">선택일 조 편성표</div>
+      <div class="boardActions">
+        <span class="hint">SKD 기준 자동정렬 · 결원/보충만 수기수정 · 날짜별 저장</span>
+      </div>
+      <table>
+        <thead><tr><th style="width:70px">조</th><th style="width:80px">출근 코드</th><th colspan="6">명단</th></tr></thead>
+        <tbody id="manualBoardBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
 <script>
 const SUPABASE_URL='https://yblzvrfkohppnrxeorce.supabase.co';
 const SUPABASE_KEY='sb_publishable_1P8VyOOWWTf41F__nOYuUw_GKo-DiKu';
@@ -316,9 +335,20 @@ function renderManualBoard(date){
   }).join('');
 }
 
+
+function openSummary(){
+  const m=$('#summaryModal'); if(!m)return;
+  renderManualBoard(selectedDay().date);
+  m.classList.add('show');m.setAttribute('aria-hidden','false');
+}
+function closeSummary(){
+  const m=$('#summaryModal'); if(!m)return;
+  m.classList.remove('show');m.setAttribute('aria-hidden','true');
+}
+
 function render(){
   const sd=selectedDay();
-  if(!scheduleRows.length){$('#tbody').innerHTML='<tr><td colspan="9" class="empty">인원 SKD 파일을 업로드해 주세요.</td></tr>';['kTotal','kWork','kHolidayWork','kOff','kLeave','kUnknown'].forEach(id=>$('#'+id).textContent='0');$('#groupGrid').innerHTML='';renderManualBoard(sd.date);$('#rowBadge').textContent='0명';return;}
+  if(!scheduleRows.length){$('#tbody').innerHTML='<tr><td colspan="9" class="empty">인원 SKD 파일을 업로드해 주세요.</td></tr>';['kTotal','kWork','kHolidayWork','kOff','kLeave','kUnknown'].forEach(id=>$('#'+id).textContent='0');$('#groupGrid').innerHTML='';$('#rowBadge').textContent='0명';return;}
   if(sd.year!==fileYear||sd.month!==fileMonth){$('#note').textContent=`업로드 파일은 ${fileYear}년 ${fileMonth}월 자료입니다. 현재 선택일 ${sd.date}은 해당 월이 아닙니다.`;}
   else $('#note').textContent=`${sd.date} 기준 · ${fileName} · 근무코드와 조 편성을 월간 SKD에서 자동 추출`;
   let data=scheduleRows.map(x=>{const code=(sd.year===fileYear&&sd.month===fileMonth)?(x.days[sd.day]||''):'';const status=codeStatus(code);const workTime=workTimeFor(code);return {...x,code,status,workTime};});
@@ -339,6 +369,9 @@ function renderGroups(data){
 function shiftDay(n){const d=new Date(($('#opDate').value||todayLocal())+'T00:00:00');d.setDate(d.getDate()+n);$('#opDate').value=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;render();}
 $('#opDate').value=todayLocal(); $('#prevDay').onclick=()=>shiftDay(-1);$('#nextDay').onclick=()=>shiftDay(1);$('#todayBtn').onclick=()=>{$('#opDate').value=todayLocal();render();};$('#opDate').onchange=render;$('#groupFilter').onchange=render;$('#statusFilter').onchange=render;$('#search').oninput=render;
 
+$('#summaryBtn').onclick=openSummary;
+$('#summaryCloseBtn').onclick=closeSummary;
+$('#summaryModal').addEventListener('click',e=>{if(e.target.id==='summaryModal')closeSummary();});
 $('#boardSaveBtn').onclick=()=>{const d=selectedDay().date;collectBoardOverrides(d);renderManualBoard(d);alert(d+' 수기 수정사항을 저장했습니다.');};
 $('#boardResetBtn').onclick=()=>{const d=selectedDay().date;if(confirm(d+' 수기 수정사항만 지우고 SKD 자동편성으로 복원할까요?')){localStorage.removeItem(boardKey(d));renderManualBoard(d);}};
 
