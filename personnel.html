@@ -51,7 +51,7 @@ main{padding:16px 18px 28px;max-width:1900px;margin:auto}.toolbar{display:flex;g
     <div id="authLoading" class="auth-loading">로그인 상태 확인 중...</div>
   </div>
 </div>
-<header><div class="brand"><a href="index.html">JAS ADMIN</a></div><div class="subtitle">인원 / 조 운영</div><span class="ver">DRAFT v0.6.2 · AUTH HARD FIX</span><div class="spacer"></div><span id="authUser" class="rcmdate" style="display:none"></span><button id="logoutBtn" style="display:none;padding:6px 10px">로그아웃</button><div id="now"></div></header>
+<header><div class="brand"><a href="index.html">JAS ADMIN</a></div><div class="subtitle">인원 / 조 운영</div><span class="ver">DRAFT v0.6.3 · CREW BOARD FIX</span><div class="spacer"></div><span id="authUser" class="rcmdate" style="display:none"></span><button id="logoutBtn" style="display:none;padding:6px 10px">로그아웃</button><div id="now"></div></header>
 <main>
   <div class="toolbar">
     <div class="dateNav"><button id="prevDay">◀</button><input id="opDate" class="dateinput" type="date"><button id="nextDay">▶</button><button id="todayBtn">오늘</button></div>
@@ -225,38 +225,69 @@ function groupNumber(g){const n=parseInt(normGroup(g),10);return Number.isFinite
 function buildAutoBoardRows(date){
   const day=selectedDayData(date);
   const byGroup=new Map();
-  day.forEach(x=>{const g=normGroup(x.group);if(!/^\d+$/.test(g))return;if(!byGroup.has(g))byGroup.set(g,[]);byGroup.get(g).push(x)});
-  const morning=[],afternoon=[],holiday=[];
+
+  // 실제 SKD의 B열 조명(1조~24조)을 기준으로 묶음
+  day.forEach(x=>{
+    const g=normGroup(x.group);
+    if(!/^\d+$/.test(g))return;
+    if(!byGroup.has(g))byGroup.set(g,[]);
+    byGroup.get(g).push(x);
+  });
+
+  const morning=[], afternoon=[], holidayMorning=[], holidayAfternoon=[];
+
   for(const [g,members] of [...byGroup.entries()].sort((a,b)=>Number(a[0])-Number(b[0]))){
     members.sort((a,b)=>(a.crewSeq||999)-(b.crewSeq||999));
-    const normal=mostCommonCode(members,isNormalWorkCode);
-    const hw=mostCommonCode(members,isHolidayWorkCode);
-    if(normal.code){
-      const names=Array.from({length:6},()=> '');
-      members.slice(0,6).forEach((x,i)=>{if(String(x.code||'').trim().toUpperCase()===normal.code)names[i]=x.name||''});
-      const row={group:g,code:normal.code,cls:'',names,kind:'normal'};
-      const n=Number(g); if(n<=8)morning.push(row); else if(n<=16)afternoon.push(row); else if(normal.count>=3)holiday.push(row);
+
+    // 일반 근무코드: R/휴가/휴근 제외 후 가장 많은 코드
+    const workMembers=members.filter(x=>x.status==='WORK');
+    const workCode=mostCommonCode(workMembers,()=>true).code;
+
+    if(workCode){
+      const names=Array(6).fill('');
+      members.slice(0,6).forEach((x,i)=>{
+        if(String(x.code||'').trim().toUpperCase()===workCode) names[i]=x.name||'';
+      });
+      const row={group:g,code:workCode,cls:'',names,kind:'normal'};
+      const n=Number(g);
+      if(n<=8) morning.push(row);
+      else if(n<=16) afternoon.push(row);
     }
-    if(hw.code&&hw.count>=2){
-      const names=Array.from({length:6},()=> '');
-      members.slice(0,6).forEach((x,i)=>{if(String(x.code||'').trim().toUpperCase()===hw.code)names[i]=x.name||''});
-      holiday.push({group:g,code:hw.code,cls:'sky',names,kind:'holiday'});
+
+    // 휴무근무는 같은 조의 원래 순번 위치를 그대로 유지
+    const raMembers=members.filter(x=>/^RA/i.test(String(x.code||'').trim()));
+    if(raMembers.length){
+      const code=mostCommonCode(raMembers,c=>/^RA/i.test(c)).code||'RA43';
+      const names=Array(6).fill('');
+      members.slice(0,6).forEach((x,i)=>{
+        if(/^RA/i.test(String(x.code||'').trim())) names[i]=x.name||'';
+      });
+      holidayMorning.push({group:g,code,cls:'sky',names,kind:'holiday'});
+    }
+
+    const rpMembers=members.filter(x=>/^RP/i.test(String(x.code||'').trim()));
+    if(rpMembers.length){
+      const code=mostCommonCode(rpMembers,c=>/^RP/i.test(c)).code||'RP14';
+      const names=Array(6).fill('');
+      members.slice(0,6).forEach((x,i)=>{
+        if(/^RP/i.test(String(x.code||'').trim())) names[i]=x.name||'';
+      });
+      holidayAfternoon.push({group:g,code,cls:'sky',names,kind:'holiday'});
     }
   }
-  // Order to resemble the existing daily summary: morning -> holiday morning -> controls -> afternoon -> holiday afternoon -> TOW.
-  holiday.sort((a,b)=>{
-    const aa=/^RA/.test(a.code)?0:1,bb=/^RA/.test(b.code)?0:1;
-    return aa-bb||Number(a.group)-Number(b.group);
-  });
-  const hMorning=holiday.filter(x=>/^RA/.test(x.code));
-  const hAfternoon=holiday.filter(x=>/^RP/.test(x.code));
+
+  morning.sort((a,b)=>Number(a.group)-Number(b.group));
+  afternoon.sort((a,b)=>Number(a.group)-Number(b.group));
+  holidayMorning.sort((a,b)=>Number(a.group)-Number(b.group));
+  holidayAfternoon.sort((a,b)=>Number(a.group)-Number(b.group));
+
   return [
     ...morning,
-    ...hMorning,
+    ...holidayMorning,
     {group:'오전 통제',code:'',cls:'control',names:Array(6).fill(''),manualOnly:true},
     {group:'오후 통제',code:'',cls:'control',names:Array(6).fill(''),manualOnly:true},
     ...afternoon,
-    ...hAfternoon,
+    ...holidayAfternoon,
     {group:'TOW',code:'A4',cls:'',names:Array(6).fill(''),manualOnly:true},
     {group:'TOW',code:'P14',cls:'',names:Array(6).fill(''),manualOnly:true}
   ];
