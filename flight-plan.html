@@ -3,16 +3,49 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>JAS ADMIN - 운항 계획</title>
+<title>JAS ADMIN - 운항 계획 · COMMON AUTH</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{--bg:#071426;--panel:#0d1d31;--line:#243d58;--text:#eaf3ff;--muted:#8da5bf;--cyan:#27d3ff}
 *{box-sizing:border-box}body{margin:0;min-height:100vh;background:linear-gradient(180deg,#071426,#08111f);color:var(--text);font-family:Inter,"Noto Sans KR","Malgun Gothic",sans-serif}header{height:68px;padding:0 22px;display:flex;align-items:center;gap:16px;border-bottom:1px solid var(--line);background:#081526}.brand{font-weight:950;color:var(--cyan);font-size:21px;text-decoration:none}.subtitle{color:#b8c8d9;font-weight:800}.spacer{flex:1}.user{font-size:12px;color:#9db2c7;border:1px solid #29425c;padding:6px 9px;border-radius:8px}.logout,.back{border:1px solid #2c5774;background:#10263c;color:#fff;border-radius:8px;padding:8px 11px;font-weight:800;cursor:pointer;text-decoration:none}main{max-width:1450px;margin:auto;padding:28px 22px}.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:28px}.eyebrow{color:var(--cyan);font-size:12px;font-weight:900;letter-spacing:1.5px}h1{margin:6px 0 10px}.muted{color:var(--muted);line-height:1.6}.auth-overlay{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:#071426}.auth-overlay.hidden{display:none}.login-card{width:min(420px,94vw);background:#0d1d31;border:1px solid #294866;border-radius:18px;padding:28px}.login-card input{width:100%;margin:6px 0 12px;background:#08182a;border:1px solid #2a4965;color:#fff;border-radius:9px;padding:12px}.login-card button{width:100%;background:#0b7198;border:1px solid #1199c8;color:#fff;border-radius:8px;padding:12px;font-weight:900}.msg{font-size:12px;color:#ff9aa8;margin-top:10px}
+
+/* ===== COMMON ACCOUNT / APPROVAL ===== */
+.login-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}.login-actions button{margin-top:0!important}.login-switch{background:#10263c!important}.signup-note{font-size:11px;color:#8fa8c0;line-height:1.5;margin-top:8px}.signup-hidden{display:none!important}.member-manage-btn{display:none;border:1px solid #7655b5;background:#322052;color:#e7dcff;border-radius:8px;padding:8px 11px;font-weight:900;cursor:pointer}.member-modal{position:fixed;inset:0;z-index:10000;background:rgba(2,8,16,.80);display:none;align-items:center;justify-content:center;padding:20px}.member-modal.show{display:flex}.member-card{width:min(760px,96vw);max-height:82vh;overflow:auto;background:#0d1d31;border:1px solid #294866;border-radius:16px;padding:18px}.member-head{display:flex;align-items:center;gap:10px;margin-bottom:12px}.member-head h3{margin:0;flex:1}.member-row{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;padding:12px 0;border-top:1px solid #243d58}.member-email{font-weight:900}.member-meta{font-size:11px;color:#8fa8c0;margin-top:3px}.member-actions{display:flex;gap:6px;flex-wrap:wrap}.member-actions button{padding:7px 10px}.member-empty{color:#8fa8c0;padding:18px 0}.approved-tag{color:#5af0ad}.pending-tag{color:#ffd36a}
+
 </style></head>
 <body>
-<div id="authOverlay" class="auth-overlay"><div class="login-card"><h2>JAS ADMIN</h2><form id="loginForm"><input id="loginEmail" type="email" placeholder="관리자 이메일" required><input id="loginPassword" type="password" placeholder="비밀번호" required><button id="loginBtn" type="submit">로그인</button><div id="loginMsg" class="msg"></div></form></div></div>
+<div id="authOverlay" class="auth-overlay">
+  <div class="login-card">
+    <div class="login-logo">JAS ADMIN</div>
+    <div class="login-sub">flight-plan</div>
+    <form id="loginForm">
+      <div id="loginTitle" style="font-weight:900;font-size:16px;margin-bottom:8px">로그인</div>
+      <label>EMAIL</label><input id="loginEmail" type="email" autocomplete="username" required placeholder="이메일">
+      <label>PASSWORD</label><input id="loginPassword" type="password" autocomplete="current-password" required placeholder="비밀번호">
+      <div id="signupConfirmWrap" class="signup-hidden"><label>PASSWORD 확인</label><input id="signupPassword2" type="password" autocomplete="new-password" placeholder="비밀번호 확인"></div>
+      <div id="signupNote" class="signup-note signup-hidden">회원가입 후 관리자 승인이 완료되어야 모든 메뉴를 사용할 수 있습니다.</div>
+      <div class="login-actions"><button id="loginBtn" type="submit">로그인</button><button id="signupToggleBtn" type="button" class="login-switch">회원가입</button></div>
+      <div id="loginMsg" class="msg login-msg"></div>
+    </form>
+    <div id="authLoading" class="loading" style="display:none">로그인 상태 확인 중...</div>
+  </div>
+</div>
 <header><a class="brand" href="index.html">JAS ADMIN</a><div class="subtitle">운항 계획</div><div class="spacer"></div><a class="back" href="index.html">메인</a><span id="authUser" class="user" style="display:none"></span><button id="logoutBtn" class="logout" style="display:none">로그아웃</button></header>
 <main><div class="panel"><div class="eyebrow">FLIGHT OPERATION PLAN</div><h1>운항 계획</h1><p class="muted">운항계획 페이지 기본 틀을 만들었습니다. 다음 단계에서 RCM 업로드 기반 계획편, 일자별 스케줄, 주기장 계획 등을 여기에 붙이면 됩니다.</p></div></main>
 <script>
-const SUPABASE_URL='https://yblzvrfkohppnrxeorce.supabase.co';const SUPABASE_KEY='sb_publishable_1P8VyOOWWTf41F__nOYuUw_GKo-DiKu';const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);const $=s=>document.querySelector(s);function showLogin(m=''){ $('#authOverlay').classList.remove('hidden');$('#loginMsg').textContent=m;$('#authUser').style.display='none';$('#logoutBtn').style.display='none'}async function enterApp(session){if(!session?.user){showLogin();return}$('#authOverlay').classList.add('hidden');$('#authUser').textContent=session.user.email||'관리자';$('#authUser').style.display='inline-block';$('#logoutBtn').style.display='inline-block'}$('#loginForm').addEventListener('submit',async e=>{e.preventDefault();try{const {data,error}=await sb.auth.signInWithPassword({email:$('#loginEmail').value.trim(),password:$('#loginPassword').value});if(error)throw error;await enterApp(data.session)}catch(err){$('#loginMsg').textContent='로그인 실패: '+(err.message||err)}});$('#logoutBtn').onclick=async()=>{await sb.auth.signOut();showLogin('로그아웃되었습니다.')};sb.auth.onAuthStateChange((event,session)=>{if(event==='SIGNED_OUT')showLogin();else if(event==='SIGNED_IN'&&session)enterApp(session)});(async()=>{const {data}=await sb.auth.getSession();if(data?.session)await enterApp(data.session);else showLogin()})();
+const SUPABASE_URL='https://yblzvrfkohppnrxeorce.supabase.co';
+const SUPABASE_KEY='sb_publishable_1P8VyOOWWTf41F__nOYuUw_GKo-DiKu';
+const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const $=s=>document.querySelector(s);
+const JAS_ADMIN_EMAIL='d7294@aekyung.kr';
+let jasAuthMode='login';
+function showLogin(m=''){ $('#authOverlay').classList.remove('hidden');$('#loginMsg').textContent=m||'';$('#authUser').style.display='none';$('#logoutBtn').style.display='none'; }
+function jasSetAuthMode(mode){jasAuthMode=mode==='signup'?'signup':'login';const signup=jasAuthMode==='signup';$('#loginTitle').textContent=signup?'회원가입 신청':'로그인';$('#loginBtn').textContent=signup?'가입 신청':'로그인';$('#signupToggleBtn').textContent=signup?'로그인으로':'회원가입';$('#signupConfirmWrap').classList.toggle('signup-hidden',!signup);$('#signupNote').classList.toggle('signup-hidden',!signup);$('#loginPassword').autocomplete=signup?'new-password':'current-password';$('#loginMsg').textContent='';}
+async function jasAccessAllowed(user){if(!user)return false;if(String(user.email||'').toLowerCase()===JAS_ADMIN_EMAIL)return true;const {data,error}=await sb.from('jas_user_access').select('approved').eq('user_id',user.id).maybeSingle();if(error)throw new Error('회원 승인정보 확인 실패: '+error.message);return !!data?.approved;}
+async function enterApp(session){if(!session?.user){showLogin();return;}try{if(!(await jasAccessAllowed(session.user))){await sb.auth.signOut();showLogin('가입 승인 대기 중입니다. 관리자 승인 후 로그인해 주세요.');return;}}catch(e){showLogin(e.message||String(e));return;}$('#authOverlay').classList.add('hidden');$('#authUser').textContent=session.user.email||'사용자';$('#authUser').style.display='inline-block';$('#logoutBtn').style.display='inline-block';}
+$('#signupToggleBtn').onclick=()=>jasSetAuthMode(jasAuthMode==='login'?'signup':'login');
+$('#loginForm').addEventListener('submit',async e=>{e.preventDefault();const email=$('#loginEmail').value.trim(),password=$('#loginPassword').value;try{if(jasAuthMode==='signup'){const p2=$('#signupPassword2').value;if(password.length<6)throw new Error('비밀번호는 6자 이상으로 입력해 주세요.');if(password!==p2)throw new Error('비밀번호 확인이 일치하지 않습니다.');const {data,error}=await sb.auth.signUp({email,password});if(error)throw error;if(data?.session)await sb.auth.signOut();jasSetAuthMode('login');$('#loginEmail').value=email;$('#loginPassword').value='';showLogin('가입 신청 완료. 관리자 승인 후 로그인할 수 있습니다.');return;}const {data,error}=await sb.auth.signInWithPassword({email,password});if(error)throw error;await enterApp(data.session);}catch(err){showLogin((jasAuthMode==='signup'?'회원가입 실패: ':'로그인 실패: ')+(err.message||err));}});
+$('#logoutBtn').onclick=async()=>{await sb.auth.signOut();showLogin('로그아웃되었습니다.');};
+sb.auth.onAuthStateChange((event,session)=>{if(event==='SIGNED_OUT')showLogin();else if((event==='SIGNED_IN'||event==='INITIAL_SESSION'||event==='TOKEN_REFRESHED')&&session)setTimeout(()=>enterApp(session),0);});
+(async()=>{const {data,error}=await sb.auth.getSession();if(error||!data?.session)showLogin(error?('로그인 상태 확인 실패: '+error.message):'');else await enterApp(data.session);})();
 </script></body></html>
