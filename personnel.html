@@ -51,7 +51,7 @@ main{padding:16px 18px 28px;max-width:1900px;margin:auto}.toolbar{display:flex;g
     <div id="authLoading" class="auth-loading">로그인 상태 확인 중...</div>
   </div>
 </div>
-<header><div class="brand"><a href="index.html">JAS ADMIN</a></div><div class="subtitle">인원 / 조 운영</div><span class="ver">DRAFT v0.5 · AUTO BASE + VACANCY MANUAL</span><div class="spacer"></div><span id="authUser" class="rcmdate" style="display:none"></span><button id="logoutBtn" style="display:none;padding:6px 10px">로그아웃</button><div id="now"></div></header>
+<header><div class="brand"><a href="index.html">JAS ADMIN</a></div><div class="subtitle">인원 / 조 운영</div><span class="ver">DRAFT v0.6 · REAL CREW AUTO</span><div class="spacer"></div><span id="authUser" class="rcmdate" style="display:none"></span><button id="logoutBtn" style="display:none;padding:6px 10px">로그아웃</button><div id="now"></div></header>
 <main>
   <div class="toolbar">
     <div class="dateNav"><button id="prevDay">◀</button><input id="opDate" class="dateinput" type="date"><button id="nextDay">▶</button><button id="todayBtn">오늘</button></div>
@@ -74,12 +74,12 @@ main{padding:16px 18px 28px;max-width:1900px;margin:auto}.toolbar{display:flex;g
 <section class="dailyBoard">
     <div class="boardTitle" id="manualBoardTitle">선택일 조 편성표</div>
     <div class="boardActions">
-      <button id="boardSaveBtn">수기수정 저장</button>
-      <button id="boardResetBtn">수기수정 초기화</button>
-      <span class="hint">기본 조원은 SKD의 조+순번으로 자동배치 · 결원/보충 칸만 수기 수정 · 날짜별 저장</span>
+      <button id="boardSaveBtn">수기보정 저장</button>
+      <button id="boardResetBtn">수기보정 초기화</button>
+      <span class="hint">SKD 실제 조 + 조내 순번으로 자동배치 · 휴무/휴가/휴근 이탈 시 해당 순번은 빈칸 · 빈칸만 수기 보충 가능</span>
     </div>
     <table>
-      <thead><tr><th style="width:70px">조</th><th style="width:80px">출근 코드</th><th colspan="8">명단</th></tr></thead>
+      <thead><tr><th style="width:70px">조</th><th style="width:80px">출근 코드</th><th colspan="6">명단</th></tr></thead>
       <tbody id="manualBoardBody"></tbody>
     </table>
   </section>
@@ -185,7 +185,9 @@ function parseWorkbook(wb,name){
     if(!name)continue;
     const info=emp.get(name)||{name,empNo:norm(r[2]),rank:norm(r[7]),position:norm(r[8]),job:norm(r[9])};
     const days=[]; for(let d=1;d<=31;d++)days[d]=norm(r[9+d]);
-    scheduleRows.push({...info,group:currentGroup||'기타',bucket:groupBucket(currentGroup),crewSeq:scheduleRows.filter(z=>z.group===(currentGroup||'기타')).length+1,days});
+    const grp=currentGroup||'기타';
+    const crewSeq=scheduleRows.filter(z=>z.group===grp).length+1;
+    scheduleRows.push({...info,group:grp,bucket:groupBucket(grp),crewSeq,days});
   }
   $('#fileBadge').textContent=`${fileName} · ${fileYear}.${String(fileMonth).padStart(2,'0')}`;
   populateGroupFilter(); render();
@@ -197,104 +199,89 @@ function populateGroupFilter(){
 }
 function selectedDay(){const d=$('#opDate').value||todayLocal();const x=new Date(d+'T00:00:00');return {date:d,year:x.getFullYear(),month:x.getMonth()+1,day:x.getDate()};}
 
-const MANUAL_BOARD_TEMPLATE=[
-  {group:'3',code:'A3',cls:''},
-  {group:'8',code:'A4',cls:''},
-  {group:'1',code:'A53',cls:''},
-  {group:'2',code:'A53',cls:''},
-  {group:'4',code:'A53',cls:''},
-  {group:'5',code:'A53',cls:''},
-  {group:'6',code:'A53',cls:''},
-  {group:'7',code:'A53',cls:''},
-  {group:'20',code:'RA43',cls:'sky'},
-  {group:'23',code:'RA43',cls:'sky'},
-  {group:'오전 통제',code:'',cls:'control',manualOnly:true},
-  {group:'오후 통제',code:'',cls:'control',manualOnly:true},
-  {group:'9',code:'P13',cls:'green'},
-  {group:'16',code:'P13',cls:'green'},
-  {group:'10',code:'P133',cls:'yellow'},
-  {group:'11',code:'P133',cls:'yellow'},
-  {group:'12',code:'P14',cls:''},
-  {group:'13',code:'P14',cls:''},
-  {group:'15',code:'P14',cls:''},
-  {group:'14',code:'P15',cls:'orange'},
-  {group:'24',code:'RP14',cls:'sky'},
-  {group:'TOW',code:'A4',cls:''},
-  {group:'TOW',code:'P14',cls:''}
-];
-function boardKey(date){return 'jas_personnel_board_override_v2_'+date;}
+function boardKey(date){return 'jas_personnel_board_override_v3_'+date;}
 function normGroup(v){
   const x=String(v??'').trim();
-  if(/^\d+\s*조$/i.test(x))return x.replace(/\s*조$/i,'');
+  const m=x.match(/^(\d+)\s*조$/i); if(m)return m[1];
   return x;
 }
 function loadBoardOverrides(date){
-  try{
-    const x=JSON.parse(localStorage.getItem(boardKey(date))||'{}');
-    return x&&typeof x==='object'&&!Array.isArray(x)?x:{};
-  }catch{return{}}
+  try{const x=JSON.parse(localStorage.getItem(boardKey(date))||'{}');return x&&typeof x==='object'&&!Array.isArray(x)?x:{}}catch{return{}}
 }
 function saveBoardOverrides(date,obj){localStorage.setItem(boardKey(date),JSON.stringify(obj));}
-function rowKey(row,idx){return `${idx}|${row.group}|${row.code}`;}
 function selectedDayData(date){
-  const d=new Date(date+'T00:00:00');
-  if(Number.isNaN(d.getTime()))return [];
-  const yy=d.getFullYear(), mm=d.getMonth()+1, dd=d.getDate();
-  return scheduleRows.map(x=>{
-    const code=(yy===fileYear&&mm===fileMonth)?(x.days?.[dd]||''):'';
-    return {...x,code,status:codeStatus(code)};
+  const d=new Date(date+'T00:00:00'); if(Number.isNaN(d.getTime()))return [];
+  const yy=d.getFullYear(),mm=d.getMonth()+1,dd=d.getDate();
+  return scheduleRows.map(x=>{const code=(yy===fileYear&&mm===fileMonth)?(x.days?.[dd]||''):'';return {...x,code,status:codeStatus(code)}});
+}
+function isNormalWorkCode(code){const c=String(code||'').trim().toUpperCase();return !!c&&codeStatus(c)==='WORK'&&!/^R[AP]/.test(c);}
+function isHolidayWorkCode(code){return /^R[AP]/.test(String(code||'').trim().toUpperCase());}
+function mostCommonCode(arr,filterFn){
+  const m=new Map();
+  arr.forEach(x=>{const c=String(x.code||'').trim().toUpperCase();if(filterFn(c))m.set(c,(m.get(c)||0)+1)});
+  let best='',n=0;for(const [c,v] of m){if(v>n){best=c;n=v}}return {code:best,count:n};
+}
+function groupNumber(g){const n=parseInt(normGroup(g),10);return Number.isFinite(n)?n:999;}
+function buildAutoBoardRows(date){
+  const day=selectedDayData(date);
+  const byGroup=new Map();
+  day.forEach(x=>{const g=normGroup(x.group);if(!/^\d+$/.test(g))return;if(!byGroup.has(g))byGroup.set(g,[]);byGroup.get(g).push(x)});
+  const morning=[],afternoon=[],holiday=[];
+  for(const [g,members] of [...byGroup.entries()].sort((a,b)=>Number(a[0])-Number(b[0]))){
+    members.sort((a,b)=>(a.crewSeq||999)-(b.crewSeq||999));
+    const normal=mostCommonCode(members,isNormalWorkCode);
+    const hw=mostCommonCode(members,isHolidayWorkCode);
+    if(normal.code){
+      const names=Array.from({length:6},()=> '');
+      members.slice(0,6).forEach((x,i)=>{if(String(x.code||'').trim().toUpperCase()===normal.code)names[i]=x.name||''});
+      const row={group:g,code:normal.code,cls:'',names,kind:'normal'};
+      const n=Number(g); if(n<=8)morning.push(row); else if(n<=16)afternoon.push(row); else if(normal.count>=3)holiday.push(row);
+    }
+    if(hw.code&&hw.count>=2){
+      const names=Array.from({length:6},()=> '');
+      members.slice(0,6).forEach((x,i)=>{if(String(x.code||'').trim().toUpperCase()===hw.code)names[i]=x.name||''});
+      holiday.push({group:g,code:hw.code,cls:'sky',names,kind:'holiday'});
+    }
+  }
+  // Order to resemble the existing daily summary: morning -> holiday morning -> controls -> afternoon -> holiday afternoon -> TOW.
+  holiday.sort((a,b)=>{
+    const aa=/^RA/.test(a.code)?0:1,bb=/^RA/.test(b.code)?0:1;
+    return aa-bb||Number(a.group)-Number(b.group);
   });
+  const hMorning=holiday.filter(x=>/^RA/.test(x.code));
+  const hAfternoon=holiday.filter(x=>/^RP/.test(x.code));
+  return [
+    ...morning,
+    ...hMorning,
+    {group:'오전 통제',code:'',cls:'control',names:Array(6).fill(''),manualOnly:true},
+    {group:'오후 통제',code:'',cls:'control',names:Array(6).fill(''),manualOnly:true},
+    ...afternoon,
+    ...hAfternoon,
+    {group:'TOW',code:'A4',cls:'',names:Array(6).fill(''),manualOnly:true},
+    {group:'TOW',code:'P14',cls:'',names:Array(6).fill(''),manualOnly:true}
+  ];
 }
-function modeCode(arr,fallback=''){
-  const counts=new Map();
-  arr.forEach(x=>{const c=String(x.code||'').trim().toUpperCase();if(c)counts.set(c,(counts.get(c)||0)+1);});
-  let best=fallback,bn=0;
-  for(const [c,n] of counts){if(n>bn){best=c;bn=n;}}
-  return best||fallback;
-}
-function autoMembersForRow(row,date){
-  if(row.manualOnly)return {code:row.code||'',names:[]};
-  const all=selectedDayData(date);
-  const g=normGroup(row.group);
-  let members=all.filter(x=>normGroup(x.group)===g);
-  const holidayRow=/^R[AP]/i.test(row.code||'');
-  if(holidayRow)members=members.filter(x=>x.status==='HOLIDAY_WORK');
-  else members=members.filter(x=>x.status==='WORK');
-  members.sort((a,b)=>(a.crewSeq||999)-(b.crewSeq||999)||String(a.name).localeCompare(String(b.name),'ko'));
-  return {code:modeCode(members,row.code||''),names:members.map(x=>x.name).slice(0,8)};
-}
+function rowKey(r,idx){return `${idx}|${r.group}|${r.code}|${r.kind||''}`;}
 function collectBoardOverrides(date){
   const current=loadBoardOverrides(date);
   document.querySelectorAll('#manualBoardBody tr').forEach(tr=>{
     const rk=tr.dataset.rowkey;if(!rk)return;
-    const autoCode=tr.dataset.autocode||'';
-    const code=tr.querySelector('.boardCode')?.textContent.trim()||'';
-    if(code!==autoCode)current[`${rk}|code`]=code; else delete current[`${rk}|code`];
-    [...tr.querySelectorAll('td.nameCell')].forEach((td,i)=>{
-      const auto=td.dataset.auto||'', val=td.textContent.trim(), key=`${rk}|${i}`;
-      if(val!==auto)current[key]=val; else delete current[key];
-    });
+    const autoCode=tr.dataset.autocode||'',code=tr.querySelector('.boardCode')?.textContent.trim()||'';
+    if(code!==autoCode)current[`${rk}|code`]=code;else delete current[`${rk}|code`];
+    [...tr.querySelectorAll('td.nameCell')].forEach((td,i)=>{const auto=td.dataset.auto||'',val=td.textContent.trim(),k=`${rk}|${i}`;if(val!==auto)current[k]=val;else delete current[k]});
   });
   saveBoardOverrides(date,current);
 }
 function renderManualBoard(date){
   const d=new Date(date+'T00:00:00'),days=['일','월','화','수','목','금','토'];
   if(!Number.isNaN(d.getTime()))$('#manualBoardTitle').textContent=`${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일 ${days[d.getDay()]}요일`;
-  const ov=loadBoardOverrides(date);
-  $('#manualBoardBody').innerHTML=MANUAL_BOARD_TEMPLATE.map((r,idx)=>{
-    const rk=rowKey(r,idx), auto=autoMembersForRow(r,date), autoCode=auto.code||r.code||'';
-    const shownCode=Object.prototype.hasOwnProperty.call(ov,`${rk}|code`)?ov[`${rk}|code`]:autoCode;
-    const cells=Array.from({length:8},(_,i)=>{
-      const autoName=auto.names[i]||'', key=`${rk}|${i}`;
-      const shown=Object.prototype.hasOwnProperty.call(ov,key)?ov[key]:autoName;
-      const isOverride=Object.prototype.hasOwnProperty.call(ov,key);
-      const cls='nameCell'+(!autoName?' vacancy':'')+(isOverride?' manualOverride':'');
-      const title=!autoName?'결원/보충 수기입력 가능':(isOverride?'수기 수정됨':'SKD 자동편성');
-      return `<td class="${cls}" contenteditable="true" data-auto="${esc(autoName)}" title="${title}">${esc(shown)}</td>`;
-    }).join('');
-    return `<tr class="${esc(r.cls||'')}" data-rowkey="${esc(rk)}" data-autocode="${esc(autoCode)}">
-      <td class="boardGroup">${esc(r.group||'')}</td>
-      <td class="boardCode" contenteditable="true">${esc(shownCode)}</td>${cells}</tr>`;
+  const rows=buildAutoBoardRows(date),ov=loadBoardOverrides(date);
+  $('#crewBadge')&&($('#crewBadge').textContent=`${rows.filter(r=>/^\d+$/.test(r.group)).length}개 조`);
+  $('#manualBoardBody').innerHTML=rows.map((r,idx)=>{
+    const rk=rowKey(r,idx),autoCode=r.code||'',shownCode=Object.prototype.hasOwnProperty.call(ov,`${rk}|code`)?ov[`${rk}|code`]:autoCode;
+    const names=[...(r.names||[])];while(names.length<6)names.push('');
+    const cells=names.slice(0,6).map((autoName,i)=>{const k=`${rk}|${i}`,has=Object.prototype.hasOwnProperty.call(ov,k),shown=has?ov[k]:autoName;const cls='nameCell'+(!autoName?' vacancy':'')+(has?' manualOverride':'');return `<td class="${cls}" contenteditable="true" data-auto="${esc(autoName)}">${esc(shown)}</td>`}).join('');
+    return `<tr class="${esc(r.cls||'')}" data-rowkey="${esc(rk)}" data-autocode="${esc(autoCode)}"><td class="boardGroup">${esc(r.group||'')}</td><td class="boardCode" contenteditable="true">${esc(shownCode)}</td>${cells}</tr>`;
   }).join('');
 }
 
