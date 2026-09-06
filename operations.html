@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>JAS ADMIN - 운항현황 v6.6.5.3 · LDM CLOUD</title>
+<title>JAS ADMIN - 운항현황 v6.6.5.5 · LDM BAG CLASS</title>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
@@ -414,7 +414,7 @@ body.light-theme .tag{
   <div class="ldmcard">
     <div class="ldmhead"><div class="ldmtitle">LDM 붙여넣기 · BAG / CGO 자동집계</div><button id="ldmModalClose" class="towclose">닫기</button></div>
     <div class="ldmbody">
-      <div class="small" style="margin-bottom:8px">여러 LDM을 한꺼번에 붙여넣을 수 있습니다. BAG는 PCS/KG, CGO는 PCS/KG를 집계하며 CLOUD에 공유합니다. 붙여넣은 LDM 원문도 보존합니다. PET · FAK · A/C PART · W/T · BBS · D/S · T/S · PER는 제외합니다.</div>
+      <div class="small" style="margin-bottom:8px">여러 LDM을 한꺼번에 붙여넣을 수 있습니다. BAG/FINS/BBST/WCHR/BT/T/S/D/S/COB/BBS/PER는 모두 수하물(BAG)로 합산합니다. CGO는 별도 PCS/KG로 집계하며 CLOUD에 공유합니다. 붙여넣은 LDM 원문도 보존합니다. PET · FAK · A/C PART · W/T · BBS · PER는 CGO에서 제외합니다.</div>
       <textarea id="ldmText" class="ldmtext" placeholder="여기에 LDM 원문을 붙여넣으세요..."></textarea>
       <div class="ldmactions"><button id="ldmApplyBtn" class="success">LDM 분석 · 적용</button><button id="ldmClearBtn">지우기</button><span id="ldmMsg" class="ldmmsg"></span></div>
       <div id="ldmResult" class="ldmresult" style="display:none"></div>
@@ -588,9 +588,24 @@ function parseLdmText(text){
     const fm=line.match(/^((?:7C|AK|KN|IT)[A-Z0-9]+)\//i);
     if(fm){flush();const dm=line.match(/\((IN|OUT)\)/i);cur={flight:normFlt(fm[1]),dir:(dm?.[1]||hint||'').toUpperCase(),bagPcs:0,bagKg:0,cargoPcs:0,cargoKg:0,raw:[]};cur.raw.push(line);continue;}
     if(!cur)continue;cur.raw.push(line);const upper=line.toUpperCase();
-    for(const m of upper.matchAll(/\bBAG\s*(\d+)\s*PC(?:S)?\s*(?:\/|\s)\s*(\d+(?:\.\d+)?)\s*KG\b/g)){cur.bagPcs+=Number(m[1]||0);cur.bagKg+=Number(m[2]||0);}
+    // BAG류 분류: BAG/FINS/BBST/WCHR/BT/T/S/D/S/COB/BBS/PER 는 모두 수하물 PCS/KG로 합산
+    const BAG_CODES=['BAG','FINS','BBST','WCHR','BT','T/S','D/S','COB','BBS','PER'];
     for(const seg0 of upper.split(/[,;]/)){
-      const seg=seg0.trim();if(!/\bCGO\b/.test(seg))continue;if(/PET|FAK|A\/C\s*PART|W\/T|BBS|D\/S|T\/S|PER/.test(seg))continue;
+      const seg=seg0.trim();
+      if(!seg)continue;
+      const code=BAG_CODES.find(c=>seg.includes(c));
+      if(code){
+        let pcs=0,kg=0;
+        const codeRe=code.replace('/','\\/');
+        const pm=seg.match(new RegExp('(?:^|\\b)'+codeRe+'\\s*[:\\-]?\\s*(\\d+)\\s*PC(?:S)?\\b'))||seg.match(/\b(\d+)\s*PC(?:S)?\b/);
+        if(pm)pcs=Number(pm[1]||0);
+        const slash=seg.match(new RegExp('(?:^|\\b)'+codeRe+'\\s*[:\\-]?\\s*(\\d+)\\s*(?:PC(?:S)?)?\\s*\\/\\s*(\\d+(?:\\.\\d+)?)\\s*KG\\b'));
+        if(slash){if(!pcs)pcs=Number(slash[1]||0);kg=Number(slash[2]||0);}
+        if(!kg){const km=[...seg.matchAll(/(\d+(?:\.\d+)?)\s*KG\b/g)];if(km.length)kg=Number(km[km.length-1][1]||0);}
+        cur.bagPcs+=pcs;cur.bagKg+=kg;
+        continue;
+      }
+      if(!/\bCGO\b/.test(seg))continue;if(/PET|FAK|A\/C\s*PART|W\/T|BBS|PER/.test(seg))continue;
       let pcs=0,kg=0;const pm=seg.match(/\bCGO\s*[:\-]?\s*(\d+)\s*PC(?:S)?\b/)||seg.match(/\b(\d+)\s*PC(?:S)?\b/);if(pm)pcs=Number(pm[1]||0);
       const slash=seg.match(/\bCGO\s*[:\-]?\s*(\d+)\s*(?:PC(?:S)?)?\s*\/\s*(\d+(?:\.\d+)?)\s*KG\b/);if(slash){if(!pcs)pcs=Number(slash[1]||0);kg=Number(slash[2]||0);}
       if(!kg){const km=[...seg.matchAll(/(\d+(?:\.\d+)?)\s*KG\b/g)];if(km.length)kg=Number(km[km.length-1][1]||0);}cur.cargoPcs+=pcs;cur.cargoKg+=kg;
