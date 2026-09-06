@@ -96,7 +96,7 @@ button,.btn,input,select{font:inherit}.btn,button{border:1px solid #2c5774;backg
 
 <header>
   <div class="brand"><a href="index.html">JAS ADMIN</a></div><div class="subtitle">잡 배정 / 조별 휴게시간</div>
-  <span class="ver">DRAFT v0.4.9.1 · BREAK ASSIGN FIX</span><div class="spacer"></div><span id="userBadge" class="badge"></span>
+  <span class="ver">DRAFT v0.4.9.2 · LOGIN FIX</span><div class="spacer"></div><span id="userBadge" class="badge"></span>
 </header>
 
 <main>
@@ -721,37 +721,57 @@ document.addEventListener('click',e=>{
 
 
 function showLogin(msg=''){
-  document.getElementById('authOverlay')?.classList.remove('hidden');
-  if($('#loginMsg'))$('#loginMsg').textContent=msg||'';
+  const ov=document.getElementById('authOverlay');
+  if(ov)ov.classList.remove('hidden');
+  const m=$('#loginMsg'); if(m)m.textContent=msg||'';
 }
 async function enterApp(session){
   if(!session?.user){showLogin();return;}
-  document.getElementById('authOverlay')?.classList.add('hidden');
-  if($('#userBadge'))$('#userBadge').textContent=session.user.email||'관리자';
-  try{await reloadAll();}catch(e){console.error('dashboard load failed',e);}
+  const ov=document.getElementById('authOverlay');
+  if(ov)ov.classList.add('hidden');
+  const ub=$('#userBadge'); if(ub)ub.textContent=session.user.email||'관리자';
+
+  // 로그인 성공 이후 대시보드 데이터 오류가 나도 로그인 상태는 유지
+  try{await reloadAll();}
+  catch(e){console.error('dashboard load error',e);}
 }
-$('#loginForm')?.addEventListener('submit',async e=>{
-  e.preventDefault();
-  const b=$('#loginBtn'); if(!b)return;
-  b.disabled=true;b.textContent='로그인 중...';
-  try{
+
+const loginForm=document.getElementById('loginForm');
+if(loginForm){
+  loginForm.addEventListener('submit',async e=>{
+    e.preventDefault();
+
+    const btn=$('#loginBtn');
     const email=$('#loginEmail')?.value.trim()||'';
     const password=$('#loginPassword')?.value||'';
-    if(!email||!password)throw new Error('이메일과 비밀번호를 입력해 주세요.');
-    const result=await Promise.race([
-      sb.auth.signInWithPassword({email,password}),
-      new Promise((_,reject)=>setTimeout(()=>reject(new Error('로그인 서버 응답 지연')),12000))
-    ]);
-    const {data,error}=result||{};
-    if(error)throw error;
-    if(!data?.session)throw new Error('로그인 세션을 받지 못했습니다.');
-    await enterApp(data.session);
-  }catch(err){
-    showLogin('로그인 실패: '+(err?.message||err));
-  }finally{
-    b.disabled=false;b.textContent='로그인';
-  }
-});
+
+    if(!email||!password){
+      showLogin('이메일과 비밀번호를 입력해 주세요.');
+      return;
+    }
+
+    if(btn){btn.disabled=true;btn.textContent='로그인 중...';}
+    try{
+      const result=await Promise.race([
+        sb.auth.signInWithPassword({email,password}),
+        new Promise((_,reject)=>setTimeout(()=>reject(new Error('로그인 서버 응답 지연')),12000))
+      ]);
+
+      const {data,error}=result||{};
+      if(error)throw error;
+      if(!data?.session)throw new Error('로그인 세션을 받지 못했습니다.');
+
+      await enterApp(data.session);
+    }catch(err){
+      console.error('login error',err);
+      showLogin('로그인 실패: '+(err?.message||String(err)));
+    }finally{
+      if(btn){btn.disabled=false;btn.textContent='로그인';}
+    }
+  });
+}
+
+// 초기 세션 확인은 짧게 제한해서 화면이 멈추지 않게 함
 showLogin('');
 (async()=>{
   try{
@@ -761,8 +781,12 @@ showLogin('');
     ]);
     const {data,error}=result||{};
     if(error)throw error;
-    if(data?.session)await enterApp(data.session); else showLogin('');
-  }catch(e){showLogin('로그인 상태 확인 실패: '+(e?.message||e));}
+    if(data?.session)await enterApp(data.session);
+    else showLogin('');
+  }catch(err){
+    console.error('session check error',err);
+    showLogin('로그인 상태 확인 실패: '+(err?.message||String(err)));
+  }
 })();
 </script>
 
