@@ -64,7 +64,7 @@ button,.btn,input,select{font:inherit}.btn,button{border:1px solid #2c5774;backg
 
 <header>
   <div class="brand"><a href="index.html">JAS ADMIN</a></div><div class="subtitle">잡 배정 / 조별 휴게시간</div>
-  <span class="ver">DRAFT v0.4.1 · SHARED SUMMARY LOAD</span><div class="spacer"></div><span id="userBadge" class="badge"></span>
+  <span class="ver">DRAFT v0.4.2 · LOGIN FIX</span><div class="spacer"></div><span id="userBadge" class="badge"></span>
 </header>
 
 <main>
@@ -288,7 +288,7 @@ function renderAttendance(){
       <div class="g">${esc(c.name)}</div>
       <div class="c">${esc(c.code||'-')}</div>
       <div class="n">${c.members.length}명</div>
-    </div>`).join(''):'<div class="muted" style="padding:14px">해당 날짜 저장 요약이 없습니다. 인원/조 운영 → 일자별 요약 보기 → 저장 후 '요약 새로고침'을 눌러 주세요.</div>';
+    </div>`).join(''):`<div class="muted" style="padding:14px">해당 날짜 저장 요약이 없습니다. 인원/조 운영 → 일자별 요약 보기 → 저장 후 "요약 새로고침"을 눌러 주세요.</div>`;
 }
 
 function crewOptions(selected){
@@ -408,9 +408,49 @@ function shiftDate(n){const d=new Date(($('#opDate').value||todayLocal())+'T00:0
 $('#opDate').value=todayLocal();$('#prevDay').onclick=()=>shiftDate(-1);$('#nextDay').onclick=()=>shiftDate(1);$('#todayBtn').onclick=()=>{$('#opDate').value=todayLocal();reloadAll();};$('#reloadBtn').onclick=reloadAll;$('#opDate').onchange=reloadAll;
 $('#refreshRosterBtn').onclick=async()=>{await loadStoredSkd();renderAll();};
 
-function showLogin(msg=''){document.getElementById('authOverlay').classList.remove('hidden');$('#loginMsg').textContent=msg;}
-async function enterApp(session){if(!session?.user)return showLogin();document.getElementById('authOverlay').classList.add('hidden');$('#userBadge').textContent=session.user.email||'관리자';await reloadAll();}
-$('#loginForm').addEventListener('submit',async e=>{e.preventDefault();const b=$('#loginBtn');b.disabled=true;b.textContent='로그인 중...';try{const {data,error}=await sb.auth.signInWithPassword({email:$('#loginEmail').value.trim(),password:$('#loginPassword').value});if(error)throw error;await enterApp(data.session);}catch(e){showLogin('로그인 실패: '+(e.message||e));}finally{b.disabled=false;b.textContent='로그인';}});
-(async()=>{try{const {data}=await sb.auth.getSession();if(data?.session)await enterApp(data.session);else showLogin();}catch{showLogin();}})();
+function showLogin(msg=''){
+  document.getElementById('authOverlay')?.classList.remove('hidden');
+  if($('#loginMsg'))$('#loginMsg').textContent=msg||'';
+}
+async function enterApp(session){
+  if(!session?.user){showLogin();return;}
+  document.getElementById('authOverlay')?.classList.add('hidden');
+  if($('#userBadge'))$('#userBadge').textContent=session.user.email||'관리자';
+  try{await reloadAll();}catch(e){console.error('dashboard load failed',e);}
+}
+$('#loginForm')?.addEventListener('submit',async e=>{
+  e.preventDefault();
+  const b=$('#loginBtn'); if(!b)return;
+  b.disabled=true;b.textContent='로그인 중...';
+  try{
+    const email=$('#loginEmail')?.value.trim()||'';
+    const password=$('#loginPassword')?.value||'';
+    if(!email||!password)throw new Error('이메일과 비밀번호를 입력해 주세요.');
+    const result=await Promise.race([
+      sb.auth.signInWithPassword({email,password}),
+      new Promise((_,reject)=>setTimeout(()=>reject(new Error('로그인 서버 응답 지연')),12000))
+    ]);
+    const {data,error}=result||{};
+    if(error)throw error;
+    if(!data?.session)throw new Error('로그인 세션을 받지 못했습니다.');
+    await enterApp(data.session);
+  }catch(err){
+    showLogin('로그인 실패: '+(err?.message||err));
+  }finally{
+    b.disabled=false;b.textContent='로그인';
+  }
+});
+showLogin('');
+(async()=>{
+  try{
+    const result=await Promise.race([
+      sb.auth.getSession(),
+      new Promise(resolve=>setTimeout(()=>resolve({data:{session:null},error:null}),3000))
+    ]);
+    const {data,error}=result||{};
+    if(error)throw error;
+    if(data?.session)await enterApp(data.session); else showLogin('');
+  }catch(e){showLogin('로그인 상태 확인 실패: '+(e?.message||e));}
+})();
 </script>
 </body></html>
