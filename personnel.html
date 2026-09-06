@@ -67,7 +67,7 @@ main{padding:16px 18px 28px;max-width:1900px;margin:auto}.toolbar{display:flex;g
     <div id="authLoading" class="auth-loading">로그인 상태 확인 중...</div>
   </div>
 </div>
-<header><div class="brand"><a href="index.html">JAS ADMIN</a></div><div class="subtitle">인원 / 조 운영</div><span class="ver">DRAFT v0.7.8.1 · SOSAN 1/2/3 FIX</span><div class="spacer"></div><span id="authUser" class="rcmdate" style="display:none"></span><button id="logoutBtn" style="display:none;padding:6px 10px">로그아웃</button><div id="now"></div></header>
+<header><div class="brand"><a href="index.html">JAS ADMIN</a></div><div class="subtitle">인원 / 조 운영</div><span class="ver">DRAFT v0.7.8.2 · SUMMARY OPEN FIX</span><div class="spacer"></div><span id="authUser" class="rcmdate" style="display:none"></span><button id="logoutBtn" style="display:none;padding:6px 10px">로그아웃</button><div id="now"></div></header>
 <main>
   <div class="toolbar">
     <div class="dateNav"><button id="prevDay">◀</button><input id="opDate" class="dateinput" type="date"><button id="nextDay">▶</button><button id="todayBtn">오늘</button></div>
@@ -481,6 +481,11 @@ async function saveSummarySnapshot(date){
 
 function renderManualBoard(date){
   const d=new Date(date+'T00:00:00'),days=['일','월','화','수','목','금','토'];
+  if(!scheduleRows.length){
+    $('#manualBoardTitle').textContent=`${date} 일자별 조 편성 요약`;
+    $('#manualBoardBody').innerHTML='<tr><td colspan="8" style="padding:34px;text-align:center;color:#8098ad">인원 SKD가 아직 복원되지 않았습니다. 잠시 후 다시 열거나 인원 SKD를 업로드해 주세요.</td></tr>';
+    return;
+  }
   if(!Number.isNaN(d.getTime()))$('#manualBoardTitle').textContent=`${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일 ${days[d.getDay()]}요일`;
   const rows=buildAutoBoardRows(date),ov=loadBoardOverrides(date);
   $('#crewBadge')&&($('#crewBadge').textContent=`${rows.filter(r=>/^\d+$/.test(r.group)).length}개 조`);
@@ -559,9 +564,26 @@ function deleteBoardCell(){
 function openSummary(){
   const m=$('#summaryModal'); if(!m)return;
   const d=selectedDay().date;
-  renderManualBoard(d);
-  saveSummarySnapshot(d);
-  m.classList.add('show');m.setAttribute('aria-hidden','false');
+
+  // 먼저 팝업을 연 뒤 내용을 그린다.
+  // 요약 자동정렬 중 오류가 나도 팝업 자체가 사라지지 않도록 처리.
+  m.classList.add('show');
+  m.setAttribute('aria-hidden','false');
+
+  try{
+    renderManualBoard(d);
+    saveSummarySnapshot(d);
+  }catch(err){
+    console.error('일자별 요약 생성 오류',err);
+    const body=$('#manualBoardBody');
+    if(body){
+      const saved=loadBoardOverrides(d);
+      body.innerHTML=`<tr><td colspan="8" style="padding:28px;text-align:center;color:#c5d6e7">
+        일자별 요약을 불러오는 중 오류가 발생했습니다.<br>
+        <span style="font-size:11px;color:#8098ad">${esc(err?.message||err)}</span>
+      </td></tr>`;
+    }
+  }
 }
 function closeSummary(){
   const m=$('#summaryModal'); if(!m)return;
@@ -599,7 +621,7 @@ document.querySelectorAll('.colorBtn').forEach(b=>b.onclick=()=>setSelectedCellC
 $('#clearCellColorBtn').onclick=()=>setSelectedCellColor('');
 $('#addCellBtn').onclick=addBoardCell;
 $('#deleteCellBtn').onclick=deleteBoardCell;
-$('#summaryBtn').onclick=openSummary;
+$('#summaryBtn').onclick=(e)=>{e.preventDefault();openSummary();};
 $('#summaryCloseBtn').onclick=closeSummary;
 $('#summaryModal').addEventListener('click',e=>{if(e.target.id==='summaryModal')closeSummary();});
 $('#clearSavedSkdBtn').onclick=async()=>{
