@@ -17,6 +17,12 @@ main{padding:16px 18px 28px;max-width:1900px;margin:auto}.toolbar{display:flex;g
 .pill{font-size:10px;font-weight:900;padding:3px 7px;border-radius:999px;border:1px solid #36536e}.pill-work{color:#6fe8af;background:#123b2a;border-color:#247a54}.pill-off{color:#8da5bf;background:#132235}.pill-leave{color:#ffd36a;background:#3a2a0f;border-color:#765620}.pill-holiday{color:#ffb5db;background:#49213a;border-color:#7d3b63}
 .auth-overlay{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 30%,#102943 0,#071426 55%,#050d18 100%);padding:20px}.auth-overlay.hidden{display:none}.login-card{width:min(420px,94vw);background:#0d1d31;border:1px solid #294866;border-radius:18px;padding:28px;box-shadow:0 24px 70px rgba(0,0,0,.45)}.login-logo{font-size:26px;font-weight:950;letter-spacing:1px;color:var(--cyan);margin-bottom:4px}.login-sub{color:#9fb4c8;font-size:13px;margin-bottom:24px}.login-card label{display:block;color:#a9bfd4;font-size:12px;font-weight:800;margin:12px 0 6px}.login-card input{width:100%;background:#08182a;border:1px solid #2a4965;color:white;border-radius:9px;padding:12px;outline:none}.login-card button{width:100%;margin-top:18px;background:#0b7198;border-color:#1199c8;padding:12px}.login-msg{min-height:20px;margin-top:12px;font-size:12px;color:#ff9aa8}.auth-loading{color:#9fb4c8;text-align:center;font-size:13px;margin-top:10px}
 @media(max-width:1100px){.kpis{grid-template-columns:repeat(3,1fr)}.groupgrid{grid-template-columns:1fr}.legend{display:none}}@media(max-width:650px){.kpis{grid-template-columns:repeat(2,1fr)}header .subtitle{display:none}}
+
+.crewpanel{margin-bottom:14px}.crewtools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-left:auto}
+.crewtable{min-width:1050px}.crewtable th,.crewtable td{text-align:center}.crewtable th:first-child,.crewtable td:first-child{text-align:left}
+.crewname{display:inline-block;background:#102b43;border:1px solid #31506d;border-radius:7px;padding:5px 7px;margin:2px;cursor:pointer}
+.crewname.hw{border-color:#9a4f7c;color:#ffb5db}.crewname.changed{border-color:#c18a27;color:#ffd36a}
+.editHint{font-size:11px;color:#8fa7bd}.unassigned{color:#ff9aa8}
 </style>
 </head>
 <body>
@@ -32,7 +38,7 @@ main{padding:16px 18px 28px;max-width:1900px;margin:auto}.toolbar{display:flex;g
     <div id="authLoading" class="auth-loading">로그인 상태 확인 중...</div>
   </div>
 </div>
-<header><div class="brand"><a href="index.html">JAS ADMIN</a></div><div class="subtitle">인원 / 조 운영</div><span class="ver">DRAFT v0.2 · SKD VIEWER</span><div class="spacer"></div><span id="authUser" class="rcmdate" style="display:none"></span><button id="logoutBtn" style="display:none;padding:6px 10px">로그아웃</button><div id="now"></div></header>
+<header><div class="brand"><a href="index.html">JAS ADMIN</a></div><div class="subtitle">인원 / 조 운영</div><span class="ver">DRAFT v0.3 · DAILY CREW</span><div class="spacer"></div><span id="authUser" class="rcmdate" style="display:none"></span><button id="logoutBtn" style="display:none;padding:6px 10px">로그아웃</button><div id="now"></div></header>
 <main>
   <div class="toolbar">
     <div class="dateNav"><button id="prevDay">◀</button><input id="opDate" class="dateinput" type="date"><button id="nextDay">▶</button><button id="todayBtn">오늘</button></div>
@@ -52,6 +58,12 @@ main{padding:16px 18px 28px;max-width:1900px;margin:auto}.toolbar{display:flex;g
     <div class="kpi red"><div class="label">시간 미확인</div><div class="num" id="kUnknown">0</div></div>
   </section>
   <section class="groupgrid" id="groupGrid"></section>
+  <section class="panel crewpanel">
+    <div class="panel-head"><div class="panel-title">일자별 조 편성 요약</div><span id="crewBadge" class="badge">0개 조</span>
+      <div class="crewtools"><span class="editHint">이름 클릭 → 배치 조 변경 · 수기편성은 날짜별 저장</span><button id="resetCrewBtn">자동편성 복원</button></div>
+    </div>
+    <div class="tablewrap" style="max-height:420px"><table class="crewtable"><thead><tr><th>조</th><th>근무코드</th><th>1번</th><th>2번</th><th>3번</th><th>4번</th><th>5번</th><th>6번</th><th>7번</th><th>8번</th></tr></thead><tbody id="crewBody"></tbody></table></div>
+  </section>
   <section class="panel">
     <div class="panel-head"><div class="panel-title">선택일 인원 현황</div><span id="rowBadge" class="badge">0명</span><div class="legend">근무코드 시간은 '근무타입' 시트 + 현장 지정코드 기준</div></div>
     <div class="tablewrap"><table><thead><tr><th>구분/조</th><th>성명</th><th>사번</th><th>직급</th><th>직책</th><th>직무</th><th>근무코드</th><th>근무시간</th><th>상태</th></tr></thead><tbody id="tbody"></tbody></table></div>
@@ -154,7 +166,7 @@ function parseWorkbook(wb,name){
     if(!name)continue;
     const info=emp.get(name)||{name,empNo:norm(r[2]),rank:norm(r[7]),position:norm(r[8]),job:norm(r[9])};
     const days=[]; for(let d=1;d<=31;d++)days[d]=norm(r[9+d]);
-    scheduleRows.push({...info,group:currentGroup||'기타',bucket:groupBucket(currentGroup),days});
+    scheduleRows.push({...info,group:currentGroup||'기타',bucket:groupBucket(currentGroup),crewSeq:scheduleRows.filter(z=>z.group===(currentGroup||'기타')).length+1,days});
   }
   $('#fileBadge').textContent=`${fileName} · ${fileYear}.${String(fileMonth).padStart(2,'0')}`;
   populateGroupFilter(); render();
@@ -167,7 +179,7 @@ function populateGroupFilter(){
 function selectedDay(){const d=$('#opDate').value||todayLocal();const x=new Date(d+'T00:00:00');return {date:d,year:x.getFullYear(),month:x.getMonth()+1,day:x.getDate()};}
 function render(){
   const sd=selectedDay();
-  if(!scheduleRows.length){$('#tbody').innerHTML='<tr><td colspan="9" class="empty">인원 SKD 파일을 업로드해 주세요.</td></tr>';['kTotal','kWork','kHolidayWork','kOff','kLeave','kUnknown'].forEach(id=>$('#'+id).textContent='0');$('#groupGrid').innerHTML='';$('#rowBadge').textContent='0명';return;}
+  if(!scheduleRows.length){$('#tbody').innerHTML='<tr><td colspan="9" class="empty">인원 SKD 파일을 업로드해 주세요.</td></tr>';['kTotal','kWork','kHolidayWork','kOff','kLeave','kUnknown'].forEach(id=>$('#'+id).textContent='0');$('#groupGrid').innerHTML='';$('#crewBody').innerHTML='<tr><td colspan="10" class="empty">인원 SKD 파일을 업로드해 주세요.</td></tr>';$('#crewBadge').textContent='0개 조';$('#rowBadge').textContent='0명';return;}
   if(sd.year!==fileYear||sd.month!==fileMonth){$('#note').textContent=`업로드 파일은 ${fileYear}년 ${fileMonth}월 자료입니다. 현재 선택일 ${sd.date}은 해당 월이 아닙니다.`;}
   else $('#note').textContent=`${sd.date} 기준 · ${fileName} · 근무코드와 조 편성을 월간 SKD에서 자동 추출`;
   let data=scheduleRows.map(x=>{const code=(sd.year===fileYear&&sd.month===fileMonth)?(x.days[sd.day]||''):'';const status=codeStatus(code);const workTime=workTimeFor(code);return {...x,code,status,workTime};});
@@ -184,8 +196,54 @@ function renderGroups(data){
   const groups=[...new Set(data.map(x=>x.bucket))].sort((a,b)=>{const ia=order.indexOf(a),ib=order.indexOf(b);return (ia<0?99:ia)-(ib<0?99:ib)||a.localeCompare(b);});
   $('#groupGrid').innerHTML=groups.map(g=>{const arr=data.filter(x=>x.bucket===g);const w=arr.filter(x=>x.status==='WORK').length,h=arr.filter(x=>x.status==='HOLIDAY_WORK').length,o=arr.filter(x=>x.status==='OFF').length,l=arr.filter(x=>x.status==='LEAVE').length;return `<div class="groupcard"><div class="grouphead"><span>${esc(g)}</span><span>${w+h}</span></div><div class="groupbar"><span class="mini">총 ${arr.length}</span><span class="mini">근무 ${w}</span><span class="mini">휴무근무 ${h}</span><span class="mini">휴무 ${o}</span><span class="mini">기타 ${l}</span></div></div>`;}).join('');
 }
+
+function crewStoreKey(date){return 'jas_personnel_crew_v1_'+date;}
+function loadCrewEdits(date){try{return JSON.parse(localStorage.getItem(crewStoreKey(date))||'{}')}catch{return{}}}
+function saveCrewEdits(date,obj){localStorage.setItem(crewStoreKey(date),JSON.stringify(obj));}
+function naturalGroup(a,b){
+  const na=parseInt(a),nb=parseInt(b);
+  if(!isNaN(na)&&!isNaN(nb))return na-nb;
+  return String(a).localeCompare(String(b),'ko');
+}
+function renderCrewSummary(data,date){
+  const edits=loadCrewEdits(date);
+  const active=data.filter(x=>x.status==='WORK'||x.status==='HOLIDAY_WORK');
+  const groups=[...new Set(scheduleRows.map(x=>x.group).filter(Boolean))].sort(naturalGroup);
+  const assigned=new Map(groups.map(g=>[g,[]]));
+  active.forEach(x=>{
+    const target=edits[x.empNo||x.name]||x.group;
+    if(!assigned.has(target))assigned.set(target,[]);
+    assigned.get(target).push({...x,assignedGroup:target,changed:target!==x.group});
+  });
+  // 기본은 조+순번 순. 휴무근무도 본인 조에 우선 유지한다.
+  for(const arr of assigned.values())arr.sort((a,b)=>(a.crewSeq||99)-(b.crewSeq||99)||a.name.localeCompare(b.name,'ko'));
+  const visible=[...assigned.entries()].filter(([g,a])=>a.length).sort((a,b)=>naturalGroup(a[0],b[0]));
+  $('#crewBadge').textContent=`${visible.length}개 조 · 출근 ${active.length}명`;
+  $('#crewBody').innerHTML=visible.map(([g,arr])=>{
+    const codes=[...new Set(arr.map(x=>x.code).filter(Boolean))].join(' / ');
+    const slots=Array.from({length:8},(_,i)=>{
+      const x=arr[i]; if(!x)return '<td></td>';
+      const id=esc(x.empNo||x.name);
+      const cls='crewname'+(x.status==='HOLIDAY_WORK'?' hw':'')+(x.changed?' changed':'');
+      return `<td><span class="${cls}" data-person="${id}" title="${esc(x.group)} ${x.crewSeq||''}번 · ${esc(x.code)}">${esc(x.name)}</span></td>`;
+    }).join('');
+    return `<tr><td class="group">${esc(g)}</td><td class="code">${esc(codes||'-')}</td>${slots}</tr>`;
+  }).join('')||'<tr><td colspan="10" class="empty">출근 편성 인원이 없습니다.</td></tr>';
+  document.querySelectorAll('.crewname').forEach(el=>el.onclick=()=>moveCrewPerson(el.dataset.person,date,data));
+}
+function moveCrewPerson(personId,date,data){
+  const x=data.find(v=>(v.empNo||v.name)===personId); if(!x)return;
+  const groups=[...new Set(scheduleRows.map(v=>v.group).filter(Boolean))].sort(naturalGroup);
+  const cur=loadCrewEdits(date)[personId]||x.group;
+  const target=prompt(`${x.name} 배치 조 변경\n현재: ${cur}\n\n배치할 조를 입력하세요.\n예: 3조, 20조, TOW, 교육`,cur);
+  if(target===null)return;
+  const t=target.trim(); if(!t)return;
+  const edits=loadCrewEdits(date); edits[personId]=t; saveCrewEdits(date,edits); render();
+}
+
 function shiftDay(n){const d=new Date(($('#opDate').value||todayLocal())+'T00:00:00');d.setDate(d.getDate()+n);$('#opDate').value=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;render();}
 $('#opDate').value=todayLocal(); $('#prevDay').onclick=()=>shiftDay(-1);$('#nextDay').onclick=()=>shiftDay(1);$('#todayBtn').onclick=()=>{$('#opDate').value=todayLocal();render();};$('#opDate').onchange=render;$('#groupFilter').onchange=render;$('#statusFilter').onchange=render;$('#search').oninput=render;
+$('#resetCrewBtn').onclick=()=>{const d=selectedDay().date;if(confirm(d+' 수기 조 편성을 모두 지우고 SKD 기준으로 복원할까요?')){localStorage.removeItem(crewStoreKey(d));render();}};
 $('#skdFile').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;try{const ab=await f.arrayBuffer();const wb=XLSX.read(ab,{type:'array',cellDates:true});parseWorkbook(wb,f.name);localStorage.setItem('jas_personnel_last_name',f.name);}catch(err){alert('SKD 읽기 실패: '+err.message);}finally{e.target.value='';}});
 setInterval(()=>{$('#now').textContent=new Date().toLocaleString('ko-KR',{hour12:false})},1000);
 
