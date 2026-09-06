@@ -65,7 +65,7 @@ main{padding:16px 18px 28px;max-width:1900px;margin:auto}.toolbar{display:flex;g
     <div id="authLoading" class="auth-loading">로그인 상태 확인 중...</div>
   </div>
 </div>
-<header><div class="brand"><a href="index.html">JAS ADMIN</a></div><div class="subtitle">인원 / 조 운영</div><span class="ver">DRAFT v0.7.6 · SUMMARY SNAPSHOT</span><div class="spacer"></div><span id="authUser" class="rcmdate" style="display:none"></span><button id="logoutBtn" style="display:none;padding:6px 10px">로그아웃</button><div id="now"></div></header>
+<header><div class="brand"><a href="index.html">JAS ADMIN</a></div><div class="subtitle">인원 / 조 운영</div><span class="ver">DRAFT v0.7.7 · SHARED SUMMARY SAVE</span><div class="spacer"></div><span id="authUser" class="rcmdate" style="display:none"></span><button id="logoutBtn" style="display:none;padding:6px 10px">로그아웃</button><div id="now"></div></header>
 <main>
   <div class="toolbar">
     <div class="dateNav"><button id="prevDay">◀</button><input id="opDate" class="dateinput" type="date"><button id="nextDay">▶</button><button id="todayBtn">오늘</button></div>
@@ -454,9 +454,21 @@ function buildSummarySnapshotFromBoard(date){
     rows
   };
 }
-function saveSummarySnapshot(date){
+async function saveSummarySnapshot(date){
   const snap=buildSummarySnapshotFromBoard(date);
   localStorage.setItem(summarySnapshotKey(date),JSON.stringify(snap));
+  try{
+    const db=await openSkdDb();
+    await new Promise((resolve,reject)=>{
+      const tx=db.transaction(SKD_STORE,'readwrite');
+      tx.objectStore(SKD_STORE).put(snap,'summary:'+date);
+      tx.oncomplete=resolve;
+      tx.onerror=()=>reject(tx.error);
+    });
+    db.close();
+  }catch(e){console.error('요약 IndexedDB 저장 실패',e);}
+  const b=$('#skdPersistBadge');
+  if(b)b.textContent=`조 요약 저장됨 · ${date} · ${snap.rows.length}개`;
   return snap;
 }
 
@@ -539,7 +551,9 @@ function deleteBoardCell(){
 
 function openSummary(){
   const m=$('#summaryModal'); if(!m)return;
-  renderManualBoard(selectedDay().date);
+  const d=selectedDay().date;
+  renderManualBoard(d);
+  saveSummarySnapshot(d);
   m.classList.add('show');m.setAttribute('aria-hidden','false');
 }
 function closeSummary(){
@@ -585,7 +599,7 @@ $('#clearSavedSkdBtn').onclick=async()=>{
   if(!confirm('브라우저에 자동 보관된 인원 SKD를 삭제할까요?\\n현재 화면의 이미 읽힌 데이터는 새로고침 전까지 유지됩니다.'))return;
   try{await clearSkdFileDb();alert('저장된 SKD를 삭제했습니다.');}catch(e){alert('저장 SKD 삭제 실패: '+e.message);}
 };
-$('#boardSaveBtn').onclick=()=>{const d=selectedDay().date;collectBoardOverrides(d);saveSummarySnapshot(d);renderManualBoard(d);alert(d+' 수기 수정사항과 일자별 조 요약을 저장했습니다.');};
+$('#boardSaveBtn').onclick=async()=>{const d=selectedDay().date;collectBoardOverrides(d);const snap=await saveSummarySnapshot(d);renderManualBoard(d);alert(d+' 조 요약 '+snap.rows.length+'개를 저장했습니다.');};
 $('#boardResetBtn').onclick=()=>{const d=selectedDay().date;if(confirm(d+' 수기 수정사항만 지우고 SKD 자동편성으로 복원할까요?')){localStorage.removeItem(boardKey(d));localStorage.removeItem(cellEditKey(d));renderManualBoard(d);}};
 
 $('#skdFile').addEventListener('change',async e=>{

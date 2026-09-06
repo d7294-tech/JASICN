@@ -64,7 +64,7 @@ button,.btn,input,select{font:inherit}.btn,button{border:1px solid #2c5774;backg
 
 <header>
   <div class="brand"><a href="index.html">JAS ADMIN</a></div><div class="subtitle">잡 배정 / 조별 휴게시간</div>
-  <span class="ver">DRAFT v0.4 · SUMMARY CREWS ONLY</span><div class="spacer"></div><span id="userBadge" class="badge"></span>
+  <span class="ver">DRAFT v0.4.1 · SHARED SUMMARY LOAD</span><div class="spacer"></div><span id="userBadge" class="badge"></span>
 </header>
 
 <main>
@@ -92,7 +92,7 @@ button,.btn,input,select{font:inherit}.btn,button{border:1px solid #2c5774;backg
 
   <div class="workLayout">
   <aside class="attendancePanel">
-    <div class="attendanceHead">출근 조 현황 <span id="attendanceBadge" class="badge">0개 조</span></div>
+    <div class="attendanceHead">출근 조 현황 <span id="attendanceBadge" class="badge">0개 조</span><button id="refreshRosterBtn" style="float:right;padding:4px 7px;font-size:10px">요약 새로고침</button></div>
     <div id="attendanceList" class="attendanceList"></div>
   </aside>
   <div class="mainWork">
@@ -150,14 +150,24 @@ async function openSkdDb(){
 async function loadStoredSkd(){
   const date=$('#opDate').value||todayLocal();
   try{
-    const raw=localStorage.getItem('jas_personnel_summary_v1_'+date);
-    if(!raw){
-      crews=[];
-      $('#rosterSource').textContent='요약 미저장';
-      renderAttendance();
-      return;
+    let snap=null;
+    // 1) shared IndexedDB summary (same origin)
+    try{
+      const db=await openSkdDb();
+      snap=await new Promise((resolve,reject)=>{
+        const tx=db.transaction('files','readonly');
+        const req=tx.objectStore('files').get('summary:'+date);
+        req.onsuccess=()=>resolve(req.result||null);
+        req.onerror=()=>reject(req.error);
+      });
+      db.close();
+    }catch(e){console.warn('IndexedDB 요약 읽기 실패',e);}
+    // 2) localStorage fallback
+    if(!snap){
+      const raw=localStorage.getItem('jas_personnel_summary_v1_'+date);
+      if(raw) snap=JSON.parse(raw);
     }
-    const snap=JSON.parse(raw);
+
     const rows=Array.isArray(snap?.rows)?snap.rows:[];
     crews=rows
       .filter(r=>r && r.group && Array.isArray(r.names) && r.names.filter(Boolean).length>0)
@@ -168,7 +178,12 @@ async function loadStoredSkd(){
         code:r.code||'',
         shift:shiftForCode(r.code||'')
       }));
-    $('#rosterSource').textContent=`요약 ${crews.length}개 조`;
+
+    if(crews.length){
+      $('#rosterSource').textContent=`요약 ${crews.length}개 조`;
+    }else{
+      $('#rosterSource').textContent='요약 0개 조';
+    }
     renderAttendance();
   }catch(e){
     console.error(e);
@@ -273,7 +288,7 @@ function renderAttendance(){
       <div class="g">${esc(c.name)}</div>
       <div class="c">${esc(c.code||'-')}</div>
       <div class="n">${c.members.length}명</div>
-    </div>`).join(''):'<div class="muted" style="padding:14px">인원/조 운영의 일자별 요약에서 저장된 조가 없습니다.</div>';
+    </div>`).join(''):'<div class="muted" style="padding:14px">해당 날짜 저장 요약이 없습니다. 인원/조 운영 → 일자별 요약 보기 → 저장 후 '요약 새로고침'을 눌러 주세요.</div>';
 }
 
 function crewOptions(selected){
@@ -391,6 +406,7 @@ async function reloadAll(){
 function shiftDate(n){const d=new Date(($('#opDate').value||todayLocal())+'T00:00:00');d.setDate(d.getDate()+n);$('#opDate').value=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;reloadAll();}
 ['inPre','inPost','outPre','outPost'].forEach(id=>$('#'+id).onchange=buildJobs);
 $('#opDate').value=todayLocal();$('#prevDay').onclick=()=>shiftDate(-1);$('#nextDay').onclick=()=>shiftDate(1);$('#todayBtn').onclick=()=>{$('#opDate').value=todayLocal();reloadAll();};$('#reloadBtn').onclick=reloadAll;$('#opDate').onchange=reloadAll;
+$('#refreshRosterBtn').onclick=async()=>{await loadStoredSkd();renderAll();};
 
 function showLogin(msg=''){document.getElementById('authOverlay').classList.remove('hidden');$('#loginMsg').textContent=msg;}
 async function enterApp(session){if(!session?.user)return showLogin();document.getElementById('authOverlay').classList.add('hidden');$('#userBadge').textContent=session.user.email||'관리자';await reloadAll();}
