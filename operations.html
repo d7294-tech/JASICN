@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>JAS ADMIN - 운항현황 v6.6.5.2 · SHARED API KEY CLOUD</title>
+<title>JAS ADMIN - 운항현황 v6.6.5.3 · LDM CLOUD</title>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
@@ -13,7 +13,7 @@ header{height:64px;padding:0 20px;display:flex;align-items:center;gap:18px;borde
 main{padding:16px 18px 28px;max-width:1900px;margin:auto}.toolbar{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin-bottom:10px}button,.btn{border:1px solid #2c5774;background:#10263c;color:white;border-radius:8px;padding:9px 13px;font-weight:800;cursor:pointer}button:hover,.btn:hover{background:#17334d}.primary{background:#0b7198;border-color:#1199c8}.primary:hover{background:#0d83af}.success{background:#12603e;border-color:#23865d}input[type=file]{display:none}.dateinput{background:#0c1c2e;border:1px solid var(--line);color:white;border-radius:8px;padding:9px 10px;font-weight:800}.dateNav{display:flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:9px;padding:4px;background:#0b1c2e}.dateNav button{padding:5px 9px}.rcmdate{font-size:11px;color:#9db2c7;border:1px solid #29425c;padding:5px 8px;border-radius:8px}.modebadge{font-size:11px;font-weight:900;padding:6px 9px;border-radius:8px;border:1px solid #31506d}.mode-live{color:#5af0ad;background:#123b2a;border-color:#247a54}.mode-stored{color:#9fd7ff;background:#12324a;border-color:#2b6389}.mode-plan{color:#ffd36a;background:#3a2a0f;border-color:#765620}.mode-empty{color:#9db2c7;background:#132235}.search,.keyinput{background:#0c1c2e;border:1px solid var(--line);color:white;border-radius:8px;padding:9px 12px;outline:none}.search{min-width:235px}.keyinput{min-width:290px}.search:focus,.keyinput:focus{border-color:#2f9bc5}.note{font-size:12px;color:var(--muted);margin:4px 0 12px}.apiok{color:var(--green)}.apierr{color:var(--red)}
 .storagebar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 12px;padding:10px 12px;background:#0b1b2e;border:1px solid var(--line);border-radius:10px}.storageitem{font-size:11px;color:#a9bfd4;border:1px solid #29425c;background:#0d2034;border-radius:8px;padding:6px 8px}.storageitem b{color:#eaf3ff}.backupbtn{background:#173b58;border-color:#2e6f98}.restorebtn{background:#3c2f12;border-color:#7b6325}.storagewarn{color:#ffcf6a}.storageok{color:#6fe8af}.filters{display:flex;gap:7px;align-items:center;margin-left:auto}.chip{display:flex;align-items:center;gap:5px;border:1px solid #2b4662;background:#0d2034;padding:6px 9px;border-radius:999px;font-size:12px;color:#bdd0e1}.chip input{accent-color:#27d3ff}
 .summarytop{display:grid;grid-template-columns:minmax(520px,1.15fr) minmax(500px,.85fr);gap:12px;margin-bottom:14px}.kpis{display:grid;grid-template-columns:repeat(5,minmax(100px,1fr));gap:10px;margin-bottom:0}.standbox{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}.standtitle{padding:9px 12px;font-size:12px;font-weight:900;color:#bcd0e2;background:#0d2035;border-bottom:1px solid var(--line)}.standtable{width:100%;min-width:0;font-size:12px;border-collapse:collapse}.standtable th{position:static;text-align:center;padding:6px 8px;background:#10263b}.standtable td{padding:6px 8px;text-align:center;border-bottom:1px solid #17304a;font-weight:800}.standtable td:first-child{text-align:left}.standtable tr:last-child td{border-bottom:0}.stand-total td{font-weight:950}.stand-concourse td:first-child{color:#ffe66d}.stand-west td:first-child{color:#9be15d}.stand-east td:first-child{color:#ffbf3c}.kpi{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:13px 14px}.kpi .label{font-size:12px;color:var(--muted);font-weight:700}.kpi .num{font-size:27px;font-weight:900;margin-top:2px}.kpi.cyan .num{color:var(--cyan)}.kpi.green .num{color:var(--green)}.kpi.amber .num{color:var(--amber)}.kpi.red .num{color:var(--red)}.kpi.purple .num{color:var(--purple)}
-.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}.panel-head{display:flex;align-items:center;padding:13px 15px;border-bottom:1px solid var(--line);background:#0d2035;gap:10px}.panel-title{font-weight:900}.badge{font-size:11px;border:1px solid #31506d;border-radius:20px;padding:3px 8px;color:#adc2d6}.legend{margin-left:auto;font-size:11px;color:#8fa7bd}.tablewrap{overflow:auto;max-height:calc(100vh - 270px)}table{width:100%;border-collapse:separate;border-spacing:0;min-width:1220px;font-size:13px}th{position:sticky;top:0;background:#10263b;color:#9eb7cd;text-align:left;padding:10px 8px;border-bottom:1px solid var(--line);z-index:2;font-size:11px;letter-spacing:.2px}td{padding:9px 8px;border-bottom:1px solid #17304a;white-space:nowrap}tbody tr:hover td{background:#10263a}.flight{font-weight:900}.arrflt{color:#eaf3ff}.depflt{color:#aee4ff}.reg{font-weight:900;color:#72d8ff}.time{font-variant-numeric:tabular-nums;font-weight:800}.live{color:var(--cyan)}.muted{color:#6f8aa2}.spot{display:inline-block;min-width:34px;text-align:center;padding:3px 7px;border-radius:7px;background:#173754;color:#d8f0ff;font-weight:900}.carousel{display:inline-block;min-width:30px;text-align:center;padding:3px 7px;border-radius:7px;background:#3d2d0f;color:#ffd66b;font-weight:900}.source{font-size:10px;padding:2px 6px;border-radius:8px;background:#1b3045;color:#9cc2de;margin-left:5px}.src-only{background:#553515;color:#ffd37a}.tag{display:inline-block;font-size:10px;font-weight:900;padding:2px 6px;border-radius:8px;margin:1px 3px 1px 0;border:1px solid #3b5872}.tag-lo{color:#ffd36a;background:#49360d;border-color:#74570d}.tag-tow{color:#d9c6ff;background:#34265a;border-color:#5c44a0}.tag-only{color:#ffc079;background:#4b2c12;border-color:#7b4a1c}.src-api{background:#0e4157;color:#59deff}.src-rcm{background:#183d52;color:#8edcff}.status{font-weight:900}.delay{color:var(--red)}.normal{color:var(--green)}.warn{color:var(--amber)}.empty{padding:45px!important;text-align:center;color:var(--muted)}.unpaired td{background:#351d2529}.errbox{display:none;margin-bottom:12px;border:1px solid #6c3441;background:#27151c;color:#ffb6c0;border-radius:9px;padding:10px 12px;font-size:12px;white-space:pre-wrap}.small{font-size:11px;color:#758fa6}.reginput{width:92px;background:#08182a;border:1px solid #2a6488;color:#8fe4ff;border-radius:7px;padding:5px 7px;font-weight:900;text-transform:uppercase;outline:none}.reginput:focus{border-color:#27d3ff;box-shadow:0 0 0 2px rgba(39,211,255,.12)}.regmanual{font-size:9px;color:#ffcf6a;margin-left:4px}.towclick{padding:2px 7px;border-radius:8px;font-size:10px;font-weight:900;background:#34265a;border:1px solid #5c44a0;color:#d9c6ff;cursor:pointer}.towclick:hover{background:#463476}.towmodal{position:fixed;inset:0;z-index:9000;background:rgba(2,8,16,.72);display:none;align-items:center;justify-content:center;padding:20px}.towmodal.show{display:flex}.towcard{width:min(760px,96vw);max-height:82vh;overflow:auto;background:#0d1d31;border:1px solid #31506d;border-radius:15px;box-shadow:0 25px 80px rgba(0,0,0,.5)}.towhead{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line);background:#0d2035;position:sticky;top:0}.towtitle{font-size:16px;font-weight:950;color:#d9c6ff}.towclose{margin-left:auto;padding:6px 10px}.towbody{padding:14px 16px}.towmeta{font-size:12px;color:#a9bfd4;margin-bottom:12px}.towresult{width:100%;min-width:0;border-collapse:collapse}.towresult th{position:static;padding:8px;background:#10263b;text-align:left}.towresult td{padding:8px;border-bottom:1px solid #17304a}.towresult tr:last-child td{border-bottom:0}.towempty{padding:24px;text-align:center;color:#6fe8af;font-weight:900}.towloading{padding:24px;text-align:center;color:#9db2c7}.towwarn{padding:10px 12px;border:1px solid #6b5421;background:#30250e;color:#ffd36a;border-radius:8px;margin-bottom:10px}.ldmbtn{background:#4b327a;border-color:#7655b5}.ldmbtn:hover{background:#5c3d91}.ldmmodal{position:fixed;inset:0;z-index:9100;background:rgba(2,8,16,.76);display:none;align-items:center;justify-content:center;padding:20px}.ldmmodal.show{display:flex}.ldmcard{width:min(900px,96vw);max-height:88vh;overflow:auto;background:#0d1d31;border:1px solid #4d6280;border-radius:15px;box-shadow:0 25px 80px rgba(0,0,0,.55)}.ldmhead{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line);background:#0d2035;position:sticky;top:0;z-index:2}.ldmtitle{font-size:16px;font-weight:950;color:#d9c6ff}.ldmbody{padding:14px 16px}.ldmtext{width:100%;min-height:260px;resize:vertical;background:#071426;border:1px solid #31506d;color:#eaf3ff;border-radius:10px;padding:12px;font-family:Consolas,monospace;line-height:1.45;outline:none}.ldmtext:focus{border-color:#7655b5}.ldmactions{display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap}.ldmresult{margin-top:12px;border:1px solid #243d58;border-radius:10px;overflow:hidden}.ldmresult table{min-width:0}.ldmresult th{position:static}.ldmmsg{font-size:12px;color:#9db2c7}.loadsummary{font-size:11px;line-height:1.35;color:#d8f0ff}.loadsummary b{color:#6fe8af}.loadsummary .out{color:#ffd36a}.loadzero{color:#617b94}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}.panel-head{display:flex;align-items:center;padding:13px 15px;border-bottom:1px solid var(--line);background:#0d2035;gap:10px}.panel-title{font-weight:900}.badge{font-size:11px;border:1px solid #31506d;border-radius:20px;padding:3px 8px;color:#adc2d6}.legend{margin-left:auto;font-size:11px;color:#8fa7bd}.tablewrap{overflow:auto;max-height:calc(100vh - 270px)}table{width:100%;border-collapse:separate;border-spacing:0;min-width:1220px;font-size:13px}th{position:sticky;top:0;background:#10263b;color:#9eb7cd;text-align:left;padding:10px 8px;border-bottom:1px solid var(--line);z-index:2;font-size:11px;letter-spacing:.2px}td{padding:9px 8px;border-bottom:1px solid #17304a;white-space:nowrap}tbody tr:hover td{background:#10263a}.flight{font-weight:900}.arrflt{color:#eaf3ff}.depflt{color:#aee4ff}.reg{font-weight:900;color:#72d8ff}.time{font-variant-numeric:tabular-nums;font-weight:800}.live{color:var(--cyan)}.muted{color:#6f8aa2}.spot{display:inline-block;min-width:34px;text-align:center;padding:3px 7px;border-radius:7px;background:#173754;color:#d8f0ff;font-weight:900}.carousel{display:inline-block;min-width:30px;text-align:center;padding:3px 7px;border-radius:7px;background:#3d2d0f;color:#ffd66b;font-weight:900}.source{font-size:10px;padding:2px 6px;border-radius:8px;background:#1b3045;color:#9cc2de;margin-left:5px}.src-only{background:#553515;color:#ffd37a}.tag{display:inline-block;font-size:10px;font-weight:900;padding:2px 6px;border-radius:8px;margin:1px 3px 1px 0;border:1px solid #3b5872}.tag-lo{color:#ffd36a;background:#49360d;border-color:#74570d}.tag-tow{color:#d9c6ff;background:#34265a;border-color:#5c44a0}.tag-only{color:#ffc079;background:#4b2c12;border-color:#7b4a1c}.src-api{background:#0e4157;color:#59deff}.src-rcm{background:#183d52;color:#8edcff}.status{font-weight:900}.delay{color:var(--red)}.normal{color:var(--green)}.warn{color:var(--amber)}.empty{padding:45px!important;text-align:center;color:var(--muted)}.unpaired td{background:#351d2529}.errbox{display:none;margin-bottom:12px;border:1px solid #6c3441;background:#27151c;color:#ffb6c0;border-radius:9px;padding:10px 12px;font-size:12px;white-space:pre-wrap}.small{font-size:11px;color:#758fa6}.reginput{width:92px;background:#08182a;border:1px solid #2a6488;color:#8fe4ff;border-radius:7px;padding:5px 7px;font-weight:900;text-transform:uppercase;outline:none}.reginput:focus{border-color:#27d3ff;box-shadow:0 0 0 2px rgba(39,211,255,.12)}.regmanual{font-size:9px;color:#ffcf6a;margin-left:4px}.towclick{padding:2px 7px;border-radius:8px;font-size:10px;font-weight:900;background:#34265a;border:1px solid #5c44a0;color:#d9c6ff;cursor:pointer}.towclick:hover{background:#463476}.towmodal{position:fixed;inset:0;z-index:9000;background:rgba(2,8,16,.72);display:none;align-items:center;justify-content:center;padding:20px}.towmodal.show{display:flex}.towcard{width:min(760px,96vw);max-height:82vh;overflow:auto;background:#0d1d31;border:1px solid #31506d;border-radius:15px;box-shadow:0 25px 80px rgba(0,0,0,.5)}.towhead{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line);background:#0d2035;position:sticky;top:0}.towtitle{font-size:16px;font-weight:950;color:#d9c6ff}.towclose{margin-left:auto;padding:6px 10px}.towbody{padding:14px 16px}.towmeta{font-size:12px;color:#a9bfd4;margin-bottom:12px}.towresult{width:100%;min-width:0;border-collapse:collapse}.towresult th{position:static;padding:8px;background:#10263b;text-align:left}.towresult td{padding:8px;border-bottom:1px solid #17304a}.towresult tr:last-child td{border-bottom:0}.towempty{padding:24px;text-align:center;color:#6fe8af;font-weight:900}.towloading{padding:24px;text-align:center;color:#9db2c7}.towwarn{padding:10px 12px;border:1px solid #6b5421;background:#30250e;color:#ffd36a;border-radius:8px;margin-bottom:10px}.ldmbtn{background:#4b327a;border-color:#7655b5}.ldmbtn:hover{background:#5c3d91}.ldmmodal{position:fixed;inset:0;z-index:9100;background:rgba(2,8,16,.76);display:none;align-items:center;justify-content:center;padding:20px}.ldmmodal.show{display:flex}.ldmcard{width:min(900px,96vw);max-height:88vh;overflow:auto;background:#0d1d31;border:1px solid #4d6280;border-radius:15px;box-shadow:0 25px 80px rgba(0,0,0,.55)}.ldmhead{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line);background:#0d2035;position:sticky;top:0;z-index:2}.ldmtitle{font-size:16px;font-weight:950;color:#d9c6ff}.ldmbody{padding:14px 16px}.ldmtext{width:100%;min-height:260px;resize:vertical;background:#071426;border:1px solid #31506d;color:#eaf3ff;border-radius:10px;padding:12px;font-family:Consolas,monospace;line-height:1.45;outline:none}.ldmtext:focus{border-color:#7655b5}.ldmactions{display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap}.ldmresult{margin-top:12px;border:1px solid #243d58;border-radius:10px;overflow:hidden}.ldmresult table{min-width:0}.ldmresult th{position:static}.ldmmsg{font-size:12px;color:#9db2c7}.loadsummary{font-size:11px;line-height:1.35;color:#d8f0ff}.loadsummary b{color:#6fe8af}.loadsummary .out{color:#ffd36a}.loadzero{color:#617b94}.ldmrawbtn{margin-left:5px;padding:1px 5px;border-radius:6px;border:1px solid #4d6280;background:#15283d;color:#b9cde0;font-size:9px;font-weight:900;cursor:pointer}.ldmrawbtn:hover{background:#213b58;color:#fff}.ldmrawmodal{position:fixed;inset:0;z-index:9200;background:rgba(2,8,16,.78);display:none;align-items:center;justify-content:center;padding:20px}.ldmrawmodal.show{display:flex}.ldmrawcard{width:min(900px,96vw);max-height:88vh;overflow:auto;background:#0d1d31;border:1px solid #4d6280;border-radius:15px;box-shadow:0 25px 80px rgba(0,0,0,.55)}.ldmrawpre{white-space:pre-wrap;word-break:break-word;margin:0;padding:16px;background:#071426;color:#eaf3ff;font-family:Consolas,monospace;line-height:1.5;min-height:220px}
 .loadinput{width:74px;background:#08182a;border:1px solid #31506d;color:#fff;border-radius:7px;padding:5px 7px;font-weight:900;text-align:center}.loadinput:focus{outline:none;border-color:#27d3ff}.loadhint{font-size:9px;color:#6f8aa2;margin-left:4px}
 @media(max-width:1050px){.summarytop{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(3,1fr)}.filters{margin-left:0}.keyinput{min-width:230px}}@media(max-width:650px){.kpis{grid-template-columns:repeat(2,1fr)}header .subtitle{display:none}}
 
@@ -397,10 +397,10 @@ body.light-theme .tag{
     </div>
   </section>
   <section class="panel">
-    <div class="panel-head"><div class="panel-title">선택일 운항 현황</div><span class="badge" id="rowBadge">총 0편 · 0행</span><div class="legend">LDM 붙여넣기 자동집계 · ONLY BAG/CGO · 수하물/화물 = 맨 오른쪽 · FERRY 미표시 · 날짜별 저장</div></div>
+    <div class="panel-head"><div class="panel-title">선택일 운항 현황</div><span class="badge" id="rowBadge">총 0편 · 0행</span><div class="legend">LDM 붙여넣기 자동집계 · BAG/CGO CLOUD 공유 · CGO PCS/KG · 원본 보존 · FERRY 미표시</div></div>
     <div class="tablewrap"><table><thead><tr>
       <th>ARR FLT</th><th>REG</th><th>FROM</th><th>STA</th><th>ETA</th><th>ARR SPOT</th><th>TOW SPOT</th><th>DEP SPOT</th><th>수취대</th>
-      <th>DEP FLT</th><th>TO</th><th>STD</th><th>ETD</th><th>상태</th><th>L/O</th><th>TOW</th><th>수하물 PCS/KG</th><th>화물 CGO KG</th>
+      <th>DEP FLT</th><th>TO</th><th>STD</th><th>ETD</th><th>상태</th><th>L/O</th><th>TOW</th><th>수하물 PCS/KG</th><th>화물 CGO PCS/KG</th>
     </tr></thead><tbody id="tbody"></tbody></table></div>
   </section>
 </main>
@@ -414,11 +414,17 @@ body.light-theme .tag{
   <div class="ldmcard">
     <div class="ldmhead"><div class="ldmtitle">LDM 붙여넣기 · BAG / CGO 자동집계</div><button id="ldmModalClose" class="towclose">닫기</button></div>
     <div class="ldmbody">
-      <div class="small" style="margin-bottom:8px">여러 LDM을 한꺼번에 붙여넣을 수 있습니다. BAG는 PCS/KG 합계, CGO는 KG 합계만 반영합니다. PET · FAK · A/C PART · W/T · BBS · D/S · T/S · PER는 제외합니다.</div>
+      <div class="small" style="margin-bottom:8px">여러 LDM을 한꺼번에 붙여넣을 수 있습니다. BAG는 PCS/KG, CGO는 PCS/KG를 집계하며 CLOUD에 공유합니다. 붙여넣은 LDM 원문도 보존합니다. PET · FAK · A/C PART · W/T · BBS · D/S · T/S · PER는 제외합니다.</div>
       <textarea id="ldmText" class="ldmtext" placeholder="여기에 LDM 원문을 붙여넣으세요..."></textarea>
       <div class="ldmactions"><button id="ldmApplyBtn" class="success">LDM 분석 · 적용</button><button id="ldmClearBtn">지우기</button><span id="ldmMsg" class="ldmmsg"></span></div>
       <div id="ldmResult" class="ldmresult" style="display:none"></div>
     </div>
+  </div>
+</div>
+<div id="ldmRawModal" class="ldmrawmodal" aria-hidden="true">
+  <div class="ldmrawcard">
+    <div class="ldmhead"><div class="ldmtitle" id="ldmRawTitle">LDM 원본</div><button id="ldmRawClose" class="towclose">닫기</button></div>
+    <pre id="ldmRawPre" class="ldmrawpre"></pre>
   </div>
 </div>
 <script>
@@ -550,76 +556,67 @@ const SNAP_PREFIX='jas_admin_snapshot_v39_';
 const RCM_PREFIX='jas_admin_rcm_v39_';
 const MANUAL_REG_PREFIX='jas_admin_manual_reg_v1_';
 const LOAD_ASSIGN_PREFIX='jas_admin_load_assign_v2_';
-let loadAssignMap=new Map(); // turn key -> {inBagPcs,inBagKg,inCargoKg,outBagPcs,outBagKg,outCargoKg}
+let loadAssignMap=new Map();
 function loadAssignKey(date){return LOAD_ASSIGN_PREFIX+date}
 function loadLoadAssignments(date){loadAssignMap=new Map();try{const raw=localStorage.getItem(loadAssignKey(date));if(raw){const x=JSON.parse(raw);if(Array.isArray(x))loadAssignMap=new Map(x);}}catch{loadAssignMap=new Map();}}
 function saveLoadAssignments(date){try{localStorage.setItem(loadAssignKey(date),JSON.stringify([...loadAssignMap.entries()]));}catch{}}
 function turnLoadKey(t){return [t.a?.flight||'',t.d?.flight||'',t.reg||'',t.a?.sched||'',t.d?.sched||''].join('|');}
+function rawBtnHtml(t,dir,cur){const raw=dir==='IN'?cur.inRaw:cur.outRaw;if(!raw)return'';const f=dir==='IN'?(t.a?.flight||''):(t.d?.flight||'');return `<button class="ldmrawbtn" data-ldm-flight="${esc(f)}" data-ldm-dir="${dir}">원본</button>`;}
 function loadSummaryHtml(t,field){
   const cur=loadAssignMap.get(turnLoadKey(t))||{};
   if(field==='baggage'){
-    const ins=(cur.inBagPcs||cur.inBagKg)?`<div><b>IN</b> ${esc(cur.inBagPcs||0)} / ${esc(cur.inBagKg||0)}</div>`:'';
-    const outs=(cur.outBagPcs||cur.outBagKg)?`<div class="out"><b>OUT</b> ${esc(cur.outBagPcs||0)} / ${esc(cur.outBagKg||0)}</div>`:'';
+    const ins=(cur.inBagPcs||cur.inBagKg)?`<div><b>IN</b> ${esc(cur.inBagPcs||0)} / ${esc(cur.inBagKg||0)}${rawBtnHtml(t,'IN',cur)}</div>`:'';
+    const outs=(cur.outBagPcs||cur.outBagKg)?`<div class="out"><b>OUT</b> ${esc(cur.outBagPcs||0)} / ${esc(cur.outBagKg||0)}${rawBtnHtml(t,'OUT',cur)}</div>`:'';
     return `<div class="loadsummary">${ins||outs?ins+outs:'<span class="loadzero">-</span>'}</div>`;
   }
-  const ins=Number(cur.inCargoKg||0)>0?`<div><b>IN</b> ${esc(cur.inCargoKg)} KG</div>`:'';
-  const outs=Number(cur.outCargoKg||0)>0?`<div class="out"><b>OUT</b> ${esc(cur.outCargoKg)} KG</div>`:'';
+  const ins=(Number(cur.inCargoPcs||0)>0||Number(cur.inCargoKg||0)>0)?`<div><b>IN</b> ${esc(cur.inCargoPcs||0)} PCS / ${esc(cur.inCargoKg||0)} KG${rawBtnHtml(t,'IN',cur)}</div>`:'';
+  const outs=(Number(cur.outCargoPcs||0)>0||Number(cur.outCargoKg||0)>0)?`<div class="out"><b>OUT</b> ${esc(cur.outCargoPcs||0)} PCS / ${esc(cur.outCargoKg||0)} KG${rawBtnHtml(t,'OUT',cur)}</div>`:'';
   return `<div class="loadsummary">${ins||outs?ins+outs:'<span class="loadzero">-</span>'}</div>`;
 }
-function saveLdmToTurn(t,dir,bagPcs,bagKg,cargoKg){
-  const key=turnLoadKey(t); const cur={...(loadAssignMap.get(key)||{})};
-  if(dir==='IN'){cur.inBagPcs=String(bagPcs);cur.inBagKg=String(bagKg);cur.inCargoKg=String(cargoKg);}
-  else {cur.outBagPcs=String(bagPcs);cur.outBagKg=String(bagKg);cur.outCargoKg=String(cargoKg);}
+function saveLdmToTurn(t,dir,bagPcs,bagKg,cargoPcs,cargoKg,rawText='',sourceText=''){
+  const key=turnLoadKey(t);const cur={...(loadAssignMap.get(key)||{})};
+  if(dir==='IN'){cur.inBagPcs=String(bagPcs);cur.inBagKg=String(bagKg);cur.inCargoPcs=String(cargoPcs);cur.inCargoKg=String(cargoKg);cur.inRaw=String(rawText||'');cur.inSource=String(sourceText||rawText||'');}
+  else {cur.outBagPcs=String(bagPcs);cur.outBagKg=String(bagKg);cur.outCargoPcs=String(cargoPcs);cur.outCargoKg=String(cargoKg);cur.outRaw=String(rawText||'');cur.outSource=String(sourceText||rawText||'');}
   loadAssignMap.set(key,cur);
 }
 function parseLdmText(text){
-  const lines=String(text||'').replace(/\r/g,'').split('\n');
-  const records=[]; let hint=''; let cur=null;
-  const flush=()=>{if(cur){records.push(cur);cur=null;}};
+  const lines=String(text||'').replace(/\r/g,'').split('\n');const records=[];let hint='';let cur=null;
+  const flush=()=>{if(cur){cur.rawText=cur.raw.join('\n');records.push(cur);cur=null;}};
   for(const raw of lines){
-    const line=raw.trim(); if(!line)continue;
-    const hm=line.match(/^LDM(?:\s*\((IN|OUT)\))?/i); if(hm){hint=hm[1]?hm[1].toUpperCase():'';continue;}
+    const line=raw.trim();if(!line)continue;
+    const hm=line.match(/^LDM(?:\s*\((IN|OUT)\))?/i);if(hm){hint=hm[1]?hm[1].toUpperCase():'';continue;}
     const fm=line.match(/^((?:7C|AK|KN|IT)[A-Z0-9]+)\//i);
-    if(fm){flush();const dm=line.match(/\((IN|OUT)\)/i);cur={flight:normFlt(fm[1]),dir:(dm?.[1]||hint||'').toUpperCase(),bagPcs:0,bagKg:0,cargoKg:0,raw:[]};cur.raw.push(line);continue;}
-    if(!cur)continue; cur.raw.push(line);
-    const upper=line.toUpperCase();
-    if(/A\/C\s*PART|W\/T/.test(upper)){}
-    // BAG: only segments explicitly marked BAG.
-    for(const m of upper.matchAll(/\bBAG\s*(\d+)\s*PC(?:S)?\s*(?:\/|\s)\s*(\d+)\s*KG\b/g)){cur.bagPcs+=Number(m[1]||0);cur.bagKg+=Number(m[2]||0);}
-    // CGO: only segments explicitly marked CGO. Sum KG, ignore other cargo-like codes.
-    const segs=upper.split(/[,;]/);
-    for(const seg of segs){if(!/\bCGO\b/.test(seg))continue;if(/PET|FAK|A\/C\s*PART|W\/T|BBS|D\/S|T\/S|PER/.test(seg))continue;const km=[...seg.matchAll(/(\d+(?:\.\d+)?)\s*KG\b/g)];if(km.length)cur.cargoKg+=Number(km[km.length-1][1]||0);}
+    if(fm){flush();const dm=line.match(/\((IN|OUT)\)/i);cur={flight:normFlt(fm[1]),dir:(dm?.[1]||hint||'').toUpperCase(),bagPcs:0,bagKg:0,cargoPcs:0,cargoKg:0,raw:[]};cur.raw.push(line);continue;}
+    if(!cur)continue;cur.raw.push(line);const upper=line.toUpperCase();
+    for(const m of upper.matchAll(/\bBAG\s*(\d+)\s*PC(?:S)?\s*(?:\/|\s)\s*(\d+(?:\.\d+)?)\s*KG\b/g)){cur.bagPcs+=Number(m[1]||0);cur.bagKg+=Number(m[2]||0);}
+    for(const seg0 of upper.split(/[,;]/)){
+      const seg=seg0.trim();if(!/\bCGO\b/.test(seg))continue;if(/PET|FAK|A\/C\s*PART|W\/T|BBS|D\/S|T\/S|PER/.test(seg))continue;
+      let pcs=0,kg=0;const pm=seg.match(/\bCGO\s*[:\-]?\s*(\d+)\s*PC(?:S)?\b/)||seg.match(/\b(\d+)\s*PC(?:S)?\b/);if(pm)pcs=Number(pm[1]||0);
+      const slash=seg.match(/\bCGO\s*[:\-]?\s*(\d+)\s*(?:PC(?:S)?)?\s*\/\s*(\d+(?:\.\d+)?)\s*KG\b/);if(slash){if(!pcs)pcs=Number(slash[1]||0);kg=Number(slash[2]||0);}
+      if(!kg){const km=[...seg.matchAll(/(\d+(?:\.\d+)?)\s*KG\b/g)];if(km.length)kg=Number(km[km.length-1][1]||0);}cur.cargoPcs+=pcs;cur.cargoKg+=kg;
+    }
   }
-  flush(); return records;
+  flush();return records;
 }
 function findTurnForLdm(rec){
-  const f=normFlt(rec.flight); let dir=rec.dir;
-  let matches=[];
-  if(dir==='IN')matches=turns.filter(t=>t.a?.flight===f);
-  else if(dir==='OUT')matches=turns.filter(t=>t.d?.flight===f);
-  else {
-    const ain=turns.filter(t=>t.a?.flight===f), dout=turns.filter(t=>t.d?.flight===f);
-    if(ain.length===1&&!dout.length){matches=ain;dir='IN';}
-    else if(dout.length===1&&!ain.length){matches=dout;dir='OUT';}
-    else if(ain.length===1&&dout.length===1){matches=ain;dir='IN';}
-    else matches=[...ain,...dout];
-  }
+  const f=normFlt(rec.flight);let dir=rec.dir;let matches=[];
+  if(dir==='IN')matches=turns.filter(t=>t.a?.flight===f);else if(dir==='OUT')matches=turns.filter(t=>t.d?.flight===f);else{const ain=turns.filter(t=>t.a?.flight===f),dout=turns.filter(t=>t.d?.flight===f);if(ain.length===1&&!dout.length){matches=ain;dir='IN';}else if(dout.length===1&&!ain.length){matches=dout;dir='OUT';}else if(ain.length===1&&dout.length===1){matches=ain;dir='IN';}else matches=[...ain,...dout];}
   return {turn:matches[0]||null,dir:dir||''};
 }
-function renderLdmResults(results){
-  const box=$('#ldmResult'); if(!box)return;
-  if(!results.length){box.style.display='none';box.innerHTML='';return;}
-  box.style.display='block';
-  box.innerHTML=`<table><thead><tr><th>편명</th><th>구분</th><th>BAG PCS</th><th>BAG KG</th><th>CGO KG</th><th>적용</th></tr></thead><tbody>${results.map(r=>`<tr><td class="flight">${esc(r.flight)}</td><td>${esc(r.dir||'-')}</td><td>${r.bagPcs}</td><td>${r.bagKg}</td><td>${r.cargoKg}</td><td>${r.ok?'<span class="normal">완료</span>':'<span class="delay">미매칭</span>'}</td></tr>`).join('')}</tbody></table>`;
+async function saveLdmCloud(date,results,sourceText){
+  try{const {data:{user}}=await sb.auth.getUser();if(!user)return false;const rows=results.map(r=>({operation_date:date,flight:normFlt(r.flight),direction:r.dir||r.recDir||'UNKNOWN',bag_pcs:Number(r.bagPcs||0),bag_kg:Number(r.bagKg||0),cargo_pcs:Number(r.cargoPcs||0),cargo_kg:Number(r.cargoKg||0),raw_text:String(r.rawText||''),source_text:String(sourceText||''),updated_by:user.id,updated_at:new Date().toISOString()})).filter(r=>r.flight);if(!rows.length)return false;const {error}=await sb.from('jas_ldm_daily').upsert(rows,{onConflict:'operation_date,flight,direction'});if(error)throw error;return true;}catch(e){console.warn('LDM CLOUD save failed',e);return false;}
 }
-function applyLdmText(){
-  const records=parseLdmText($('#ldmText')?.value||'');
-  if(!records.length){$('#ldmMsg').textContent='인식 가능한 LDM 편명을 찾지 못했습니다.';renderLdmResults([]);return;}
-  const results=[]; let ok=0;
-  for(const rec of records){const m=findTurnForLdm(rec);if(m.turn&&m.dir){saveLdmToTurn(m.turn,m.dir,rec.bagPcs,rec.bagKg,rec.cargoKg);ok++;results.push({...rec,dir:m.dir,ok:true});}else results.push({...rec,ok:false});}
-  saveLoadAssignments($('#opDate').value||todayLocal()); render(); renderLdmResults(results);
-  $('#ldmMsg').textContent=`${records.length}건 분석 · ${ok}건 적용 · ${records.length-ok}건 미매칭`;
+async function loadLdmCloud(date){
+  try{const {data,error}=await sb.from('jas_ldm_daily').select('*').eq('operation_date',date).order('updated_at');if(error)throw error;if(!data?.length)return false;for(const r of data){const rec={flight:normFlt(r.flight),dir:String(r.direction||'').toUpperCase()};const m=findTurnForLdm(rec);if(m.turn&&m.dir)saveLdmToTurn(m.turn,m.dir,r.bag_pcs||0,r.bag_kg||0,r.cargo_pcs||0,r.cargo_kg||0,r.raw_text||'',r.source_text||r.raw_text||'');}saveLoadAssignments(date);return true;}catch(e){console.warn('LDM CLOUD load failed',e);return false;}
 }
+function renderLdmResults(results){const box=$('#ldmResult');if(!box)return;if(!results.length){box.style.display='none';box.innerHTML='';return;}box.style.display='block';box.innerHTML=`<table><thead><tr><th>편명</th><th>구분</th><th>BAG PCS</th><th>BAG KG</th><th>CGO PCS</th><th>CGO KG</th><th>적용</th></tr></thead><tbody>${results.map(r=>`<tr><td class="flight">${esc(r.flight)}</td><td>${esc(r.dir||'-')}</td><td>${r.bagPcs}</td><td>${r.bagKg}</td><td>${r.cargoPcs}</td><td>${r.cargoKg}</td><td>${r.ok?'<span class="normal">완료</span>':'<span class="delay">미매칭</span>'}</td></tr>`).join('')}</tbody></table>`;}
+async function applyLdmText(){
+  const sourceText=$('#ldmText')?.value||'';const records=parseLdmText(sourceText);if(!records.length){$('#ldmMsg').textContent='인식 가능한 LDM 편명을 찾지 못했습니다.';renderLdmResults([]);return;}
+  const results=[];let ok=0;for(const rec of records){const m=findTurnForLdm(rec);if(m.turn&&m.dir){saveLdmToTurn(m.turn,m.dir,rec.bagPcs,rec.bagKg,rec.cargoPcs,rec.cargoKg,rec.rawText,sourceText);ok++;results.push({...rec,recDir:rec.dir,dir:m.dir,ok:true});}else results.push({...rec,recDir:rec.dir,dir:rec.dir||'UNKNOWN',ok:false});}
+  const date=$('#opDate').value||todayLocal();saveLoadAssignments(date);render();renderLdmResults(results);const cloudOk=await saveLdmCloud(date,results,sourceText);$('#ldmMsg').textContent=`${records.length}건 분석 · ${ok}건 적용 · ${records.length-ok}건 미매칭 · ${cloudOk?'CLOUD 저장 완료':'CLOUD 저장 실패'}`;
+}
+function openLdmRaw(flight,dir){const f=normFlt(flight);let found='';let full='';for(const t of turns){const cur=loadAssignMap.get(turnLoadKey(t))||{};if(dir==='IN'&&t.a?.flight===f){found=cur.inRaw||'';full=cur.inSource||found;break;}if(dir==='OUT'&&t.d?.flight===f){found=cur.outRaw||'';full=cur.outSource||found;break;}}$('#ldmRawTitle').textContent=`LDM 원본 · ${f} · ${dir}`;$('#ldmRawPre').textContent=found||full||'저장된 원본이 없습니다.';$('#ldmRawModal').classList.add('show');$('#ldmRawModal').setAttribute('aria-hidden','false');}
+function closeLdmRaw(){$('#ldmRawModal')?.classList.remove('show');$('#ldmRawModal')?.setAttribute('aria-hidden','true');}
 function openLdmModal(){const date=$('#opDate')?.value||todayLocal();if(isPastDate(date)){alert('마감된 과거 운항현황은 수정할 수 없습니다.');return;}$('#ldmModal')?.classList.add('show');$('#ldmModal')?.setAttribute('aria-hidden','false');setTimeout(()=>$('#ldmText')?.focus(),50);}
 function closeLdmModal(){$('#ldmModal')?.classList.remove('show');$('#ldmModal')?.setAttribute('aria-hidden','true');}
 
@@ -1337,7 +1334,7 @@ async function cloudLoadFlights(date){
   saveManualRegs(date);
   arrivals=data.filter(x=>x.direction==='A').map(x=>({kind:'A',flight:x.flight,line:prefix(x.flight),opDate:date,airportCode:x.airport_code||'',sched:x.schedule_time||'',est:x.estimated_time||'',actual:x.actual_time||'',spot:x.spot||'',gate:x.gate||'',carousel:x.carousel||'',remark:x.status||'',raw:x.raw_data||{}}));
   departures=data.filter(x=>x.direction==='D').map(x=>({kind:'D',flight:x.flight,line:prefix(x.flight),opDate:date,airportCode:x.airport_code||'',sched:x.schedule_time||'',est:x.estimated_time||'',actual:x.actual_time||'',spot:x.spot||'',gate:x.gate||'',carousel:x.carousel||'',remark:x.status||'',raw:x.raw_data||{}}));
-  buildTurns(); render(); return true;
+  buildTurns(); await loadLdmCloud(date); render(); return true;
 }
 async function importBackupDirectToCloud(file){
   const text=await file.text(); let data;
@@ -1402,7 +1399,7 @@ async function onDateChanged(){
     const hasCloudFlights=await cloudLoadFlights(date);
     if(hasCloudFlights){if(date<today){markFinal(date);setMode('FINAL','FINAL');applyDateLock(date);$('#apiNote').className='note apiok';$('#apiNote').textContent=`${date} FINAL 마감본 · 마지막 CLOUD 저장자료 고정 · API 재갱신/RCM/LDM/수기REG 수정 잠금`; }else{setMode(date===today?'LIVE':'STORED',date===today?'오늘 CLOUD':'CLOUD 저장자료');applyDateLock(date);$('#apiNote').className='note apiok';$('#apiNote').textContent=`${date} CLOUD 자료 불러옴 · ${savedRcm?'RCM 적용':'RCM 없음'}`;}return;}
   }catch(e){$('#cloudBadge').textContent='CLOUD 오류';}
-  if(date===today){render();setMode('LIVE','오늘 LIVE');applyDateLock(date);updateLiveStamp(date);$('#apiNote').className='note apiok';$('#apiNote').textContent=`${date} 오늘 LIVE 모드 · ${savedRcm?'RCM 보정 적용':'RCM 없음'} · LIVE 수동 갱신 또는 5분 자동갱신 시 로컬+CLOUD 저장 · 운항편은 API 기준 · RCM은 7C REG/연결/L/O/TOW만 보정 · AK/KN/IT REG는 표에서 수기입력 · L/O OUT=당일 RCM DEP / L/O IN=익일 RCM ARR 기준 · AK/KN 퀵턴 유지 · LDM BAG/CGO 자동집계 · 과거일은 FINAL 고정 저장`;return;}
+  if(date===today){render();setMode('LIVE','오늘 LIVE');applyDateLock(date);updateLiveStamp(date);$('#apiNote').className='note apiok';$('#apiNote').textContent=`${date} 오늘 LIVE 모드 · ${savedRcm?'RCM 보정 적용':'RCM 없음'} · LIVE 수동 갱신 또는 5분 자동갱신 시 로컬+CLOUD 저장 · 운항편은 API 기준 · RCM은 7C REG/연결/L/O/TOW만 보정 · AK/KN/IT REG는 표에서 수기입력 · L/O OUT=당일 RCM DEP / L/O IN=익일 RCM ARR 기준 · AK/KN 퀵턴 유지 · LDM BAG/CGO CLOUD 공유 · CGO PCS/KG · 원본 보존 · 과거일은 FINAL 고정 저장`;return;}
   applyDateLock(date);
   if(date<today){if(loadSnapshot(date)){markFinal(date);setMode('FINAL','FINAL');applyDateLock(date);$('#apiNote').className='note apiok';$('#apiNote').textContent=`${date} FINAL 마감본 · 로컬 최종 저장자료 고정`;return;}render();setMode('FINAL','FINAL · 저장본 없음');$('#apiNote').className='note warn';$('#apiNote').textContent=`${date} 마감일 · 저장된 API 자료 없음 · ${savedRcm?'RCM만 존재':'RCM 없음'}`;return;}
   render();applyDateLock(date);setMode('PLAN','계획자료');$('#apiNote').className='note warn';$('#apiNote').textContent=`${date} 미래일 · API 자료 없음 · ${savedRcm?'RCM은 연결/TOW 보정자료로만 저장됨':'RCM 없음'}`;
@@ -1453,6 +1450,9 @@ $('#ldmModalClose')?.addEventListener('click',closeLdmModal);
 $('#ldmApplyBtn')?.addEventListener('click',applyLdmText);
 $('#ldmClearBtn')?.addEventListener('click',()=>{if($('#ldmText'))$('#ldmText').value='';if($('#ldmMsg'))$('#ldmMsg').textContent='';renderLdmResults([]);});
 $('#ldmModal')?.addEventListener('click',e=>{if(e.target?.id==='ldmModal')closeLdmModal();});
+$('#ldmRawClose')?.addEventListener('click',closeLdmRaw);
+$('#ldmRawModal')?.addEventListener('click',e=>{if(e.target?.id==='ldmRawModal')closeLdmRaw();});
+$('#tbody')?.addEventListener('click',e=>{const b=e.target?.closest?.('.ldmrawbtn');if(b){e.preventDefault();e.stopPropagation();openLdmRaw(b.dataset.ldmFlight||'',b.dataset.ldmDir||'');}});
 initAuth();
 </script>
 
