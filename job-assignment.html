@@ -51,6 +51,18 @@ button,.btn,input,select{font:inherit}.btn,button{border:1px solid #2c5774;backg
 @media(max-width:1200px){.workLayout{grid-template-columns:240px minmax(0,1fr)}}
 @media(max-width:980px){.workLayout{grid-template-columns:1fr}.attendancePanel{position:static}}
 
+
+.attRow .n.memberCount{cursor:pointer;color:#dff4ff;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px}
+.attRow .n.memberCount:hover{color:#27d3ff}
+.memberPopover{position:fixed;z-index:9800;width:230px;max-height:280px;overflow:auto;background:#fffdf2;color:#111;border:1px solid #6d7a86;border-radius:8px;box-shadow:0 12px 34px rgba(0,0,0,.42);display:none}
+.memberPopover.show{display:block}
+.memberPopoverHead{display:flex;align-items:center;gap:8px;padding:9px 10px;background:#f3f0df;border-bottom:1px solid #b9b39f;font-weight:900}
+.memberPopoverHead .sub{margin-left:auto;font-size:11px;font-weight:700;color:#555}
+.memberPopoverBody{padding:6px 0}
+.memberLine{padding:7px 10px;border-bottom:1px solid #e6e0cc;font-size:12px}
+.memberLine:last-child{border-bottom:0}
+.memberEmpty{padding:16px 10px;text-align:center;color:#777;font-size:12px}
+
 </style>
 </head>
 <body>
@@ -69,7 +81,7 @@ button,.btn,input,select{font:inherit}.btn,button{border:1px solid #2c5774;backg
 
 <header>
   <div class="brand"><a href="index.html">JAS ADMIN</a></div><div class="subtitle">잡 배정 / 조별 휴게시간</div>
-  <span class="ver">DRAFT v0.4.7 · SOSAN→TOW</span><div class="spacer"></div><span id="userBadge" class="badge"></span>
+  <span class="ver">DRAFT v0.4.8 · CREW MEMBER POPUP</span><div class="spacer"></div><span id="userBadge" class="badge"></span>
 </header>
 
 <main>
@@ -387,13 +399,52 @@ function operationalCrewList(list){
   return [...tow,...sortCrewsByWorkCode(normal),...emergency];
 }
 
+
+function closeMemberPopover(){
+  const p=$('#memberPopover'); if(!p)return;
+  p.classList.remove('show'); p.setAttribute('aria-hidden','true');
+}
+function openMemberPopover(crewId,anchorEl){
+  const c=crews.find(x=>String(x.id)===String(crewId));
+  if(!c)return;
+  const p=$('#memberPopover'), body=$('#memberPopoverBody');
+  if(!p||!body)return;
+
+  $('#memberPopoverTitle').textContent=(c.displayName||crewDisplayName(c.name))+' 명단';
+  $('#memberPopoverCode').textContent=(c.code||'-')+' · '+c.members.length+'명';
+
+  body.innerHTML=c.members.length
+    ? c.members.map((name,i)=>`<div class="memberLine">${i+1}. ${esc(name)}</div>`).join('')
+    : '<div class="memberEmpty">등록 인원 없음</div>';
+
+  const r=anchorEl.getBoundingClientRect();
+  const w=230, pad=8;
+  let left=r.right+8, top=r.top;
+  if(left+w>window.innerWidth-pad) left=Math.max(pad,r.left-w-8);
+  p.style.left=left+'px';
+  p.style.top=Math.min(top,window.innerHeight-300)+'px';
+  p.classList.add('show');
+  p.setAttribute('aria-hidden','false');
+}
+document.addEventListener('click',e=>{
+  const cnt=e.target.closest('.memberCount');
+  if(cnt){
+    e.stopPropagation();
+    openMemberPopover(cnt.dataset.crewid,cnt);
+    return;
+  }
+  if(!e.target.closest('#memberPopover'))closeMemberPopover();
+});
+window.addEventListener('resize',closeMemberPopover);
+window.addEventListener('scroll',closeMemberPopover,true);
+
 function renderAttendance(){
   $('#attendanceBadge').textContent=`${crews.length}개 조`;
   $('#attendanceList').innerHTML=crews.length?crews.map(c=>`
     <div class="attRow ${c.virtual?'virtual':''}">
       <div class="g">${esc(c.displayName||crewDisplayName(c.name))}</div>
       <div class="c">${esc(c.code||'-')}</div>
-      <div class="n">${c.members.length}명</div>
+      <div class="n memberCount" data-crewid="${esc(c.id)}" title="클릭하면 명단 표시">${c.members.length}명</div>
     </div>`).join(''):`<div class="muted" style="padding:14px">해당 날짜 저장 요약이 없습니다. 인원/조 운영 → 일자별 요약 보기 → 저장 후 "요약 새로고침"을 눌러 주세요.</div>`;
 }
 
@@ -559,4 +610,13 @@ showLogin('');
   }catch(e){showLogin('로그인 상태 확인 실패: '+(e?.message||e));}
 })();
 </script>
+
+<div id="memberPopover" class="memberPopover" aria-hidden="true">
+  <div class="memberPopoverHead">
+    <span id="memberPopoverTitle">조 인원</span>
+    <span id="memberPopoverCode" class="sub"></span>
+  </div>
+  <div id="memberPopoverBody" class="memberPopoverBody"></div>
+</div>
+
 </body></html>
