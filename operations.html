@@ -434,6 +434,75 @@ let liveDayToken='';
 const LIVE_REFRESH_MS=5*60*1000;
 const LIVE_LAST_PREFIX='jas_admin_live_last_v1_';
 const FINAL_PREFIX='jas_admin_final_v1_';
+const API_KEY_LOCAL='jas_icn_api_key_v35';
+const PAX_KEY_LOCAL='jas_icn_pax_api_key_v35';
+const API_KEY_ADMIN_EMAIL='d7294@aekyung.kr';
+let apiKeyCloudLoaded=false;
+
+async function currentUserIsApiAdmin(){
+  try{
+    const {data:{user}}=await sb.auth.getUser();
+    return String(user?.email||'').trim().toLowerCase()===API_KEY_ADMIN_EMAIL.toLowerCase();
+  }catch{return false;}
+}
+
+async function applyApiKeyEditPermission(){
+  const admin=await currentUserIsApiAdmin();
+  for(const id of ['apiKey','paxApiKey']){
+    const el=$("#"+id); if(!el)continue;
+    el.readOnly=!admin;
+    el.title=admin?'공용 API 키 수정 가능':'공용 API 키 · 관리자만 수정 가능';
+    el.style.cursor=admin?'text':'default';
+  }
+  const copy=$('#copyKeyBtn');
+  if(copy){copy.disabled=!admin;copy.title=admin?'①키를 ②키로 복사':'관리자만 수정 가능';}
+  return admin;
+}
+
+async function loadApiKeysCloud(){
+  try{
+    const {data:{user}}=await sb.auth.getUser();
+    if(!user)return false;
+    const {data,error}=await sb.from('jas_shared_settings').select('api_key,pax_api_key').eq('id',1).maybeSingle();
+    if(error)throw error;
+    const localKey=localStorage.getItem(API_KEY_LOCAL)||localStorage.getItem('jas_icn_api_key_v34')||localStorage.getItem('jas_icn_api_key_v33')||localStorage.getItem('jas_icn_api_key_v3')||'';
+    const localPax=localStorage.getItem(PAX_KEY_LOCAL)||localStorage.getItem('jas_icn_pax_api_key_v34')||'';
+    let key=String(data?.api_key||'').trim();
+    let pkey=String(data?.pax_api_key||'').trim();
+    const admin=String(user.email||'').trim().toLowerCase()===API_KEY_ADMIN_EMAIL.toLowerCase();
+    if(admin && !data && (localKey||localPax)){
+      key=String(localKey||'').trim(); pkey=String(localPax||'').trim();
+      const {error:saveErr}=await sb.from('jas_shared_settings').upsert({id:1,api_key:key||null,pax_api_key:pkey||null,updated_by:user.id,updated_at:new Date().toISOString()},{onConflict:'id'});
+      if(saveErr)console.warn('Shared API key initial migration failed',saveErr);
+    }
+    if(key){$('#apiKey').value=key;localStorage.setItem(API_KEY_LOCAL,key);} else {$('#apiKey').value='';localStorage.removeItem(API_KEY_LOCAL);}
+    if(pkey){$('#paxApiKey').value=pkey;localStorage.setItem(PAX_KEY_LOCAL,pkey);} else {$('#paxApiKey').value='';localStorage.removeItem(PAX_KEY_LOCAL);}
+    await applyApiKeyEditPermission();
+    apiKeyCloudLoaded=true;
+    return !!(key||pkey);
+  }catch(e){
+    console.warn('Shared API key CLOUD load failed',e);
+    await applyApiKeyEditPermission();
+    apiKeyCloudLoaded=true;
+    return false;
+  }
+}
+
+async function saveApiKeysCloud(){
+  const admin=await currentUserIsApiAdmin();
+  if(!admin){await loadApiKeysCloud();return false;}
+  const key=String($('#apiKey')?.value||'').trim();
+  const pkey=String($('#paxApiKey')?.value||'').trim();
+  if(key)localStorage.setItem(API_KEY_LOCAL,key); else localStorage.removeItem(API_KEY_LOCAL);
+  if(pkey)localStorage.setItem(PAX_KEY_LOCAL,pkey); else localStorage.removeItem(PAX_KEY_LOCAL);
+  try{
+    const {data:{user}}=await sb.auth.getUser();
+    if(!user)return false;
+    const {error}=await sb.from('jas_shared_settings').upsert({id:1,api_key:key||null,pax_api_key:pkey||null,updated_by:user.id,updated_at:new Date().toISOString()},{onConflict:'id'});
+    if(error)throw error;
+    return true;
+  }catch(e){console.warn('Shared API key CLOUD save failed',e);return false;}
+}
 function showLogin(message=''){
   document.getElementById('authOverlay')?.classList.remove('hidden');
   const loading=document.getElementById('authLoading'); if(loading)loading.style.display='none';
@@ -446,6 +515,7 @@ async function enterApp(session){
   document.getElementById('authOverlay')?.classList.add('hidden');
   const au=document.getElementById('authUser'); if(au){au.textContent=session.user.email||'관리자';au.style.display='inline-block';}
   const lo=document.getElementById('logoutBtn'); if(lo)lo.style.display='inline-block';
+  await loadApiKeysCloud();
   if(!appStarted){appStarted=true; await onDateChanged();}
   else {await onDateChanged();}
 }
@@ -920,7 +990,7 @@ async function syncApi(opts={}){
  const key=$('#apiKey').value.trim();
  if(!key){if(!silent)alert('① 운항마감정보 일반 인증키를 입력해 주세요.');else $('#liveStamp').textContent='자동갱신 대기 · API키 필요';return false}
  const pkey=$('#paxApiKey').value.trim();
- localStorage.setItem('jas_icn_api_key_v35',key); if(pkey)localStorage.setItem('jas_icn_pax_api_key_v35',pkey);
+ await saveApiKeysCloud();
  hideErr(); const b=$('#syncBtn'); liveRefreshRunning=true; b.disabled=true; b.textContent='LIVE 갱신 중...';
  $('#apiNote').className='note'; $('#apiNote').textContent='① 운항마감정보 LIVE 조회 중...';
  let paxWarning='';
@@ -1341,7 +1411,7 @@ $('#opDate').value=todayLocal();
 $('#prevDay').onclick=()=>shiftOpDate(-1);$('#nextDay').onclick=()=>shiftOpDate(1);$('#todayBtn').onclick=()=>{$('#opDate').value=todayLocal();onDateChanged();};$('#opDate').addEventListener('change',onDateChanged);$('#cloudMigrateBtn').onclick=migrateLocalToCloud;$('#cloudReloadBtn').onclick=()=>onDateChanged();
 $('#backupBtn').onclick=exportBackup;$('#restoreFile').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;try{await importBackup(f)}catch(err){showErr('백업 복원 실패',err.message)}finally{e.target.value='';}});
 $('#cloudBackupFile').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;try{$('#backupNote').className='small';$('#backupNote').textContent='백업파일 CLOUD 이전 중...';await importBackupDirectToCloud(f)}catch(err){showErr('백업파일 CLOUD 이전 실패',err.message)}finally{e.target.value='';}});
-$('#syncBtn').onclick=()=>syncApi({silent:false});$('#autoLive').addEventListener('change',()=>{startAutoLive();if($('#autoLive').checked&&($('#opDate').value||todayLocal())===todayLocal())syncApi({silent:true});});document.addEventListener('visibilitychange',()=>{if(!document.hidden&&$('#autoLive')?.checked){const date=$('#opDate').value||todayLocal();const last=localStorage.getItem(liveLastKey(date));if(date===todayLocal()&&(!last||Date.now()-new Date(last).getTime()>=LIVE_REFRESH_MS))syncApi({silent:true});}});$('#copyKeyBtn').onclick=()=>{$('#paxApiKey').value=$('#apiKey').value;};$('#clearBtn').onclick=()=>{if(isPastDate($('#opDate').value||todayLocal())){alert('FINAL 마감본은 초기화할 수 없습니다.');return;}arrivals=[];departures=[];turns=[];allApiArrivals=[];allApiDepartures=[];allApiLoadedAt='';paxArrMap=new Map();paxDepMap=new Map();hideErr();render();setMode($('#opDate').value===todayLocal()?'LIVE':'','대기');$('#apiNote').className='note';$('#apiNote').textContent='화면 API 값 초기화됨 · 선택일 RCM 저장본은 유지';};$('#search').addEventListener('input',render);document.querySelectorAll('#airlineFilters input').forEach(x=>x.addEventListener('change',()=>{if(arrivals.length||departures.length){const active=selectedAirlines();arrivals=arrivals.filter(x=>active.includes(prefix(x.flight)));departures=departures.filter(x=>active.includes(prefix(x.flight)));buildTurns()}render()}));
+$('#syncBtn').onclick=()=>syncApi({silent:false});$('#autoLive').addEventListener('change',()=>{startAutoLive();if($('#autoLive').checked&&($('#opDate').value||todayLocal())===todayLocal())syncApi({silent:true});});document.addEventListener('visibilitychange',()=>{if(!document.hidden&&$('#autoLive')?.checked){const date=$('#opDate').value||todayLocal();const last=localStorage.getItem(liveLastKey(date));if(date===todayLocal()&&(!last||Date.now()-new Date(last).getTime()>=LIVE_REFRESH_MS))syncApi({silent:true});}});$('#copyKeyBtn').onclick=async()=>{if(!(await currentUserIsApiAdmin()))return;$('#paxApiKey').value=$('#apiKey').value;await saveApiKeysCloud();};$('#apiKey').addEventListener('change',saveApiKeysCloud);$('#paxApiKey').addEventListener('change',saveApiKeysCloud);$('#clearBtn').onclick=()=>{if(isPastDate($('#opDate').value||todayLocal())){alert('FINAL 마감본은 초기화할 수 없습니다.');return;}arrivals=[];departures=[];turns=[];allApiArrivals=[];allApiDepartures=[];allApiLoadedAt='';paxArrMap=new Map();paxDepMap=new Map();hideErr();render();setMode($('#opDate').value===todayLocal()?'LIVE':'','대기');$('#apiNote').className='note';$('#apiNote').textContent='화면 API 값 초기화됨 · 선택일 RCM 저장본은 유지';};$('#search').addEventListener('input',render);document.querySelectorAll('#airlineFilters input').forEach(x=>x.addEventListener('change',()=>{if(arrivals.length||departures.length){const active=selectedAirlines();arrivals=arrivals.filter(x=>active.includes(prefix(x.flight)));departures=departures.filter(x=>active.includes(prefix(x.flight)));buildTurns()}render()}));
 // LOGIN FIX: bind authentication handlers before any optional dashboard startup code.
 // This ensures a rendering/startup error cannot prevent the login form from working.
 $('#loginForm').addEventListener('submit',async e=>{
@@ -1361,7 +1431,7 @@ $('#loginForm').addEventListener('submit',async e=>{
     msg.className='login-msg'; msg.textContent='로그인 실패: '+(err?.message||String(err));
   }finally{btn.disabled=false;btn.textContent='로그인';}
 });
-$('#logoutBtn').addEventListener('click',async()=>{await sb.auth.signOut();appStarted=false;arrivals=[];departures=[];turns=[];allApiArrivals=[];allApiDepartures=[];allApiLoadedAt='';try{render();}catch{}showLogin('로그아웃되었습니다.');});
+$('#logoutBtn').addEventListener('click',async()=>{await sb.auth.signOut();appStarted=false;apiKeyCloudLoaded=false;arrivals=[];departures=[];turns=[];allApiArrivals=[];allApiDepartures=[];allApiLoadedAt='';if($('#apiKey'))$('#apiKey').value='';if($('#paxApiKey'))$('#paxApiKey').value='';localStorage.removeItem(API_KEY_LOCAL);localStorage.removeItem(PAX_KEY_LOCAL);try{render();}catch{}showLogin('로그아웃되었습니다.');});
 $('#towModalClose').onclick=()=>{$('#towModal').classList.remove('show');$('#towModal').setAttribute('aria-hidden','true');};$('#towModal').addEventListener('click',e=>{if(e.target===$('#towModal'))$('#towModalClose').click();});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('#towModal').classList.contains('show'))$('#towModalClose').click();});
 sb.auth.onAuthStateChange((event,session)=>{
   if(event==='SIGNED_OUT')showLogin();
@@ -1370,8 +1440,8 @@ sb.auth.onAuthStateChange((event,session)=>{
 
 // Non-auth dashboard startup is isolated so it cannot break login binding.
 try{
-  const saved=localStorage.getItem('jas_icn_api_key_v35')||localStorage.getItem('jas_icn_api_key_v34')||localStorage.getItem('jas_icn_api_key_v33')||localStorage.getItem('jas_icn_api_key_v3');if(saved)$('#apiKey').value=saved;
-  const psaved=localStorage.getItem('jas_icn_pax_api_key_v35')||localStorage.getItem('jas_icn_pax_api_key_v34');if(psaved)$('#paxApiKey').value=psaved;
+  const saved=localStorage.getItem(API_KEY_LOCAL)||localStorage.getItem('jas_icn_api_key_v34')||localStorage.getItem('jas_icn_api_key_v33')||localStorage.getItem('jas_icn_api_key_v3');if(saved)$('#apiKey').value=saved;
+  const psaved=localStorage.getItem(PAX_KEY_LOCAL)||localStorage.getItem('jas_icn_pax_api_key_v34');if(psaved)$('#paxApiKey').value=psaved;
   liveDayToken=todayLocal();updateLiveStamp(todayLocal());startAutoLive();
   setInterval(()=>{const n=$('#now');if(n)n.textContent=new Date().toLocaleString('ko-KR',{hour12:false});checkLiveDayRollover();},1000);
   updateStorageStats();$('#cloudBadge').textContent='CLOUD 연결';render();
