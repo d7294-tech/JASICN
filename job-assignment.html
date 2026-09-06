@@ -46,7 +46,7 @@ button,.btn,input,select{font:inherit}.btn,button{border:1px solid #2c5774;backg
 .attRow{display:grid;grid-template-columns:minmax(58px,.8fr) minmax(70px,.9fr) 52px;gap:6px;padding:8px 10px;border-bottom:1px solid #17304a;align-items:center;min-width:0}
 .attRow .g{font-weight:950;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .attRow .c{color:#9fdcff;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.attRow .n{text-align:right;font-weight:900;white-space:nowrap}.attRow.virtual{background:#152437}.attRow.virtual .g{color:#ffd36a}.attRow.virtual .c{color:#ffd36a}
+.attRow .n{text-align:right;font-weight:900;white-space:nowrap}.memberCount{appearance:none;background:transparent;border:0;padding:0;margin:0;color:inherit;font:inherit;cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px}.memberCount:hover{color:#27d3ff}.attRow.virtual{background:#152437}.attRow.virtual .g{color:#ffd36a}.attRow.virtual .c{color:#ffd36a}
 .mainWork{min-width:0}
 @media(max-width:1200px){.workLayout{grid-template-columns:240px minmax(0,1fr)}}
 @media(max-width:980px){.workLayout{grid-template-columns:1fr}.attendancePanel{position:static}}
@@ -54,7 +54,7 @@ button,.btn,input,select{font:inherit}.btn,button{border:1px solid #2c5774;backg
 
 .attRow .n.memberCount{cursor:pointer;color:#dff4ff;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px}
 .attRow .n.memberCount:hover{color:#27d3ff}
-.memberPopover{position:fixed;z-index:9800;width:250px;max-height:280px;overflow:auto;background:#fffdf2;color:#111;border:1px solid #6d7a86;border-radius:8px;box-shadow:0 12px 34px rgba(0,0,0,.42);display:none}
+.memberPopover{position:fixed;z-index:20000;width:250px;max-height:280px;overflow:auto;background:#fffdf2;color:#111;border:1px solid #6d7a86;border-radius:8px;box-shadow:0 12px 34px rgba(0,0,0,.42);display:none}
 .memberPopover.show{display:block}
 .memberPopoverHead{display:flex;align-items:center;gap:8px;padding:9px 10px;background:#f3f0df;border-bottom:1px solid #b9b39f;font-weight:900}
 .memberPopoverHead .sub{margin-left:auto;font-size:11px;font-weight:700;color:#555}
@@ -96,7 +96,7 @@ button,.btn,input,select{font:inherit}.btn,button{border:1px solid #2c5774;backg
 
 <header>
   <div class="brand"><a href="index.html">JAS ADMIN</a></div><div class="subtitle">잡 배정 / 조별 휴게시간</div>
-  <span class="ver">DRAFT v0.4.10.2 · MEMBER CLICK FIX</span><div class="spacer"></div><span id="userBadge" class="badge"></span>
+  <span class="ver">DRAFT v0.4.10.3 · MEMBER POPUP HARD FIX</span><div class="spacer"></div><span id="userBadge" class="badge"></span>
 </header>
 
 <main>
@@ -466,8 +466,9 @@ function applyManualEmergencyNames(){
 }
 function closeMemberPopover(){
   const p=$('#memberPopover'); if(!p)return;
-  p.classList.remove('show'); p.setAttribute('aria-hidden','true'); activeMemberCrewId='';
+  p.classList.remove('show'); p.style.display='none'; p.setAttribute('aria-hidden','true'); activeMemberCrewId='';
 }
+function openMemberPopoverById(crewId,anchorEl){ return openMemberPopover(crewId,anchorEl); }
 function openMemberPopover(crewId,anchorEl){
   const c=crews.find(x=>String(x.id)===String(crewId));
   if(!c)return;
@@ -495,10 +496,12 @@ function openMemberPopover(crewId,anchorEl){
 
   const r=anchorEl?.getBoundingClientRect?.()||{right:20,left:20,top:120,bottom:150};
   const w=250,pad=8;
-  let left=r.right+8, top=r.top;
+  let left=r.right+8;
   if(left+w>window.innerWidth-pad) left=Math.max(pad,r.left-w-8);
+  let top=Math.max(pad,Math.min(r.top,window.innerHeight-320));
   p.style.left=left+'px';
-  p.style.top=Math.max(pad,Math.min(top,window.innerHeight-430))+'px';
+  p.style.top=top+'px';
+  p.style.display='block';
   p.classList.add('show');
   p.setAttribute('aria-hidden','false');
 }
@@ -552,7 +555,7 @@ function renderAttendance(){
     <div class="attRow ${c.virtual?'virtual':''}">
       <div class="g">${esc(c.displayName||crewDisplayName(c.name))}</div>
       <div class="c">${esc(c.code||'-')}</div>
-      <div class="n memberCount" data-crewid="${esc(c.id)}" title="클릭하면 명단 표시">${c.members.length}명</div>
+      <button type="button" class="n memberCount" data-crewid="${esc(c.id)}" onclick="openMemberPopoverById(this.dataset.crewid,this)" title="클릭하면 명단 표시">${c.members.length}명</button>
     </div>`).join(''):`<div class="muted" style="padding:14px">해당 날짜 저장 요약이 없습니다. 인원/조 운영 → 일자별 요약 보기 → 저장 후 "요약 새로고침"을 눌러 주세요.</div>`;
 }
 
@@ -817,7 +820,6 @@ function bindMemberPopoverDelegation(){
   };
 
   list.addEventListener('click',openFromEvent);
-  list.addEventListener('pointerup',openFromEvent);
 }
 bindMemberPopoverDelegation();
 
