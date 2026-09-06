@@ -46,7 +46,7 @@ button,.btn,input,select{font:inherit}.btn,button{border:1px solid #2c5774;backg
 .attRow{display:grid;grid-template-columns:minmax(58px,.8fr) minmax(70px,.9fr) 52px;gap:6px;padding:8px 10px;border-bottom:1px solid #17304a;align-items:center;min-width:0}
 .attRow .g{font-weight:950;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .attRow .c{color:#9fdcff;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.attRow .n{text-align:right;font-weight:900;white-space:nowrap}
+.attRow .n{text-align:right;font-weight:900;white-space:nowrap}.attRow.virtual{background:#152437}.attRow.virtual .g{color:#ffd36a}.attRow.virtual .c{color:#ffd36a}
 .mainWork{min-width:0}
 @media(max-width:1200px){.workLayout{grid-template-columns:240px minmax(0,1fr)}}
 @media(max-width:980px){.workLayout{grid-template-columns:1fr}.attendancePanel{position:static}}
@@ -69,7 +69,7 @@ button,.btn,input,select{font:inherit}.btn,button{border:1px solid #2c5774;backg
 
 <header>
   <div class="brand"><a href="index.html">JAS ADMIN</a></div><div class="subtitle">잡 배정 / 조별 휴게시간</div>
-  <span class="ver">DRAFT v0.4.5 · AIRPORT CODE FIX</span><div class="spacer"></div><span id="userBadge" class="badge"></span>
+  <span class="ver">DRAFT v0.4.7 · SOSAN→TOW</span><div class="spacer"></div><span id="userBadge" class="badge"></span>
 </header>
 
 <main>
@@ -174,7 +174,7 @@ async function loadStoredSkd(){
     }
 
     const rows=Array.isArray(snap?.rows)?snap.rows:[];
-    crews=sortCrewsByWorkCode(rows
+    crews=operationalCrewList(rows
       .filter(r=>r && r.group && Array.isArray(r.names) && r.names.filter(Boolean).length>0)
       .map((r,idx)=>({
         id:`${r.group}|${r.code}|${idx}`,
@@ -184,10 +184,11 @@ async function loadStoredSkd(){
         shift:shiftForCode(r.code||'')
       })));
 
-    if(crews.length){
-      $('#rosterSource').textContent=`요약 ${crews.length}개 조`;
+    const realCount=crews.filter(c=>!c.virtual).length;
+    if(realCount){
+      $('#rosterSource').textContent=`요약 ${realCount}개 조 + G/G1`;
     }else{
-      $('#rosterSource').textContent='요약 0개 조';
+      $('#rosterSource').textContent='요약 0개 조 · G/G1';
     }
     renderAttendance();
   }catch(e){
@@ -344,19 +345,60 @@ function crewDisplayName(name){
   const x=String(name||'').trim();
   return /^\d+$/.test(x)?x+'조':x;
 }
+
+function operationalCrewList(list){
+  const base=[...list];
+
+  // 인원/조 운영의 '소산1 / 소산2 / 소산3'을 잡배정에서는
+  // 각각 'TOW1 / TOW2 / TOW3'으로 표시한다.
+  // 일반 숫자조와 달리 소산조는 인원/근무코드 그대로 유지.
+  const normalized=base.map(c=>{
+    const raw=String(c.name||'').trim().replace(/\s+/g,'');
+    const m=raw.match(/^소산([123])$/);
+    if(m){
+      const n=m[1];
+      return {
+        ...c,
+        sourceGroup:c.name,
+        name:'TOW'+n,
+        displayName:'TOW'+n,
+        towNo:Number(n)
+      };
+    }
+    // 과거 수기요약에 TOW1~3가 이미 저장돼 있으면 그대로 허용
+    const tm=raw.match(/^TOW([123])$/i);
+    if(tm){
+      const n=tm[1];
+      return {...c,name:'TOW'+n,displayName:'TOW'+n,towNo:Number(n)};
+    }
+    return {...c,displayName:crewDisplayName(c.name)};
+  });
+
+  // TOW1~3는 소산 번호 순서로, 나머지는 기존 근무코드 순서로 정렬.
+  const tow=normalized.filter(c=>c.towNo).sort((a,b)=>a.towNo-b.towNo);
+  const normal=normalized.filter(c=>!c.towNo);
+
+  // Emergency reserve crews: selectable even with zero registered members.
+  const emergency=[
+    {id:'__EMERGENCY_G__',name:'G',displayName:'G',members:[],code:'G',shift:['',''],virtual:true},
+    {id:'__EMERGENCY_G1__',name:'G1',displayName:'G1',members:[],code:'G1',shift:['',''],virtual:true}
+  ];
+
+  return [...tow,...sortCrewsByWorkCode(normal),...emergency];
+}
+
 function renderAttendance(){
-  crews=sortCrewsByWorkCode(crews);
   $('#attendanceBadge').textContent=`${crews.length}개 조`;
   $('#attendanceList').innerHTML=crews.length?crews.map(c=>`
-    <div class="attRow">
-      <div class="g">${esc(crewDisplayName(c.name))}</div>
+    <div class="attRow ${c.virtual?'virtual':''}">
+      <div class="g">${esc(c.displayName||crewDisplayName(c.name))}</div>
       <div class="c">${esc(c.code||'-')}</div>
       <div class="n">${c.members.length}명</div>
     </div>`).join(''):`<div class="muted" style="padding:14px">해당 날짜 저장 요약이 없습니다. 인원/조 운영 → 일자별 요약 보기 → 저장 후 "요약 새로고침"을 눌러 주세요.</div>`;
 }
 
 function crewOptions(selected){
-  return `<option value="">-</option>`+crews.map(c=>`<option value="${esc(c.id)}" ${c.id===selected?'selected':''}>${esc(crewDisplayName(c.name))} (${c.members.length}명)</option>`).join('');
+  return `<option value="">-</option>`+crews.map(c=>`<option value="${esc(c.id)}" ${c.id===selected?'selected':''}>${esc(c.displayName||crewDisplayName(c.name))} (${c.members.length}명)</option>`).join('');
 }
 function overlaps(a,b){const as=toMin(a.start),ae=toMin(a.end),bs=toMin(b.start),be=toMin(b.end);return as!=null&&bs!=null&&Math.max(as,bs)<Math.min(ae,be);}
 function crewConflicts(){
@@ -459,7 +501,7 @@ function renderBreaks(){
       const left=g[0]/1440*100,width=(g[1]-g[0])/1440*100;
       return `<div class="breakBar" style="left:${left}%;width:${width}%" title="휴게 가능 ${fmtMin(g[0])}~${fmtMin(g[1])}">${g[1]-g[0]>=60?`${fmtMin(g[0])}~${fmtMin(g[1])}`:''}</div>`;
     }).join('');
-    return `<div class="timelineRow"><div class="timelineLabel">${esc(crewDisplayName(c.name))}<span class="crewMeta">${esc(c.code||'-')} · ${c.members.length}명</span></div><div class="track">${breakBars}${bars}</div></div>`;
+    return `<div class="timelineRow"><div class="timelineLabel">${esc(c.displayName||crewDisplayName(c.name))}<span class="crewMeta">${esc(c.code||'-')} · ${c.members.length}명</span></div><div class="track">${breakBars}${bars}</div></div>`;
   }).join('');
   $('#timelineWrap').innerHTML=`<div class="timeline"><div class="timelineHeader"><div class="timelineLabel">조 / 시간</div><div class="timeAxis">${ticks}</div></div>${rows||'<div class="muted" style="padding:20px">해당일 출근조가 없습니다.</div>'}</div>`;
 }
