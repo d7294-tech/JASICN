@@ -57,7 +57,7 @@ main{padding:16px 18px 28px;max-width:1900px;margin:auto}.toolbar{display:flex;g
     <div id="authLoading" class="auth-loading">로그인 상태 확인 중...</div>
   </div>
 </div>
-<header><div class="brand"><a href="index.html">JAS ADMIN</a></div><div class="subtitle">인원 / 조 운영</div><span class="ver">DRAFT v0.7.1 · SUMMARY MODAL</span><div class="spacer"></div><span id="authUser" class="rcmdate" style="display:none"></span><button id="logoutBtn" style="display:none;padding:6px 10px">로그아웃</button><div id="now"></div></header>
+<header><div class="brand"><a href="index.html">JAS ADMIN</a></div><div class="subtitle">인원 / 조 운영</div><span class="ver">DRAFT v0.7.3 · DATE + SOSAN TOW</span><div class="spacer"></div><span id="authUser" class="rcmdate" style="display:none"></span><button id="logoutBtn" style="display:none;padding:6px 10px">로그아웃</button><div id="now"></div></header>
 <main>
   <div class="toolbar">
     <div class="dateNav"><button id="prevDay">◀</button><input id="opDate" class="dateinput" type="date"><button id="nextDay">▶</button><button id="todayBtn">오늘</button></div>
@@ -244,10 +244,16 @@ function groupNumber(g){const n=parseInt(normGroup(g),10);return Number.isFinite
 function buildAutoBoardRows(date){
   const day=selectedDayData(date);
   const byGroup=new Map();
+  const towMembers=[];
 
-  // 실제 SKD의 B열 조명(1조~24조)을 기준으로 묶음
+  // 숫자 조(1조~24조)와 소산조를 분리한다.
   day.forEach(x=>{
-    const g=normGroup(x.group);
+    const raw=String(x.group||'').trim();
+    const g=normGroup(raw);
+    if(x.bucket==='소산'){
+      towMembers.push(x);
+      return;
+    }
     if(!/^\d+$/.test(g))return;
     if(!byGroup.has(g))byGroup.set(g,[]);
     byGroup.get(g).push(x);
@@ -258,39 +264,33 @@ function buildAutoBoardRows(date){
   for(const [g,members] of [...byGroup.entries()].sort((a,b)=>Number(a[0])-Number(b[0]))){
     members.sort((a,b)=>(a.crewSeq||999)-(b.crewSeq||999));
 
-    // 일반 근무코드: R/휴가/휴근 제외 후 가장 많은 코드
-    const workMembers=members.filter(x=>x.status==='WORK');
-    const workCode=mostCommonCode(workMembers,()=>true).code;
-
-    if(workCode){
+    // 해당 날짜 실제 근무자 중 대표 출근코드를 잡고, 원래 순번 위치를 유지한다.
+    const active=members.filter(x=>x.status==='WORK' && !/^R[AP]/i.test(String(x.code||'').trim()));
+    if(active.length){
+      const workCode=mostCommonCode(active,()=>true).code || String(active[0].code||'').trim().toUpperCase();
       const names=Array(6).fill('');
       members.slice(0,6).forEach((x,i)=>{
         if(String(x.code||'').trim().toUpperCase()===workCode) names[i]=x.name||'';
       });
       const row={group:g,code:workCode,cls:'',names,kind:'normal'};
-      const n=Number(g);
-      if(n<=8) morning.push(row);
-      else if(n<=16) afternoon.push(row);
+      // 날짜가 바뀔 때마다 실제 출근코드로 오전/오후를 다시 분류한다.
+      // 조 번호에 고정하지 않아 1~24조 어느 조든 해당 날짜 근무가 있으면 표시된다.
+      if(/^P/i.test(workCode)) afternoon.push(row); else morning.push(row);
     }
 
-    // 휴무근무는 같은 조의 원래 순번 위치를 그대로 유지
-    const raMembers=members.filter(x=>/^RA/i.test(String(x.code||'').trim()));
-    if(raMembers.length){
-      const code=mostCommonCode(raMembers,c=>/^RA/i.test(c)).code||'RA43';
+    // 휴무근무는 날짜마다 실제 RA/RP 코드 기준으로 별도 행 생성.
+    const ra=members.filter(x=>/^RA/i.test(String(x.code||'').trim()));
+    if(ra.length){
+      const code=mostCommonCode(ra,c=>/^RA/i.test(c)).code || String(ra[0].code||'RA43').trim().toUpperCase();
       const names=Array(6).fill('');
-      members.slice(0,6).forEach((x,i)=>{
-        if(/^RA/i.test(String(x.code||'').trim())) names[i]=x.name||'';
-      });
+      members.slice(0,6).forEach((x,i)=>{if(/^RA/i.test(String(x.code||'').trim()))names[i]=x.name||'';});
       holidayMorning.push({group:g,code,cls:'sky',names,kind:'holiday'});
     }
-
-    const rpMembers=members.filter(x=>/^RP/i.test(String(x.code||'').trim()));
-    if(rpMembers.length){
-      const code=mostCommonCode(rpMembers,c=>/^RP/i.test(c)).code||'RP14';
+    const rp=members.filter(x=>/^RP/i.test(String(x.code||'').trim()));
+    if(rp.length){
+      const code=mostCommonCode(rp,c=>/^RP/i.test(c)).code || String(rp[0].code||'RP14').trim().toUpperCase();
       const names=Array(6).fill('');
-      members.slice(0,6).forEach((x,i)=>{
-        if(/^RP/i.test(String(x.code||'').trim())) names[i]=x.name||'';
-      });
+      members.slice(0,6).forEach((x,i)=>{if(/^RP/i.test(String(x.code||'').trim()))names[i]=x.name||'';});
       holidayAfternoon.push({group:g,code,cls:'sky',names,kind:'holiday'});
     }
   }
@@ -300,6 +300,17 @@ function buildAutoBoardRows(date){
   holidayMorning.sort((a,b)=>Number(a.group)-Number(b.group));
   holidayAfternoon.sort((a,b)=>Number(a.group)-Number(b.group));
 
+  // TOW는 별도 조가 아니라 SKD에서 '소산'으로 분류된 인원이다. 선택 날짜의 실제 근무코드 기준으로 A/P를 나눠 표시한다.
+  towMembers.sort((a,b)=>String(a.group).localeCompare(String(b.group),'ko')||(a.crewSeq||999)-(b.crewSeq||999));
+  const towA=towMembers.filter(x=>x.status==='WORK' && /^A/i.test(String(x.code||'').trim()));
+  const towP=towMembers.filter(x=>x.status==='WORK' && /^P/i.test(String(x.code||'').trim()));
+  const towACode=mostCommonCode(towA,c=>/^A/i.test(c)).code||'A4';
+  const towPCode=mostCommonCode(towP,c=>/^P/i.test(c)).code||'P14';
+  const towANames=towA.filter(x=>String(x.code||'').trim().toUpperCase()===towACode).map(x=>x.name).slice(0,6);
+  const towPNames=towP.filter(x=>String(x.code||'').trim().toUpperCase()===towPCode).map(x=>x.name).slice(0,6);
+  while(towANames.length<6)towANames.push('');
+  while(towPNames.length<6)towPNames.push('');
+
   return [
     ...morning,
     ...holidayMorning,
@@ -307,8 +318,8 @@ function buildAutoBoardRows(date){
     {group:'오후 통제',code:'',cls:'control',names:Array(6).fill(''),manualOnly:true},
     ...afternoon,
     ...holidayAfternoon,
-    {group:'TOW',code:'A4',cls:'',names:Array(6).fill(''),manualOnly:true},
-    {group:'TOW',code:'P14',cls:'',names:Array(6).fill(''),manualOnly:true}
+    {group:'TOW',code:towACode,cls:'',names:towANames,kind:'tow'},
+    {group:'TOW',code:towPCode,cls:'',names:towPNames,kind:'tow'}
   ];
 }
 function rowKey(r,idx){return `${idx}|${r.group}|${r.code}|${r.kind||''}`;}
