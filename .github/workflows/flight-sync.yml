@@ -1,0 +1,27 @@
+name: JAS Flight Sync
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "*/5 * * * *"
+
+concurrency:
+  group: jas-flight-sync
+  cancel-in-progress: true
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Collect ICN flights and save to Supabase
+        env:
+          DATA_GO_KR_CLOSING_KEY: ${{ secrets.DATA_GO_KR_CLOSING_KEY }}
+          DATA_GO_KR_PASSENGER_KEY: ${{ secrets.DATA_GO_KR_PASSENGER_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scripts/sync-flights.mjs
