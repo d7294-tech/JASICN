@@ -65,18 +65,20 @@ main{padding:16px 18px 28px;max-width:1900px;margin:auto}.toolbar{display:flex;g
     <div id="authLoading" class="auth-loading">로그인 상태 확인 중...</div>
   </div>
 </div>
-<header><div class="brand"><a href="index.html">JAS ADMIN</a></div><div class="subtitle">인원 / 조 운영</div><span class="ver">DRAFT v0.7.4 · CELL EDITOR</span><div class="spacer"></div><span id="authUser" class="rcmdate" style="display:none"></span><button id="logoutBtn" style="display:none;padding:6px 10px">로그아웃</button><div id="now"></div></header>
+<header><div class="brand"><a href="index.html">JAS ADMIN</a></div><div class="subtitle">인원 / 조 운영</div><span class="ver">DRAFT v0.7.5 · PERSIST + AUTOSAVE</span><div class="spacer"></div><span id="authUser" class="rcmdate" style="display:none"></span><button id="logoutBtn" style="display:none;padding:6px 10px">로그아웃</button><div id="now"></div></header>
 <main>
   <div class="toolbar">
     <div class="dateNav"><button id="prevDay">◀</button><input id="opDate" class="dateinput" type="date"><button id="nextDay">▶</button><button id="todayBtn">오늘</button></div>
     <label class="btn primary" for="skdFile">인원 SKD 업로드</label><input id="skdFile" type="file" accept=".xlsx,.xls,.xlsm">
     <span id="fileBadge" class="rcmdate">SKD 미업로드</span>
+    <span id="skdPersistBadge" class="rcmdate">저장 SKD 없음</span>
+    <button id="clearSavedSkdBtn">저장 SKD 삭제</button>
     <button id="summaryBtn" class="primary">일자별 요약 보기</button>
     <select id="groupFilter" class="select"><option value="">전체 구분</option></select>
     <select id="statusFilter" class="select"><option value="">전체 상태</option><option value="WORK">근무</option><option value="HOLIDAY_WORK">휴무근무</option><option value="OFF">휴무</option><option value="LEAVE">휴가/기타</option></select>
     <input id="search" class="search" placeholder="성명 / 조 / 직무 / 근무코드 검색">
   </div>
-  <div id="note" class="note">월간 SKD를 업로드하면 선택 날짜 기준 근무자와 조 편성을 자동으로 표시합니다. RA/RP 계열은 휴무근무, HA/HP 계열은 기타 근무로 집계합니다.</div>
+  <div id="note" class="note">월간 SKD는 브라우저에 자동 보관되어 새로고침/버전교체 후 자동 복원됩니다. 수기보정·셀편집도 날짜별 자동저장됩니다.</div>
   <section class="kpis">
     <div class="kpi cyan"><div class="label">총 인원</div><div class="num" id="kTotal">0</div></div>
     <div class="kpi green"><div class="label">근무</div><div class="num" id="kWork">0</div></div>
@@ -197,6 +199,91 @@ function groupBucket(g){
   if(x==='관리')return'Office';
   return x||'기타';
 }
+
+const SKD_DB_NAME='jas_personnel_db';
+const SKD_DB_VERSION=1;
+const SKD_STORE='files';
+const SKD_KEY='last_skd';
+
+function openSkdDb(){
+  return new Promise((resolve,reject)=>{
+    const req=indexedDB.open(SKD_DB_NAME,SKD_DB_VERSION);
+    req.onupgradeneeded=()=>{const db=req.result;if(!db.objectStoreNames.contains(SKD_STORE))db.createObjectStore(SKD_STORE);};
+    req.onsuccess=()=>resolve(req.result);
+    req.onerror=()=>reject(req.error);
+  });
+}
+async function saveSkdFileToDb(file,arrayBuffer){
+  const db=await openSkdDb();
+  await new Promise((resolve,reject)=>{
+    const tx=db.transaction(SKD_STORE,'readwrite');
+    tx.objectStore(SKD_STORE).put({
+      name:file.name,
+      type:file.type||'application/vnd.ms-excel',
+      size:file.size||arrayBuffer.byteLength,
+      updatedAt:Date.now(),
+      bytes:arrayBuffer
+    },SKD_KEY);
+    tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);
+  });
+  db.close();
+  updatePersistBadge(file.name,Date.now());
+}
+async function loadSkdFileFromDb(){
+  const db=await openSkdDb();
+  const data=await new Promise((resolve,reject)=>{
+    const tx=db.transaction(SKD_STORE,'readonly');
+    const req=tx.objectStore(SKD_STORE).get(SKD_KEY);
+    req.onsuccess=()=>resolve(req.result||null);req.onerror=()=>reject(req.error);
+  });
+  db.close();return data;
+}
+async function clearSkdFileDb(){
+  const db=await openSkdDb();
+  await new Promise((resolve,reject)=>{
+    const tx=db.transaction(SKD_STORE,'readwrite');
+    tx.objectStore(SKD_STORE).delete(SKD_KEY);
+    tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);
+  });
+  db.close();
+  updatePersistBadge('',0);
+}
+function updatePersistBadge(name,ts){
+  const el=$('#skdPersistBadge');if(!el)return;
+  if(!name){el.textContent='저장 SKD 없음';return;}
+  const d=ts?new Date(ts):null;
+  const t=d&&!Number.isNaN(d.getTime())?d.toLocaleString('ko-KR',{hour12:false}):'';
+  el.textContent=`자동보관 · ${name}${t?' · '+t:''}`;
+}
+async function restoreSavedSkd(){
+  try{
+    const saved=await loadSkdFileFromDb();
+    if(!saved?.bytes){updatePersistBadge('',0);return false;}
+    const wb=XLSX.read(saved.bytes,{type:'array',cellDates:true});
+    parseWorkbook(wb,saved.name||'저장 SKD');
+    updatePersistBadge(saved.name||'저장 SKD',saved.updatedAt);
+    return true;
+  }catch(err){
+    console.error('SKD 자동복원 실패',err);
+    const el=$('#skdPersistBadge');if(el)el.textContent='SKD 자동복원 실패';
+    return false;
+  }
+}
+
+let autosaveTimer=null;
+function scheduleBoardAutosave(){
+  clearTimeout(autosaveTimer);
+  autosaveTimer=setTimeout(()=>{
+    try{
+      if(!document.querySelector('#summaryModal.show'))return;
+      const d=selectedDay().date;
+      collectBoardOverrides(d);
+      const b=$('#boardSaveBtn');
+      if(b){const old=b.textContent;b.textContent='자동저장됨';setTimeout(()=>{if(b.textContent==='자동저장됨')b.textContent=old;},900);}
+    }catch(e){console.error('편성 자동저장 실패',e);}
+  },450);
+}
+
 function parseWorkbook(wb,name){
   fileName=name||'SKD'; roster=[];scheduleRows=[];workTimes=new Map();
   const dir=wb.Sheets['직원명단'];
@@ -436,6 +523,7 @@ function openSummary(){
 }
 function closeSummary(){
   const m=$('#summaryModal'); if(!m)return;
+  try{collectBoardOverrides(selectedDay().date);}catch(e){console.error('닫기 전 자동저장 실패',e);}
   m.classList.remove('show');m.setAttribute('aria-hidden','true');
 }
 
@@ -463,6 +551,8 @@ function shiftDay(n){const d=new Date(($('#opDate').value||todayLocal())+'T00:00
 $('#opDate').value=todayLocal(); $('#prevDay').onclick=()=>shiftDay(-1);$('#nextDay').onclick=()=>shiftDay(1);$('#todayBtn').onclick=()=>{$('#opDate').value=todayLocal();render();};$('#opDate').onchange=render;$('#groupFilter').onchange=render;$('#statusFilter').onchange=render;$('#search').oninput=render;
 
 $('#manualBoardBody').addEventListener('click',e=>{const td=e.target.closest('td');if(td)selectBoardCell(td);});
+$('#manualBoardBody').addEventListener('input',scheduleBoardAutosave);
+$('#manualBoardBody').addEventListener('blur',scheduleBoardAutosave,true);
 document.querySelectorAll('.colorBtn').forEach(b=>b.onclick=()=>setSelectedCellColor(b.dataset.cellcolor));
 $('#clearCellColorBtn').onclick=()=>setSelectedCellColor('');
 $('#addCellBtn').onclick=addBoardCell;
@@ -470,10 +560,25 @@ $('#deleteCellBtn').onclick=deleteBoardCell;
 $('#summaryBtn').onclick=openSummary;
 $('#summaryCloseBtn').onclick=closeSummary;
 $('#summaryModal').addEventListener('click',e=>{if(e.target.id==='summaryModal')closeSummary();});
+$('#clearSavedSkdBtn').onclick=async()=>{
+  if(!confirm('브라우저에 자동 보관된 인원 SKD를 삭제할까요?\\n현재 화면의 이미 읽힌 데이터는 새로고침 전까지 유지됩니다.'))return;
+  try{await clearSkdFileDb();alert('저장된 SKD를 삭제했습니다.');}catch(e){alert('저장 SKD 삭제 실패: '+e.message);}
+};
 $('#boardSaveBtn').onclick=()=>{const d=selectedDay().date;collectBoardOverrides(d);renderManualBoard(d);alert(d+' 수기 수정사항을 저장했습니다.');};
 $('#boardResetBtn').onclick=()=>{const d=selectedDay().date;if(confirm(d+' 수기 수정사항만 지우고 SKD 자동편성으로 복원할까요?')){localStorage.removeItem(boardKey(d));localStorage.removeItem(cellEditKey(d));renderManualBoard(d);}};
 
-$('#skdFile').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;try{const ab=await f.arrayBuffer();const wb=XLSX.read(ab,{type:'array',cellDates:true});parseWorkbook(wb,f.name);localStorage.setItem('jas_personnel_last_name',f.name);}catch(err){alert('SKD 읽기 실패: '+err.message);}finally{e.target.value='';}});
+$('#skdFile').addEventListener('change',async e=>{
+  const f=e.target.files[0];if(!f)return;
+  try{
+    const ab=await f.arrayBuffer();
+    const wb=XLSX.read(ab,{type:'array',cellDates:true});
+    parseWorkbook(wb,f.name);
+    await saveSkdFileToDb(f,ab);
+    localStorage.setItem('jas_personnel_last_name',f.name);
+  }catch(err){
+    alert('SKD 읽기/저장 실패: '+err.message);
+  }finally{e.target.value='';}
+});parseWorkbook(wb,f.name);localStorage.setItem('jas_personnel_last_name',f.name);}catch(err){alert('SKD 읽기 실패: '+err.message);}finally{e.target.value='';}});
 setInterval(()=>{$('#now').textContent=new Date().toLocaleString('ko-KR',{hour12:false})},1000);
 
 function showLogin(msg=''){
@@ -533,6 +638,7 @@ showLogin('');
     showLogin('로그인 상태 확인 실패: '+(e?.message||e));
   }
 })();
+setTimeout(()=>{restoreSavedSkd();},250);
 </script>
 </body>
 </html>
