@@ -65,7 +65,7 @@ main{padding:16px 18px 28px;max-width:1900px;margin:auto}.toolbar{display:flex;g
     <div id="authLoading" class="auth-loading">로그인 상태 확인 중...</div>
   </div>
 </div>
-<header><div class="brand"><a href="index.html">JAS ADMIN</a></div><div class="subtitle">인원 / 조 운영</div><span class="ver">DRAFT v0.7.5.1 · LOGIN FIX</span><div class="spacer"></div><span id="authUser" class="rcmdate" style="display:none"></span><button id="logoutBtn" style="display:none;padding:6px 10px">로그아웃</button><div id="now"></div></header>
+<header><div class="brand"><a href="index.html">JAS ADMIN</a></div><div class="subtitle">인원 / 조 운영</div><span class="ver">DRAFT v0.7.6 · SUMMARY SNAPSHOT</span><div class="spacer"></div><span id="authUser" class="rcmdate" style="display:none"></span><button id="logoutBtn" style="display:none;padding:6px 10px">로그아웃</button><div id="now"></div></header>
 <main>
   <div class="toolbar">
     <div class="dateNav"><button id="prevDay">◀</button><input id="opDate" class="dateinput" type="date"><button id="nextDay">▶</button><button id="todayBtn">오늘</button></div>
@@ -277,7 +277,7 @@ function scheduleBoardAutosave(){
     try{
       if(!document.querySelector('#summaryModal.show'))return;
       const d=selectedDay().date;
-      collectBoardOverrides(d);
+      collectBoardOverrides(d);saveSummarySnapshot(d);
       const b=$('#boardSaveBtn');
       if(b){const old=b.textContent;b.textContent='자동저장됨';setTimeout(()=>{if(b.textContent==='자동저장됨')b.textContent=old;},900);}
     }catch(e){console.error('편성 자동저장 실패',e);}
@@ -439,6 +439,27 @@ function collectBoardOverrides(date){
   });
   saveBoardOverrides(date,current);
 }
+
+function summarySnapshotKey(date){return 'jas_personnel_summary_v1_'+date;}
+function buildSummarySnapshotFromBoard(date){
+  const rows=[...document.querySelectorAll('#manualBoardBody tr')].map((tr,idx)=>{
+    const group=tr.children[0]?.textContent.trim()||'';
+    const code=tr.children[1]?.textContent.trim()||'';
+    const names=[...tr.querySelectorAll('td.nameCell')].map(td=>td.textContent.trim()).filter(Boolean);
+    return {group,code,names,count:names.length,rowIndex:idx};
+  }).filter(r=>r.group && r.names.length>0);
+  return {
+    date,
+    savedAt:Date.now(),
+    rows
+  };
+}
+function saveSummarySnapshot(date){
+  const snap=buildSummarySnapshotFromBoard(date);
+  localStorage.setItem(summarySnapshotKey(date),JSON.stringify(snap));
+  return snap;
+}
+
 function renderManualBoard(date){
   const d=new Date(date+'T00:00:00'),days=['일','월','화','수','목','금','토'];
   if(!Number.isNaN(d.getTime()))$('#manualBoardTitle').textContent=`${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일 ${days[d.getDay()]}요일`;
@@ -523,7 +544,7 @@ function openSummary(){
 }
 function closeSummary(){
   const m=$('#summaryModal'); if(!m)return;
-  try{collectBoardOverrides(selectedDay().date);}catch(e){console.error('닫기 전 자동저장 실패',e);}
+  try{const d=selectedDay().date;collectBoardOverrides(d);saveSummarySnapshot(d);}catch(e){console.error('닫기 전 자동저장 실패',e);}
   m.classList.remove('show');m.setAttribute('aria-hidden','true');
 }
 
@@ -564,7 +585,7 @@ $('#clearSavedSkdBtn').onclick=async()=>{
   if(!confirm('브라우저에 자동 보관된 인원 SKD를 삭제할까요?\\n현재 화면의 이미 읽힌 데이터는 새로고침 전까지 유지됩니다.'))return;
   try{await clearSkdFileDb();alert('저장된 SKD를 삭제했습니다.');}catch(e){alert('저장 SKD 삭제 실패: '+e.message);}
 };
-$('#boardSaveBtn').onclick=()=>{const d=selectedDay().date;collectBoardOverrides(d);renderManualBoard(d);alert(d+' 수기 수정사항을 저장했습니다.');};
+$('#boardSaveBtn').onclick=()=>{const d=selectedDay().date;collectBoardOverrides(d);saveSummarySnapshot(d);renderManualBoard(d);alert(d+' 수기 수정사항과 일자별 조 요약을 저장했습니다.');};
 $('#boardResetBtn').onclick=()=>{const d=selectedDay().date;if(confirm(d+' 수기 수정사항만 지우고 SKD 자동편성으로 복원할까요?')){localStorage.removeItem(boardKey(d));localStorage.removeItem(cellEditKey(d));renderManualBoard(d);}};
 
 $('#skdFile').addEventListener('change',async e=>{

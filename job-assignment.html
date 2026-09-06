@@ -36,6 +36,16 @@ button,.btn,input,select{font:inherit}.btn,button{border:1px solid #2c5774;backg
 .breakBar{position:absolute;top:12px;height:22px;border:1px dashed #347656;background:#123525;border-radius:5px;font-size:9px;color:#8fe8b7;padding:3px 5px;overflow:hidden;white-space:nowrap}
 .crewMeta{display:block;font-size:10px;color:#8da5bf;font-weight:700;margin-top:3px}
 
+
+.workLayout{display:grid;grid-template-columns:230px minmax(0,1fr);gap:14px}
+.attendancePanel{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden;align-self:start;position:sticky;top:82px}
+.attendanceHead{padding:12px 14px;background:#0d2035;border-bottom:1px solid var(--line);font-weight:950}
+.attendanceList{max-height:650px;overflow:auto}
+.attRow{display:grid;grid-template-columns:1fr 62px 44px;gap:6px;padding:8px 10px;border-bottom:1px solid #17304a;align-items:center}
+.attRow .g{font-weight:950}.attRow .c{color:#9fdcff;font-size:11px}.attRow .n{text-align:right;font-weight:900}
+.mainWork{min-width:0}
+@media(max-width:1100px){.workLayout{grid-template-columns:1fr}.attendancePanel{position:static}}
+
 </style>
 </head>
 <body>
@@ -54,7 +64,7 @@ button,.btn,input,select{font:inherit}.btn,button{border:1px solid #2c5774;backg
 
 <header>
   <div class="brand"><a href="index.html">JAS ADMIN</a></div><div class="subtitle">잡 배정 / 조별 휴게시간</div>
-  <span class="ver">DRAFT v0.3 · IN/OUT CREW + MEMO</span><div class="spacer"></div><span id="userBadge" class="badge"></span>
+  <span class="ver">DRAFT v0.4 · SUMMARY CREWS ONLY</span><div class="spacer"></div><span id="userBadge" class="badge"></span>
 </header>
 
 <main>
@@ -80,7 +90,13 @@ button,.btn,input,select{font:inherit}.btn,button{border:1px solid #2c5774;backg
     <div class="kpi purple"><div class="label">출근 조</div><div class="num" id="kCrews">0</div></div>
   </section>
 
-  <section class="panel">
+  <div class="workLayout">
+  <aside class="attendancePanel">
+    <div class="attendanceHead">출근 조 현황 <span id="attendanceBadge" class="badge">0개 조</span></div>
+    <div id="attendanceList" class="attendanceList"></div>
+  </aside>
+  <div class="mainWork">
+<section class="panel">
     <div class="panel-head"><div class="panel-title">운항 JOB 배정</div><span id="jobBadge" class="badge">0건</span><div class="legend">IN/OUT 각각 조 배정 · 비고 수기입력 · 중복 자동경고</div></div>
     <div class="tablewrap" style="max-height:430px"><table>
       <thead><tr><th>ARR FLT</th><th>ETA</th><th>도착 SPOT</th><th>ORG</th><th>출발 SPOT</th><th>DEP FLT</th><th>REG</th><th>STD</th><th>DEST</th><th>IN</th><th>OUT</th><th>상태</th><th>비고</th></tr></thead>
@@ -96,6 +112,9 @@ button,.btn,input,select{font:inherit}.btn,button{border:1px solid #2c5774;backg
     </div>
     <div id="timelineWrap" class="timelineWrap"></div>
   </section>
+
+  </div>
+</div>
 </main>
 
 <script>
@@ -129,15 +148,34 @@ async function openSkdDb(){
   });
 }
 async function loadStoredSkd(){
+  const date=$('#opDate').value||todayLocal();
   try{
-    const db=await openSkdDb();
-    const saved=await new Promise((resolve,reject)=>{const tx=db.transaction('files','readonly');const r=tx.objectStore('files').get('last_skd');r.onsuccess=()=>resolve(r.result||null);r.onerror=()=>reject(r.error);});
-    db.close();
-    if(!saved?.bytes){$('#rosterSource').textContent='SKD 없음';crews=[];return;}
-    const wb=XLSX.read(saved.bytes,{type:'array',cellDates:true});
-    parseCrews(wb);
-    $('#rosterSource').textContent='SKD 자동복원';
-  }catch(e){console.error(e);$('#rosterSource').textContent='SKD 오류';crews=[];}
+    const raw=localStorage.getItem('jas_personnel_summary_v1_'+date);
+    if(!raw){
+      crews=[];
+      $('#rosterSource').textContent='요약 미저장';
+      renderAttendance();
+      return;
+    }
+    const snap=JSON.parse(raw);
+    const rows=Array.isArray(snap?.rows)?snap.rows:[];
+    crews=rows
+      .filter(r=>r && r.group && Array.isArray(r.names) && r.names.filter(Boolean).length>0)
+      .map((r,idx)=>({
+        id:`${r.group}|${r.code}|${idx}`,
+        name:r.group,
+        members:r.names.filter(Boolean),
+        code:r.code||'',
+        shift:shiftForCode(r.code||'')
+      }));
+    $('#rosterSource').textContent=`요약 ${crews.length}개 조`;
+    renderAttendance();
+  }catch(e){
+    console.error(e);
+    crews=[];
+    $('#rosterSource').textContent='요약 오류';
+    renderAttendance();
+  }
 }
 function codeStatus(c){c=String(c||'').trim().toUpperCase();if(!c)return'OFF';if(/^R[AP]/.test(c))return'WORK';if(['R','RR','OFF','휴','휴무','HL','L','ML','BL','UL','PL','SL','C'].includes(c))return'OFF';return'WORK';}
 function parseCrews(wb){
@@ -227,8 +265,19 @@ function buildJobs(){
   });
   renderAll();
 }
+
+function renderAttendance(){
+  $('#attendanceBadge').textContent=`${crews.length}개 조`;
+  $('#attendanceList').innerHTML=crews.length?crews.map(c=>`
+    <div class="attRow">
+      <div class="g">${esc(c.name)}</div>
+      <div class="c">${esc(c.code||'-')}</div>
+      <div class="n">${c.members.length}명</div>
+    </div>`).join(''):'<div class="muted" style="padding:14px">인원/조 운영의 일자별 요약에서 저장된 조가 없습니다.</div>';
+}
+
 function crewOptions(selected){
-  return `<option value="">-</option>`+crews.map(c=>`<option value="${esc(c.id)}" ${c.id===selected?'selected':''}>${esc(c.name)}</option>`).join('');
+  return `<option value="">-</option>`+crews.map(c=>`<option value="${esc(c.id)}" ${c.id===selected?'selected':''}>${esc(c.name)} (${c.members.length}명)</option>`).join('');
 }
 function overlaps(a,b){const as=toMin(a.start),ae=toMin(a.end),bs=toMin(b.start),be=toMin(b.end);return as!=null&&bs!=null&&Math.max(as,bs)<Math.min(ae,be);}
 function crewConflicts(){
@@ -337,7 +386,7 @@ function renderBreaks(){
 }
 function renderAll(){renderJobs();renderBreaks();}
 async function reloadAll(){
-  loadAssignments();await loadStoredSkd();await loadFlights();renderAll();
+  loadAssignments();await loadStoredSkd();await loadFlights();renderAttendance();renderAll();
 }
 function shiftDate(n){const d=new Date(($('#opDate').value||todayLocal())+'T00:00:00');d.setDate(d.getDate()+n);$('#opDate').value=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;reloadAll();}
 ['inPre','inPost','outPre','outPost'].forEach(id=>$('#'+id).onchange=buildJobs);
