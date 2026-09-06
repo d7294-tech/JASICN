@@ -54,7 +54,7 @@ button,.btn,input,select{font:inherit}.btn,button{border:1px solid #2c5774;backg
 
 .attRow .n.memberCount{cursor:pointer;color:#dff4ff;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px}
 .attRow .n.memberCount:hover{color:#27d3ff}
-.memberPopover{position:fixed;z-index:9800;width:230px;max-height:280px;overflow:auto;background:#fffdf2;color:#111;border:1px solid #6d7a86;border-radius:8px;box-shadow:0 12px 34px rgba(0,0,0,.42);display:none}
+.memberPopover{position:fixed;z-index:9800;width:250px;max-height:280px;overflow:auto;background:#fffdf2;color:#111;border:1px solid #6d7a86;border-radius:8px;box-shadow:0 12px 34px rgba(0,0,0,.42);display:none}
 .memberPopover.show{display:block}
 .memberPopoverHead{display:flex;align-items:center;gap:8px;padding:9px 10px;background:#f3f0df;border-bottom:1px solid #b9b39f;font-weight:900}
 .memberPopoverHead .sub{margin-left:auto;font-size:11px;font-weight:700;color:#555}
@@ -96,7 +96,7 @@ button,.btn,input,select{font:inherit}.btn,button{border:1px solid #2c5774;backg
 
 <header>
   <div class="brand"><a href="index.html">JAS ADMIN</a></div><div class="subtitle">잡 배정 / 조별 휴게시간</div>
-  <span class="ver">DRAFT v0.4.9.3 · LOGIN RUNTIME FIX</span><div class="spacer"></div><span id="userBadge" class="badge"></span>
+  <span class="ver">DRAFT v0.4.10 · MEMBER MEMO + G/G1 EDIT</span><div class="spacer"></div><span id="userBadge" class="badge"></span>
 </header>
 
 <main>
@@ -155,6 +155,23 @@ button,.btn,input,select{font:inherit}.btn,button{border:1px solid #2c5774;backg
     <div><label>시작</label><input id="breakStartInput" type="time" step="300"></div>
     <div><label>종료</label><input id="breakEndInput" type="time" step="300"></div>
   </div>
+
+
+<div id="memberPopover" class="memberPopover" aria-hidden="true">
+  <div class="memberPopoverHead">
+    <span id="memberPopoverTitle">조 인원</span>
+    <span id="memberPopoverCode" class="sub"></span>
+  </div>
+  <div id="memberPopoverBody" class="memberPopoverBody"></div>
+  <div id="memberPopoverActions" style="display:none;padding:8px 10px;border-top:1px solid #d8d1bc;background:#faf7e9">
+    <textarea id="memberManualInput" style="width:100%;min-height:110px;resize:vertical;border:1px solid #b9b39f;border-radius:6px;padding:8px;font:12px/1.4 Consolas,'Malgun Gothic',sans-serif" placeholder="한 줄에 한 명씩 입력"></textarea>
+    <div style="display:flex;gap:6px;margin-top:7px">
+      <button id="memberManualSaveBtn" type="button" style="flex:1;background:#12603e;border-color:#23865d">명단 저장</button>
+      <button id="memberManualClearBtn" type="button" style="flex:1">초기화</button>
+    </div>
+    <div style="margin-top:6px;font-size:10px;color:#666">G / G1 전용 수기 명단 · 날짜별 자동 저장</div>
+  </div>
+</div>
 
 <script>
 const SUPABASE_URL='https://yblzvrfkohppnrxeorce.supabase.co';
@@ -218,6 +235,7 @@ async function loadStoredSkd(){
         shift:shiftForCode(r.code||'')
       })));
 
+    applyManualEmergencyNames();
     const realCount=crews.filter(c=>!c.virtual).length;
     if(realCount){
       $('#rosterSource').textContent=`요약 ${realCount}개 조 + G/G1`;
@@ -422,31 +440,109 @@ function operationalCrewList(list){
 }
 
 
+const CREW_MANUAL_PREFIX='jas_job_manual_crew_v1_';
+let activeMemberCrewId='';
+
+function manualCrewKey(date){
+  return CREW_MANUAL_PREFIX+date;
+}
+function loadManualCrewNames(){
+  try{
+    const x=JSON.parse(localStorage.getItem(manualCrewKey($('#opDate').value||todayLocal()))||'{}');
+    return x&&typeof x==='object'&&!Array.isArray(x)?x:{};
+  }catch{return{};}
+}
+function saveManualCrewNames(obj){
+  localStorage.setItem(manualCrewKey($('#opDate').value||todayLocal()),JSON.stringify(obj||{}));
+}
+function applyManualEmergencyNames(){
+  const saved=loadManualCrewNames();
+  for(const c of crews){
+    if(c.name==='G'||c.name==='G1'){
+      const arr=Array.isArray(saved[c.name])?saved[c.name].filter(Boolean):[];
+      c.members=arr;
+    }
+  }
+}
 function closeMemberPopover(){
   const p=$('#memberPopover'); if(!p)return;
-  p.classList.remove('show'); p.setAttribute('aria-hidden','true');
+  p.classList.remove('show'); p.setAttribute('aria-hidden','true'); activeMemberCrewId='';
 }
 function openMemberPopover(crewId,anchorEl){
   const c=crews.find(x=>String(x.id)===String(crewId));
   if(!c)return;
+  activeMemberCrewId=String(crewId);
+
   const p=$('#memberPopover'), body=$('#memberPopoverBody');
   if(!p||!body)return;
 
-  $('#memberPopoverTitle').textContent=(c.displayName||crewDisplayName(c.name))+' 명단';
+  const name=c.displayName||crewDisplayName(c.name);
+  $('#memberPopoverTitle').textContent=name+' 명단';
   $('#memberPopoverCode').textContent=(c.code||'-')+' · '+c.members.length+'명';
 
   body.innerHTML=c.members.length
-    ? c.members.map((name,i)=>`<div class="memberLine">${i+1}. ${esc(name)}</div>`).join('')
+    ? c.members.map((person,i)=>`<div class="memberLine">${i+1}. ${esc(person)}</div>`).join('')
     : '<div class="memberEmpty">등록 인원 없음</div>';
 
+  const editable=(c.name==='G'||c.name==='G1');
+  const act=$('#memberPopoverActions');
+  if(act){
+    act.style.display=editable?'block':'none';
+    if(editable){
+      $('#memberManualInput').value=(c.members||[]).join('\n');
+    }
+  }
+
   const r=anchorEl.getBoundingClientRect();
-  const w=230, pad=8;
+  const w=250,pad=8;
   let left=r.right+8, top=r.top;
   if(left+w>window.innerWidth-pad) left=Math.max(pad,r.left-w-8);
   p.style.left=left+'px';
-  p.style.top=Math.min(top,window.innerHeight-300)+'px';
+  p.style.top=Math.max(pad,Math.min(top,window.innerHeight-430))+'px';
   p.classList.add('show');
   p.setAttribute('aria-hidden','false');
+}
+function saveManualEmergencyCrew(){
+  const c=crews.find(x=>String(x.id)===String(activeMemberCrewId));
+  if(!c || !(c.name==='G'||c.name==='G1'))return;
+  const names=String($('#memberManualInput')?.value||'')
+    .split(/\r?\n/)
+    .map(x=>x.trim())
+    .filter(Boolean);
+
+  const saved=loadManualCrewNames();
+  saved[c.name]=names;
+  saveManualCrewNames(saved);
+  c.members=names;
+
+  renderAttendance();
+  renderBreaks();
+
+  const title=$('#memberPopoverTitle');
+  const code=$('#memberPopoverCode');
+  if(title)title.textContent=(c.displayName||c.name)+' 명단';
+  if(code)code.textContent=(c.code||'-')+' · '+names.length+'명';
+  const body=$('#memberPopoverBody');
+  if(body){
+    body.innerHTML=names.length
+      ? names.map((person,i)=>`<div class="memberLine">${i+1}. ${esc(person)}</div>`).join('')
+      : '<div class="memberEmpty">등록 인원 없음</div>';
+  }
+}
+function clearManualEmergencyCrew(){
+  const c=crews.find(x=>String(x.id)===String(activeMemberCrewId));
+  if(!c || !(c.name==='G'||c.name==='G1'))return;
+  const saved=loadManualCrewNames();
+  delete saved[c.name];
+  saveManualCrewNames(saved);
+  c.members=[];
+  if($('#memberManualInput'))$('#memberManualInput').value='';
+  renderAttendance();
+  renderBreaks();
+  const body=$('#memberPopoverBody');
+  if(body)body.innerHTML='<div class="memberEmpty">등록 인원 없음</div>';
+  const code=$('#memberPopoverCode');
+  if(code)code.textContent=(c.code||'-')+' · 0명';
 }
 document.addEventListener('click',e=>{
   const cnt=e.target.closest('.memberCount');
@@ -721,6 +817,9 @@ $('#refreshRosterBtn').onclick=async()=>{await loadStoredSkd();renderAll();};
 $('#breakSaveBtn')?.addEventListener('click',saveBreakFromEditor);
 $('#breakDeleteBtn')?.addEventListener('click',deleteBreakFromEditor);
 $('#breakCancelBtn')?.addEventListener('click',closeBreakEditor);
+$('#memberManualSaveBtn')?.addEventListener('click',saveManualEmergencyCrew);
+$('#memberManualClearBtn')?.addEventListener('click',clearManualEmergencyCrew);
+
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeBreakEditor();});
 document.addEventListener('click',e=>{
   if($('#breakEditor')?.classList.contains('show') && !e.target.closest('#breakEditor') && !e.target.closest('.breakBar') && !e.target.closest('.restBar'))closeBreakEditor();
@@ -796,15 +895,6 @@ showLogin('');
   }
 })();
 </script>
-
-<div id="memberPopover" class="memberPopover" aria-hidden="true">
-  <div class="memberPopoverHead">
-    <span id="memberPopoverTitle">조 인원</span>
-    <span id="memberPopoverCode" class="sub"></span>
-  </div>
-  <div id="memberPopoverBody" class="memberPopoverBody"></div>
-</div>
-
 
 <div class="breakEditorActions">
     <button id="breakSaveBtn" class="success">휴게 추가</button>
