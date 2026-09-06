@@ -42,6 +42,14 @@ main{padding:16px 18px 28px;max-width:1900px;margin:auto}.toolbar{display:flex;g
 .summaryHead{display:flex;align-items:center;gap:12px;padding:12px 14px;background:#0d2035;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:4}
 .summaryTitle{font-size:16px;font-weight:950}.summaryActions{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
 
+
+.cellTools{display:flex;gap:5px;align-items:center;flex-wrap:wrap;padding-right:8px;border-right:1px solid #31506d}
+.toolLabel{font-size:11px;font-weight:900;color:#9fb4c9;margin-right:2px}
+.colorBtn{width:26px!important;min-width:26px!important;height:26px!important;padding:0!important;border:2px solid #73879a!important;border-radius:5px!important}
+.colorBtn.yellow{background:#fff2a8!important}.colorBtn.blue{background:#b7d7ef!important}.colorBtn.green{background:#cce8b0!important}.colorBtn.orange{background:#f4b183!important}
+.dailyBoard td.cellSelected{outline:3px solid #27d3ff!important;outline-offset:-3px}
+.dailyBoard td.manualCellColor{background:var(--manual-bg)!important}
+
 </style>
 </head>
 <body>
@@ -57,7 +65,7 @@ main{padding:16px 18px 28px;max-width:1900px;margin:auto}.toolbar{display:flex;g
     <div id="authLoading" class="auth-loading">로그인 상태 확인 중...</div>
   </div>
 </div>
-<header><div class="brand"><a href="index.html">JAS ADMIN</a></div><div class="subtitle">인원 / 조 운영</div><span class="ver">DRAFT v0.7.3 · DATE + SOSAN TOW</span><div class="spacer"></div><span id="authUser" class="rcmdate" style="display:none"></span><button id="logoutBtn" style="display:none;padding:6px 10px">로그아웃</button><div id="now"></div></header>
+<header><div class="brand"><a href="index.html">JAS ADMIN</a></div><div class="subtitle">인원 / 조 운영</div><span class="ver">DRAFT v0.7.4 · CELL EDITOR</span><div class="spacer"></div><span id="authUser" class="rcmdate" style="display:none"></span><button id="logoutBtn" style="display:none;padding:6px 10px">로그아웃</button><div id="now"></div></header>
 <main>
   <div class="toolbar">
     <div class="dateNav"><button id="prevDay">◀</button><input id="opDate" class="dateinput" type="date"><button id="nextDay">▶</button><button id="todayBtn">오늘</button></div>
@@ -89,6 +97,17 @@ main{padding:16px 18px 28px;max-width:1900px;margin:auto}.toolbar{display:flex;g
     <div class="summaryHead">
       <div class="summaryTitle">일자별 조 편성 요약</div>
       <div class="summaryActions">
+        <div class="cellTools">
+          <span class="toolLabel">셀 편집</span>
+          <button type="button" class="colorBtn" data-cellcolor="#ffffff" title="흰색">□</button>
+          <button type="button" class="colorBtn yellow" data-cellcolor="#fff2a8" title="노랑"></button>
+          <button type="button" class="colorBtn blue" data-cellcolor="#b7d7ef" title="파랑"></button>
+          <button type="button" class="colorBtn green" data-cellcolor="#cce8b0" title="초록"></button>
+          <button type="button" class="colorBtn orange" data-cellcolor="#f4b183" title="주황"></button>
+          <button type="button" id="clearCellColorBtn">색 초기화</button>
+          <button type="button" id="addCellBtn">셀 추가</button>
+          <button type="button" id="deleteCellBtn">셀 삭제</button>
+        </div>
         <button id="boardSaveBtn">수기보정 저장</button>
         <button id="boardResetBtn">수기보정 초기화</button>
         <button id="summaryCloseBtn">닫기</button>
@@ -344,8 +363,71 @@ function renderManualBoard(date){
     const cells=names.slice(0,6).map((autoName,i)=>{const k=`${rk}|${i}`,has=Object.prototype.hasOwnProperty.call(ov,k),shown=has?ov[k]:autoName;const cls='nameCell'+(!autoName?' vacancy':'')+(has?' manualOverride':'');return `<td class="${cls}" contenteditable="true" data-auto="${esc(autoName)}">${esc(shown)}</td>`}).join('');
     return `<tr class="${esc(r.cls||'')}" data-rowkey="${esc(rk)}" data-autocode="${esc(autoCode)}"><td class="boardGroup">${esc(r.group||'')}</td><td class="boardCode" contenteditable="true">${esc(shownCode)}</td>${cells}</tr>`;
   }).join('');
+
+  applySavedCellEdits(date);
 }
 
+
+
+let selectedBoardCell=null;
+function cellEditKey(date){return 'jas_personnel_cell_edit_v1_'+date;}
+function loadCellEdits(date){
+  try{const x=JSON.parse(localStorage.getItem(cellEditKey(date))||'{}');return x&&typeof x==='object'?x:{};}catch{return{};}
+}
+function saveCellEdits(date,x){localStorage.setItem(cellEditKey(date),JSON.stringify(x));}
+function selectBoardCell(td){
+  if(selectedBoardCell)selectedBoardCell.classList.remove('cellSelected');
+  selectedBoardCell=td;
+  if(td)td.classList.add('cellSelected');
+}
+function boardCellId(td){
+  const tr=td.closest('tr'); if(!tr)return '';
+  const rows=[...document.querySelectorAll('#manualBoardBody tr')];
+  const ri=rows.indexOf(tr), ci=[...tr.children].indexOf(td);
+  return ri+'|'+ci;
+}
+function applySavedCellEdits(date){
+  const edits=loadCellEdits(date), rows=[...document.querySelectorAll('#manualBoardBody tr')];
+  rows.forEach((tr,ri)=>{
+    const extra=Math.max(0,Number(edits['rowExtra|'+ri]||0));
+    for(let n=0;n<extra;n++){
+      const td=document.createElement('td');td.className='nameCell';td.contentEditable='true';td.textContent='';
+      tr.appendChild(td);
+    }
+    [...tr.children].forEach((td,ci)=>{
+      const color=edits['color|'+ri+'|'+ci];
+      if(color){td.style.setProperty('--manual-bg',color);td.classList.add('manualCellColor');}
+    });
+  });
+}
+function setSelectedCellColor(color){
+  if(!selectedBoardCell)return alert('먼저 편성표 셀을 선택해 주세요.');
+  const date=selectedDay().date, edits=loadCellEdits(date), id=boardCellId(selectedBoardCell);
+  if(!id)return;
+  if(color){edits['color|'+id]=color;selectedBoardCell.style.setProperty('--manual-bg',color);selectedBoardCell.classList.add('manualCellColor');}
+  else{delete edits['color|'+id];selectedBoardCell.style.removeProperty('--manual-bg');selectedBoardCell.classList.remove('manualCellColor');}
+  saveCellEdits(date,edits);
+}
+function addBoardCell(){
+  if(!selectedBoardCell)return alert('셀을 추가할 행의 셀을 먼저 선택해 주세요.');
+  const tr=selectedBoardCell.closest('tr'), rows=[...document.querySelectorAll('#manualBoardBody tr')], ri=rows.indexOf(tr);
+  const td=document.createElement('td');td.className='nameCell';td.contentEditable='true';td.textContent='';
+  tr.appendChild(td);
+  const edits=loadCellEdits(selectedDay().date);
+  edits['rowExtra|'+ri]=Number(edits['rowExtra|'+ri]||0)+1;saveCellEdits(selectedDay().date,edits);
+  selectBoardCell(td);
+}
+function deleteBoardCell(){
+  if(!selectedBoardCell)return alert('삭제할 셀을 먼저 선택해 주세요.');
+  const tr=selectedBoardCell.closest('tr'), cells=[...tr.children];
+  const ci=cells.indexOf(selectedBoardCell);
+  if(ci<2)return alert('조/출근코드 셀은 삭제하지 않습니다.');
+  const rows=[...document.querySelectorAll('#manualBoardBody tr')], ri=rows.indexOf(tr);
+  if(cells.length<=8)return alert('기본 명단 6칸은 유지됩니다. 추가한 셀만 삭제할 수 있습니다.');
+  selectedBoardCell.remove();selectedBoardCell=null;
+  const edits=loadCellEdits(selectedDay().date);
+  edits['rowExtra|'+ri]=Math.max(0,Number(edits['rowExtra|'+ri]||0)-1);saveCellEdits(selectedDay().date,edits);
+}
 
 function openSummary(){
   const m=$('#summaryModal'); if(!m)return;
@@ -380,11 +462,16 @@ function renderGroups(data){
 function shiftDay(n){const d=new Date(($('#opDate').value||todayLocal())+'T00:00:00');d.setDate(d.getDate()+n);$('#opDate').value=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;render();}
 $('#opDate').value=todayLocal(); $('#prevDay').onclick=()=>shiftDay(-1);$('#nextDay').onclick=()=>shiftDay(1);$('#todayBtn').onclick=()=>{$('#opDate').value=todayLocal();render();};$('#opDate').onchange=render;$('#groupFilter').onchange=render;$('#statusFilter').onchange=render;$('#search').oninput=render;
 
+$('#manualBoardBody').addEventListener('click',e=>{const td=e.target.closest('td');if(td)selectBoardCell(td);});
+document.querySelectorAll('.colorBtn').forEach(b=>b.onclick=()=>setSelectedCellColor(b.dataset.cellcolor));
+$('#clearCellColorBtn').onclick=()=>setSelectedCellColor('');
+$('#addCellBtn').onclick=addBoardCell;
+$('#deleteCellBtn').onclick=deleteBoardCell;
 $('#summaryBtn').onclick=openSummary;
 $('#summaryCloseBtn').onclick=closeSummary;
 $('#summaryModal').addEventListener('click',e=>{if(e.target.id==='summaryModal')closeSummary();});
 $('#boardSaveBtn').onclick=()=>{const d=selectedDay().date;collectBoardOverrides(d);renderManualBoard(d);alert(d+' 수기 수정사항을 저장했습니다.');};
-$('#boardResetBtn').onclick=()=>{const d=selectedDay().date;if(confirm(d+' 수기 수정사항만 지우고 SKD 자동편성으로 복원할까요?')){localStorage.removeItem(boardKey(d));renderManualBoard(d);}};
+$('#boardResetBtn').onclick=()=>{const d=selectedDay().date;if(confirm(d+' 수기 수정사항만 지우고 SKD 자동편성으로 복원할까요?')){localStorage.removeItem(boardKey(d));localStorage.removeItem(cellEditKey(d));renderManualBoard(d);}};
 
 $('#skdFile').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;try{const ab=await f.arrayBuffer();const wb=XLSX.read(ab,{type:'array',cellDates:true});parseWorkbook(wb,f.name);localStorage.setItem('jas_personnel_last_name',f.name);}catch(err){alert('SKD 읽기 실패: '+err.message);}finally{e.target.value='';}});
 setInterval(()=>{$('#now').textContent=new Date().toLocaleString('ko-KR',{hour12:false})},1000);
