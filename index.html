@@ -152,6 +152,15 @@ body:not(.light) .go{color:#20d7ff!important}
 /* ===== COMMON ACCOUNT / APPROVAL ===== */
 .login-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}.login-actions button{margin-top:0!important}.login-switch{background:#10263c!important}.signup-note{font-size:11px;color:#8fa8c0;line-height:1.5;margin-top:8px}.signup-hidden{display:none!important}.member-manage-btn{display:none;border:1px solid #7655b5;background:#322052;color:#e7dcff;border-radius:8px;padding:8px 11px;font-weight:900;cursor:pointer}.member-modal{position:fixed;inset:0;z-index:10000;background:rgba(2,8,16,.80);display:none;align-items:center;justify-content:center;padding:20px}.member-modal.show{display:flex}.member-card{width:min(760px,96vw);max-height:82vh;overflow:auto;background:#0d1d31;border:1px solid #294866;border-radius:16px;padding:18px}.member-head{display:flex;align-items:center;gap:10px;margin-bottom:12px}.member-head h3{margin:0;flex:1}.member-row{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;padding:12px 0;border-top:1px solid #243d58}.member-email{font-weight:900}.member-meta{font-size:11px;color:#8fa8c0;margin-top:3px}.member-actions{display:flex;gap:6px;flex-wrap:wrap}.member-actions button{padding:7px 10px}.member-empty{color:#8fa8c0;padding:18px 0}.approved-tag{color:#5af0ad}.pending-tag{color:#ffd36a}
 
+
+/* MODULE PERMISSIONS */
+.member-card{width:min(1180px,98vw)!important}
+.member-row{grid-template-columns:minmax(230px,1fr) minmax(520px,2.5fr) auto!important;align-items:start!important}
+.perm-grid{display:grid;grid-template-columns:repeat(4,minmax(110px,1fr));gap:7px 10px}
+.perm-item{display:flex;align-items:center;gap:6px;font-size:12px;color:#c9d8e7;background:#0a1828;border:1px solid #26435e;border-radius:8px;padding:7px 8px;white-space:nowrap}
+.perm-item input{accent-color:#11a7d8}.perm-save{border:1px solid #238b68!important;background:#123d32!important;color:#7af3c1!important}
+.perm-note{font-size:10px;color:#7f9ab2;margin-top:5px}.card.permission-hidden{display:none!important}
+@media(max-width:900px){.member-row{grid-template-columns:1fr!important}.perm-grid{grid-template-columns:repeat(2,minmax(110px,1fr))}}
 </style>
 </head>
 <body>
@@ -177,14 +186,14 @@ body:not(.light) .go{color:#20d7ff!important}
 <main>
   <div class="hero"><div><div class="eyebrow">RAMP CONTROL DASHBOARD</div><h1>메인 대시보드</h1><p>운항현황을 중심으로 램프 운영 기능을 한 곳에서 관리합니다.</p></div><div id="clock" class="clock"></div></div>
   <div class="grid">
-    <a class="card active" href="operations.html"><div class="icon">✈️</div><h2>운항 현황</h2><p>LIVE API, RCM 연결, L/O, TOW, FERRY, 주기장 현황, LDM BAG/CGO 집계</p><div class="go">열기 →</div></a>
-    <a class="card" href="flight-plan.html"><div class="icon">🗓️</div><h2>운항 계획</h2><p>일자별 운항계획, RCM 기반 사전 편성 및 주기장·운항 일정 확인</p><div class="go">열기 →</div></a>
-    <a class="card" href="personnel.html"><div class="icon">👥</div><h2>인원 / 조 운영</h2><p>월간 SKD 업로드, 선택일 근무자·근무코드·근무시간 및 그룹별 인원현황 확인</p><div class="go">열기 →</div></a>
-    <a class="card" href="job-assignment.html"><div class="icon">🧩</div><h2>잡 배정 / 휴게시간</h2><p>운항현황 기반 조별 JOB 배정 · 시간 겹침 확인 · 조별 휴게시간 관리</p><div class="go">열기 →</div></a>
-    <a class="card" href="gse.html"><div class="icon">🚜</div><h2>GSE 현황</h2><p>장비 가동/정비/배정 상태 및 일일 점검 관리</p><div class="go">열기 →</div></a>
-    <div class="card disabled"><div class="icon">🎓</div><h2>교육 / 관리</h2><p>교육 이력, 자격·만료일, 교재 및 평가 관리</p><div class="go">준비중</div></div>
-    <div class="card disabled"><div class="icon">❄️</div><h2>De/Anti-Ice</h2><p>제·방빙 작업, 장비·약제, 교육 및 작업기록 관리</p><div class="go">준비중</div></div>
-    <div class="card disabled"><div class="icon">📋</div><h2>업무 / 보고</h2><p>이례사항, 안전, 교육, 점검 및 보고자료 관리</p><div class="go">준비중</div></div>
+    <a class="card active" data-perm="operations" href="operations.html"><div class="icon">✈️</div><h2>운항 현황</h2><p>LIVE API, RCM 연결, L/O, TOW, FERRY, 주기장 현황, LDM BAG/CGO 집계</p><div class="go">열기 →</div></a>
+    <a class="card" data-perm="flight_plan" href="flight-plan.html"><div class="icon">🗓️</div><h2>운항 계획</h2><p>일자별 운항계획, RCM 기반 사전 편성 및 주기장·운항 일정 확인</p><div class="go">열기 →</div></a>
+    <a class="card" data-perm="personnel" href="personnel.html"><div class="icon">👥</div><h2>인원 / 조 운영</h2><p>월간 SKD 업로드, 선택일 근무자·근무코드·근무시간 및 그룹별 인원현황 확인</p><div class="go">열기 →</div></a>
+    <a class="card" data-perm="job_assignment" href="job-assignment.html"><div class="icon">🧩</div><h2>잡 배정 / 휴게시간</h2><p>운항현황 기반 조별 JOB 배정 · 시간 겹침 확인 · 조별 휴게시간 관리</p><div class="go">열기 →</div></a>
+    <a class="card" data-perm="gse" href="gse.html"><div class="icon">🚜</div><h2>GSE 현황</h2><p>장비 가동/정비/배정 상태 및 일일 점검 관리</p><div class="go">열기 →</div></a>
+    <div class="card disabled" data-perm="education"><div class="icon">🎓</div><h2>교육 / 관리</h2><p>교육 이력, 자격·만료일, 교재 및 평가 관리</p><div class="go">준비중</div></div>
+    <div class="card disabled" data-perm="deicing"><div class="icon">❄️</div><h2>De/Anti-Ice</h2><p>제·방빙 작업, 장비·약제, 교육 및 작업기록 관리</p><div class="go">준비중</div></div>
+    <div class="card disabled" data-perm="reports"><div class="icon">📋</div><h2>업무 / 보고</h2><p>이례사항, 안전, 교육, 점검 및 보고자료 관리</p><div class="go">준비중</div></div>
   </div>
   <div class="sectionTitle">빠른 구성</div>
   <div class="mini">
@@ -198,6 +207,11 @@ const SUPABASE_URL='https://yblzvrfkohppnrxeorce.supabase.co';
 const SUPABASE_KEY='sb_publishable_1P8VyOOWWTf41F__nOYuUw_GKo-DiKu';
 const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 const JAS_ADMIN_EMAIL='d7294@aekyung.kr';
+const JAS_PERMISSION_FIELDS=[['operations','운항현황'],['flight_plan','운항계획'],['personnel','인원/조운영'],['job_assignment','잡배정'],['gse','GSE'],['education','교육/관리'],['deicing','De/Anti-Ice'],['reports','업무/보고']];
+let jasCurrentPermissions=null;
+async function loadMyPermissions(user){if(!user)return {};if(String(user.email||'').toLowerCase()===JAS_ADMIN_EMAIL)return Object.fromEntries(JAS_PERMISSION_FIELDS.map(([k])=>[k,true]));const {data,error}=await sb.from('jas_user_permissions').select(JAS_PERMISSION_FIELDS.map(x=>x[0]).join(',')).eq('user_id',user.id).maybeSingle();if(error)throw new Error('메뉴 권한 확인 실패: '+error.message);return data||{};}
+function applyDashboardPermissions(perms,isAdmin=false){document.querySelectorAll('[data-perm]').forEach(el=>{el.classList.toggle('permission-hidden',!isAdmin&&!perms?.[el.dataset.perm]);});}
+
 let jasAuthMode='login';
 function jasSetAuthMode(mode){
   jasAuthMode=mode==='signup'?'signup':'login';
@@ -244,16 +258,23 @@ async function jasAuthSubmit(){
 
 const $=s=>document.querySelector(s);
 function showLogin(message=''){ $('#authOverlay').classList.remove('hidden'); const l=$('#authLoading');if(l)l.style.display='none'; $('#loginMsg').textContent=message||''; $('#authUser').style.display='none'; $('#logoutBtn').style.display='none'; const mb=$('#memberManageBtn');if(mb)mb.style.display='none'; }
-async function enterApp(session){ if(!session?.user){showLogin();return;} try{if(!(await jasRequireApproved(session)))return;}catch(e){showLogin(e.message||String(e));return;} $('#authOverlay').classList.add('hidden'); $('#authUser').textContent=session.user.email||'사용자'; $('#authUser').style.display='inline-block'; $('#logoutBtn').style.display='inline-block'; const admin=String(session.user.email||'').toLowerCase()===JAS_ADMIN_EMAIL; const mb=$('#memberManageBtn');if(mb)mb.style.display=admin?'inline-block':'none'; }
+async function enterApp(session){ if(!session?.user){showLogin();return;} try{if(!(await jasRequireApproved(session)))return;}catch(e){showLogin(e.message||String(e));return;} $('#authOverlay').classList.add('hidden'); $('#authUser').textContent=session.user.email||'사용자'; $('#authUser').style.display='inline-block'; $('#logoutBtn').style.display='inline-block'; const admin=String(session.user.email||'').toLowerCase()===JAS_ADMIN_EMAIL; const mb=$('#memberManageBtn');if(mb)mb.style.display=admin?'inline-block':'none'; try{jasCurrentPermissions=await loadMyPermissions(session.user);applyDashboardPermissions(jasCurrentPermissions,admin);}catch(e){console.warn(e);applyDashboardPermissions({},admin);} }
 $('#signupToggleBtn')?.addEventListener('click',()=>jasSetAuthMode(jasAuthMode==='login'?'signup':'login'));
 $('#loginForm').addEventListener('submit',async e=>{e.preventDefault();try{const r=await jasAuthSubmit();if(r&&r!=='signup')await enterApp(r);}catch(err){showLogin((jasAuthMode==='signup'?'회원가입 실패: ':'로그인 실패: ')+(err.message||err));}});
 $('#logoutBtn').onclick=async()=>{await sb.auth.signOut();showLogin('로그아웃되었습니다.');};
 sb.auth.onAuthStateChange((event,session)=>{if(event==='SIGNED_OUT')showLogin();else if((event==='SIGNED_IN'||event==='INITIAL_SESSION'||event==='TOKEN_REFRESHED')&&session)setTimeout(()=>enterApp(session),0)});
 (async()=>{const {data,error}=await sb.auth.getSession();if(error||!data?.session)showLogin(error?('로그인 상태 확인 실패: '+error.message):'');else await enterApp(data.session);})();
 
-async function loadMembers(){const box=$('#memberList');if(!box)return;box.innerHTML='<div class="member-empty">불러오는 중...</div>';const {data,error}=await sb.from('jas_user_access').select('user_id,email,approved,requested_at,approved_at').order('requested_at',{ascending:true});if(error){box.innerHTML='<div class="member-empty">조회 실패: '+error.message+'</div>';return;}if(!data?.length){box.innerHTML='<div class="member-empty">가입 회원이 없습니다.</div>';return;}box.innerHTML=data.map(r=>`<div class="member-row"><div><div class="member-email">${String(r.email||'-').replace(/</g,'&lt;')}</div><div class="member-meta">${r.approved?'<span class="approved-tag">승인</span>':'<span class="pending-tag">승인 대기</span>'} · 신청 ${r.requested_at?new Date(r.requested_at).toLocaleString('ko-KR'):'-'}</div></div><div class="member-actions">${String(r.email||'').toLowerCase()===JAS_ADMIN_EMAIL?'관리자':r.approved?`<button data-action="revoke" data-uid="${r.user_id}">승인 취소</button>`:`<button data-action="approve" data-uid="${r.user_id}">승인</button>`}</div></div>`).join('');}
+async function loadMembers(){
+ const box=$('#memberList');if(!box)return;box.innerHTML='<div class="member-empty">불러오는 중...</div>';
+ const [{data:members,error:e1},{data:perms,error:e2}]=await Promise.all([sb.from('jas_user_access').select('user_id,email,approved,requested_at,approved_at').order('requested_at',{ascending:true}),sb.from('jas_user_permissions').select('*')]);
+ if(e1||e2){box.innerHTML='<div class="member-empty">조회 실패: '+(e1?.message||e2?.message)+'</div>';return;} if(!members?.length){box.innerHTML='<div class="member-empty">가입 회원이 없습니다.</div>';return;}
+ const pm=new Map((perms||[]).map(p=>[p.user_id,p]));
+ box.innerHTML=members.map(r=>{const admin=String(r.email||'').toLowerCase()===JAS_ADMIN_EMAIL,p=pm.get(r.user_id)||{};const checks=JAS_PERMISSION_FIELDS.map(([k,label])=>`<label class="perm-item"><input type="checkbox" data-pkey="${k}" ${admin||p[k]?'checked':''} ${admin?'disabled':''}>${label}</label>`).join('');const actions=admin?'관리자':r.approved?`<button data-action="revoke" data-uid="${r.user_id}">승인 취소</button><button class="perm-save" data-action="saveperm" data-uid="${r.user_id}">권한 저장</button>`:`<button data-action="approve" data-uid="${r.user_id}">승인</button><button class="perm-save" data-action="saveperm" data-uid="${r.user_id}">권한 저장</button>`;return `<div class="member-row" data-uid-row="${r.user_id}"><div><div class="member-email">${String(r.email||'-').replace(/</g,'&lt;')}</div><div class="member-meta">${r.approved?'<span class="approved-tag">승인</span>':'<span class="pending-tag">승인 대기</span>'} · 신청 ${r.requested_at?new Date(r.requested_at).toLocaleString('ko-KR'):'-'}</div><div class="perm-note">권한 없는 메뉴는 메인에서 숨김 + 주소 직접 접근 차단</div></div><div class="perm-grid">${checks}</div><div class="member-actions">${actions}</div></div>`;}).join('');
+}
 function openMemberManage(){$('#memberModal')?.classList.add('show');loadMembers();}function closeMemberManage(){$('#memberModal')?.classList.remove('show');}
-$('#memberManageBtn')?.addEventListener('click',openMemberManage);$('#memberCloseBtn')?.addEventListener('click',closeMemberManage);$('#memberRefreshBtn')?.addEventListener('click',loadMembers);$('#memberModal')?.addEventListener('click',e=>{if(e.target.id==='memberModal')closeMemberManage();});$('#memberList')?.addEventListener('click',async e=>{const b=e.target.closest('button[data-action]');if(!b)return;const approve=b.dataset.action==='approve';b.disabled=true;const {data:{user}}=await sb.auth.getUser();const {error}=await sb.from('jas_user_access').update({approved:approve,approved_at:approve?new Date().toISOString():null,approved_by:approve?(user?.id||null):null}).eq('user_id',b.dataset.uid);if(error){alert('회원 상태 변경 실패: '+error.message);b.disabled=false;return;}await loadMembers();});
+$('#memberManageBtn')?.addEventListener('click',openMemberManage);$('#memberCloseBtn')?.addEventListener('click',closeMemberManage);$('#memberRefreshBtn')?.addEventListener('click',loadMembers);$('#memberModal')?.addEventListener('click',e=>{if(e.target.id==='memberModal')closeMemberManage();});
+$('#memberList')?.addEventListener('click',async e=>{const b=e.target.closest('button[data-action]');if(!b)return;const uid=b.dataset.uid;b.disabled=true;try{if(b.dataset.action==='saveperm'){const row=b.closest('[data-uid-row]'),payload={user_id:uid,updated_at:new Date().toISOString()};JAS_PERMISSION_FIELDS.forEach(([k])=>payload[k]=!!row.querySelector(`input[data-pkey="${k}"]`)?.checked);const {error}=await sb.from('jas_user_permissions').upsert(payload,{onConflict:'user_id'});if(error)throw error;}else{const approve=b.dataset.action==='approve';const {data:{user}}=await sb.auth.getUser();const {error}=await sb.from('jas_user_access').update({approved:approve,approved_at:approve?new Date().toISOString():null,approved_by:approve?(user?.id||null):null}).eq('user_id',uid);if(error)throw error;if(approve){const payload={user_id:uid,operations:true,flight_plan:false,personnel:false,job_assignment:false,gse:false,education:false,deicing:false,reports:false,updated_at:new Date().toISOString()};const {error:pe}=await sb.from('jas_user_permissions').upsert(payload,{onConflict:'user_id',ignoreDuplicates:true});if(pe)console.warn(pe);}}await loadMembers();}catch(err){alert('회원/권한 변경 실패: '+(err.message||err));b.disabled=false;}});
 
 setInterval(()=>{$('#clock').textContent=new Date().toLocaleString('ko-KR',{hour12:false})},1000);
 </script>

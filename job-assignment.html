@@ -704,6 +704,9 @@ body.light-theme #breakBadge{
 const SUPABASE_URL='https://yblzvrfkohppnrxeorce.supabase.co';
 const SUPABASE_KEY='sb_publishable_1P8VyOOWWTf41F__nOYuUw_GKo-DiKu';
 const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const JAS_PAGE_PERMISSION='job_assignment';const JAS_PERMISSION_ADMIN='d7294@aekyung.kr';
+(async function jasPagePermissionGuard(){try{const {data:{session}}=await sb.auth.getSession();if(!session?.user)return;if(String(session.user.email||'').toLowerCase()===JAS_PERMISSION_ADMIN)return;const {data,error}=await sb.from('jas_user_permissions').select(JAS_PAGE_PERMISSION).eq('user_id',session.user.id).maybeSingle();if(error)throw error;if(!data?.[JAS_PAGE_PERMISSION]){alert('이 메뉴에 대한 접근 권한이 없습니다.');location.replace('index.html?denied='+encodeURIComponent(JAS_PAGE_PERMISSION));}}catch(e){console.warn('권한 확인 실패',e);alert('메뉴 권한을 확인할 수 없습니다. 관리자에게 문의해 주세요.');location.replace('index.html');}})();
+
 const ADMIN_EMAIL='d7294@aekyung.kr';
 let authMode='login';
 const $=s=>document.querySelector(s);
