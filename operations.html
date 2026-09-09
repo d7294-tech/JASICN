@@ -332,6 +332,28 @@ body.light-theme .tag{
 .changed-cell{color:#ff6373!important;font-weight:900!important}.changed-cell *{color:#ff6373!important}.change-btn{background:#6a1d27;border-color:#b33a49}.change-btn.pending{box-shadow:0 0 0 2px rgba(255,99,115,.35) inset}.manual-save-btn{background:#185a45;border-color:#2f8b6b}
 
 .manualtow-panel{margin:0 0 12px;border:1px solid #6c5520;background:#211b0d;border-radius:10px;overflow:hidden}.manualtow-head{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid #5d4b20;background:#2a220f}.manualtow-title{font-weight:950;color:#ffd36a}.manualtow-count{font-size:10px;border:1px solid #7a6124;border-radius:12px;padding:2px 7px;color:#ffe69e}.manualtow-body{padding:8px 10px}.manualtow-empty{color:#8e8060;font-size:11px;padding:4px}.manualtow-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:7px 8px;border-bottom:1px solid #4b3c19}.manualtow-row:last-child{border-bottom:0}.manualtow-flight{font-weight:950;color:#fff}.manualtow-route{font-weight:950;color:#ffd36a}.manualtow-time{font-weight:950;color:#67e8f9}.manualtow-meta{font-size:10px;color:#a99b7a}.manualtow-edit,.manualtow-remove{padding:3px 7px;font-size:10px;border-radius:7px}.manualtow-edit{background:#5a4510;border-color:#8b6a18;color:#ffe69e}.manualtow-remove{background:#4a1e25;border-color:#7d3440;color:#ffb1bc}.towcarrybtn{margin-left:4px;padding:2px 6px;border-radius:7px;font-size:9px;font-weight:900;background:#5a4510;border:1px solid #8b6a18;color:#ffe69e;cursor:pointer}.towcarrybtn.active{background:#805f10;color:#fff2b5}.towcarrynote{display:block;margin-top:3px;font-size:9px;color:#ffd36a}.towcellwrap{display:inline-flex;align-items:center;gap:3px;flex-wrap:wrap}
+
+/* ===== CURRENT TIME BAR v6.6.8.2 ===== */
+.now-time-row td{
+  padding:0!important;height:22px!important;border-bottom:0!important;background:transparent!important;
+  position:relative;overflow:visible;
+}
+.now-time-bar{
+  position:relative;height:22px;display:flex;align-items:center;z-index:3;pointer-events:none;
+}
+.now-time-bar::before{
+  content:"";position:absolute;left:0;right:0;top:50%;height:2px;
+  background:#ff4d5f;box-shadow:0 0 8px rgba(255,77,95,.45);
+}
+.now-time-label{
+  position:sticky;left:10px;z-index:4;display:inline-block;margin-left:8px;padding:2px 8px;
+  border-radius:999px;background:#ff4d5f;color:#fff;font-size:10px;font-weight:950;letter-spacing:.4px;
+  border:1px solid #ff7b88;box-shadow:0 2px 8px rgba(0,0,0,.35);white-space:nowrap;
+}
+body.light-theme .now-time-row td{background:transparent!important}
+body.light-theme .now-time-bar::before{background:#d71938;box-shadow:none}
+body.light-theme .now-time-label{background:#d71938;color:#fff;border-color:#a9112a}
+
 </style>
 </head>
 <body>
@@ -1798,7 +1820,23 @@ function render(){
  const active=selectedAirlines(); const q=$('#search').value.trim().toUpperCase();
  let data=turns.filter(t=>{const fs=[t.a?.flight,t.d?.flight].filter(Boolean);if(fs.length&&!fs.some(f=>active.includes(prefix(f))))return false;const vals=[...fs,t.reg,t.a?.airportCode,t.d?.airportCode,t.a?.carousel,t.a?.gate,t.d?.gate,t.detail?.des];return !q||vals.some(v=>String(v||'').toUpperCase().includes(q))});
  data.sort((x,y)=>mins(x.sort)-mins(y.sort));
- $('#tbody').innerHTML=data.length?data.map(t=>{const a=t.a,d=t.d;return `<tr class="${!t.reg?'unpaired':''}"><td class="flight arrflt${cellChanged(t,'arrFlt')}">${esc(a?.flight||'-')}${a?sourceBadge(a):''}</td><td class="reg${cellChanged(t,'reg')}">${regCellHtml(t)}</td><td class="${cellChanged(t,'from').trim()}">${esc(a?.airportCode||'-')}</td><td class="time${cellChanged(t,'sta')}">${esc(a?.sched||'-')}</td><td class="time live${cellChanged(t,'eta')}">${esc(a?.est||'-')}</td><td class="${cellChanged(t,'arrSpot').trim()}">${arrSpotHtml(t)}</td><td class="${cellChanged(t,'towSpot').trim()}">${towSpotHtml(t)}</td><td class="${cellChanged(t,'depSpot').trim()}">${depSpotHtml(t)}</td><td class="${cellChanged(t,'carousel').trim()}">${a?.carousel?`<span class="carousel">${esc(a.carousel)}</span><span class="source src-api">API</span>`:'-'}</td><td class="flight depflt${cellChanged(t,'depFlt')}">${esc(d?.flight||'-')}${d?sourceBadge(d):''}</td><td class="${cellChanged(t,'to').trim()}">${esc(d?.airportCode||t.detail?.des||'-')}</td><td class="time${cellChanged(t,'std')}">${d?.sched?esc(d.sched):'-'}</td><td class="time live${cellChanged(t,'etd')}">${d?.est?esc(d.est):'-'}</td><td class="${cellChanged(t,'status').trim()}">${statusHtml(t)}</td><td class="${cellChanged(t,'lo').trim()}">${loFlagHtml(t)}</td><td class="${cellChanged(t,'tow').trim()}">${towFlagHtml(t)}</td><td>${outFltCgoHtml(t)}</td><td>${loadSummaryHtml(t,'baggage')}</td><td>${loadSummaryHtml(t,'cargo')}</td></tr>`}).join(''):'<tr><td colspan="19" class="empty">API 또는 RCM 자료가 있으면 운항편이 표시됩니다.</td></tr>';
+ const renderTurnRow=t=>{const a=t.a,d=t.d;return `<tr class="${!t.reg?'unpaired':''}"><td class="flight arrflt${cellChanged(t,'arrFlt')}">${esc(a?.flight||'-')}${a?sourceBadge(a):''}</td><td class="reg${cellChanged(t,'reg')}">${regCellHtml(t)}</td><td class="${cellChanged(t,'from').trim()}">${esc(a?.airportCode||'-')}</td><td class="time${cellChanged(t,'sta')}">${esc(a?.sched||'-')}</td><td class="time live${cellChanged(t,'eta')}">${esc(a?.est||'-')}</td><td class="${cellChanged(t,'arrSpot').trim()}">${arrSpotHtml(t)}</td><td class="${cellChanged(t,'towSpot').trim()}">${towSpotHtml(t)}</td><td class="${cellChanged(t,'depSpot').trim()}">${depSpotHtml(t)}</td><td class="${cellChanged(t,'carousel').trim()}">${a?.carousel?`<span class="carousel">${esc(a.carousel)}</span><span class="source src-api">API</span>`:'-'}</td><td class="flight depflt${cellChanged(t,'depFlt')}">${esc(d?.flight||'-')}${d?sourceBadge(d):''}</td><td class="${cellChanged(t,'to').trim()}">${esc(d?.airportCode||t.detail?.des||'-')}</td><td class="time${cellChanged(t,'std')}">${d?.sched?esc(d.sched):'-'}</td><td class="time live${cellChanged(t,'etd')}">${d?.est?esc(d.est):'-'}</td><td class="${cellChanged(t,'status').trim()}">${statusHtml(t)}</td><td class="${cellChanged(t,'lo').trim()}">${loFlagHtml(t)}</td><td class="${cellChanged(t,'tow').trim()}">${towFlagHtml(t)}</td><td>${outFltCgoHtml(t)}</td><td>${loadSummaryHtml(t,'baggage')}</td><td>${loadSummaryHtml(t,'cargo')}</td></tr>`};
+ const selectedDate=$('#opDate')?.value||todayLocal();
+ let tableHtml='';
+ if(data.length){
+   const isToday=selectedDate===todayLocal();
+   const now=new Date();
+   const nowMin=now.getHours()*60+now.getMinutes();
+   const nowLabel=`NOW ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+   const nowRow=`<tr class="now-time-row"><td colspan="19"><div class="now-time-bar"><span class="now-time-label">${nowLabel}</span></div></td></tr>`;
+   let inserted=false;
+   for(const t of data){
+     if(isToday&&!inserted&&mins(t.sort)>=nowMin){tableHtml+=nowRow;inserted=true;}
+     tableHtml+=renderTurnRow(t);
+   }
+   if(isToday&&!inserted)tableHtml+=nowRow;
+ }else tableHtml='<tr><td colspan="19" class="empty">API 또는 RCM 자료가 있으면 운항편이 표시됩니다.</td></tr>';
+ $('#tbody').innerHTML=tableHtml;
  bindRegInputs(); bindTowButtons(); bindOutFltCgoInputs();
  const visibleTurns=data;
  const flightObjs=[]; for(const t of visibleTurns){if(t.a)flightObjs.push(t.a);if(t.d)flightObjs.push(t.d)}
@@ -2046,6 +2084,8 @@ try{
   const psaved=localStorage.getItem(PAX_KEY_LOCAL)||localStorage.getItem('jas_icn_pax_api_key_v34');if(psaved)$('#paxApiKey').value=psaved;
   liveDayToken=todayLocal();updateLiveStamp(todayLocal());startAutoLive();
   setInterval(()=>{const n=$('#now');if(n)n.textContent=new Date().toLocaleString('ko-KR',{hour12:false});checkLiveDayRollover();},1000);
+  // 선택일이 오늘이면 현재시간 표시바를 1분마다 새 위치로 갱신한다.
+  setInterval(()=>{if(($('#opDate')?.value||'')===todayLocal())render();},60000);
   updateStorageStats();$('#cloudBadge').textContent='CLOUD 연결';render();startChangeAckPolling();
 }catch(e){console.error('dashboard startup error',e);}
 
