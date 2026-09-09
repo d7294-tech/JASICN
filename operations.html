@@ -1778,7 +1778,14 @@ function addBagCgoSection(ws,startRow,title,date,records,timeHeader){
   let r=hr+1;
   records.forEach((x,i)=>{
     const vals=[i+1,x.flight,bagCgoTimeValue(x.time),x.bagPcs||'',x.bagKg||'',x.cgoPcs||'',x.cgoKg||''];
-    vals.forEach((v,c)=>ws[XLSX.utils.encode_cell({r:r-1,c})]={t:(typeof v==='number'?'n':'s'),v,s:bodyStyle});
+    vals.forEach((v,c)=>{
+      const cell={t:(typeof v==='number'?'n':'s'),v,s:bodyStyle};
+      if(typeof v==='number'){
+        if(c===3||c===5)cell.z='0" PCS"';
+        if(c===4||c===6)cell.z='0" KG"';
+      }
+      ws[XLSX.utils.encode_cell({r:r-1,c})]=cell;
+    });
     r++;
   });
   const totalRow=r;
@@ -1788,7 +1795,10 @@ function addBagCgoSection(ws,startRow,title,date,records,timeHeader){
   for(let c=3;c<=6;c++){
     const col=XLSX.utils.encode_col(c);
     const first=hr+1, last=Math.max(hr+1,totalRow-1);
-    ws[XLSX.utils.encode_cell({r:totalRow-1,c})]={t:'n',f:records.length?`SUM(${col}${first}:${col}${totalRow-1})`:'0',s:totalStyle};
+    const totalCell={t:'n',f:records.length?`SUM(${col}${first}:${col}${totalRow-1})`:'0',s:totalStyle};
+    if(c===3||c===5)totalCell.z='0" PCS"';
+    if(c===4||c===6)totalCell.z='0" KG"';
+    ws[XLSX.utils.encode_cell({r:totalRow-1,c})]=totalCell;
   }
   if(!ws['!rows'])ws['!rows']=[];
   ws['!rows'][startRow-1]={hpt:22}; ws['!rows'][hr-1]={hpt:22};
