@@ -165,7 +165,7 @@ body:not(.light) .go{color:#20d7ff!important}
 /* ===== ICN AIRPORT WEATHER COMMON OPERATIONS ALERT ===== */
 .ops-alert{margin:0 0 22px;background:#0b1b2e;border:1px solid var(--line);border-radius:14px;padding:14px 16px}
 .ops-alert-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}.ops-alert-head b{font-size:15px}.ops-alert-status{font-size:11px;font-weight:900;border-radius:999px;padding:5px 9px;background:#153044;color:#9fdcff;border:1px solid #31516b}.ops-alert-status.ok{background:#103728;color:#70f1b4;border-color:#236748}.ops-alert-status.warn{background:#4a3511;color:#ffd36a;border-color:#6c531e}.ops-alert-status.danger{background:#481c23;color:#ff9aa8;border-color:#71303a}.ops-alert-updated{margin-left:auto;font-size:11px;color:var(--muted)}
-.ops-weather{display:grid;grid-template-columns:repeat(6,minmax(120px,1fr));gap:8px}.ops-weather .wbox{background:#081727;border:1px solid #203a52;border-radius:10px;padding:10px}.ops-weather .wl{font-size:10px;color:#819bb4;font-weight:800;margin-bottom:4px}.ops-weather .wv{font-size:17px;font-weight:950;color:#eaf3ff}.ops-weather .ws{font-size:10px;color:#91a8bd;margin-top:4px}.ops-alert-tags{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}.ops-alert-tag{font-size:11px;font-weight:900;border:1px solid #2b4a64;background:#10253a;color:#b8cce0;border-radius:999px;padding:5px 9px}.ops-alert-tag.warn{border-color:#7a5a1e;background:#3d2d0f;color:#ffd36a}.ops-alert-tag.danger{border-color:#7a2c38;background:#3b1820;color:#ff8d9d}.ops-alert-tag.ok{border-color:#236748;background:#103728;color:#70f1b4}
+.ops-weather{display:grid;grid-template-columns:repeat(9,minmax(110px,1fr));gap:8px}.ops-weather .wbox{background:#081727;border:1px solid #203a52;border-radius:10px;padding:10px}.ops-weather .wl{font-size:10px;color:#819bb4;font-weight:800;margin-bottom:4px}.ops-weather .wv{font-size:17px;font-weight:950;color:#eaf3ff}.ops-weather .ws{font-size:10px;color:#91a8bd;margin-top:4px}.ops-alert-tags{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}.ops-alert-tag{font-size:11px;font-weight:900;border:1px solid #2b4a64;background:#10253a;color:#b8cce0;border-radius:999px;padding:5px 9px}.ops-alert-tag.warn{border-color:#7a5a1e;background:#3d2d0f;color:#ffd36a}.ops-alert-tag.danger{border-color:#7a2c38;background:#3b1820;color:#ff8d9d}.ops-alert-tag.ok{border-color:#236748;background:#103728;color:#70f1b4}
 body.light .ops-alert{background:#fff} body.light .ops-weather .wbox{background:#f7f9fc;border-color:#d7e0e9} body.light .ops-weather .wv{color:#10253d}
 @media(max-width:1100px){.ops-weather{grid-template-columns:repeat(3,1fr)}}@media(max-width:650px){.ops-weather{grid-template-columns:repeat(2,1fr)}.ops-alert-updated{margin-left:0;width:100%}}
 </style>
@@ -196,12 +196,15 @@ body.light .ops-alert{background:#fff} body.light .ops-weather .wbox{background:
   <section id="opsAlert" class="ops-alert">
     <div class="ops-alert-head"><b>⚠ 공통 운영경보 · ICN</b><span id="opsAlertStatus" class="ops-alert-status">기상정보 연결 대기</span><span id="opsAlertUpdated" class="ops-alert-updated">-</span></div>
     <div class="ops-weather">
-      <div class="wbox"><div class="wl">현재온도</div><div id="liveTemp" class="wv">-</div><div class="ws">AMOS 실황</div></div>
-      <div class="wbox"><div class="wl">현재시정</div><div id="liveVis" class="wv">-</div><div class="ws">L/R 최소값</div></div>
-      <div class="wbox"><div class="wl">풍속 / 돌풍</div><div id="liveWind" class="wv">-</div><div class="ws">10분풍속 / 최대풍속</div></div>
-      <div class="wbox"><div class="wl">강수</div><div id="liveRain" class="wv">-</div><div class="ws">AMOS 관측</div></div>
-      <div class="wbox"><div class="wl">체감온도</div><div id="liveFeels" class="wv">-</div><div class="ws">기온·습도·풍속 기반</div></div>
-      <div class="wbox"><div class="wl">관측시각</div><div id="liveTm" class="wv" style="font-size:14px">-</div><div class="ws">AMOS</div></div>
+      <div class="wbox"><div class="wl">현재온도</div><div id="liveTemp" class="wv">-</div><div class="ws">AMOS · TA</div></div>
+      <div class="wbox"><div class="wl">현재시정</div><div id="liveVis" class="wv">-</div><div class="ws">L/R VIS 최소값</div></div>
+      <div class="wbox"><div class="wl">현재풍속</div><div id="liveWind" class="wv">-</div><div class="ws">10분 평균 우선</div></div>
+      <div class="wbox"><div class="wl">최대풍속</div><div id="liveGust" class="wv">-</div><div class="ws">10분 최대 우선</div></div>
+      <div class="wbox"><div class="wl">강수</div><div id="liveRain" class="wv">-</div><div class="ws">AMOS · RN</div></div>
+      <div class="wbox"><div class="wl">강설</div><div id="liveSnow" class="wv">별도연동</div><div class="ws">AMOS 매분 출력필드 없음</div></div>
+      <div class="wbox"><div class="wl">뇌우</div><div id="liveThunder" class="wv">별도연동</div><div class="ws">METAR/특보 연동 예정</div></div>
+      <div class="wbox"><div class="wl">체감온도</div><div id="liveFeels" class="wv">-</div><div class="ws">기온·습도·풍속 계산</div></div>
+      <div class="wbox"><div class="wl">관측시각</div><div id="liveTm" class="wv" style="font-size:14px">-</div><div class="ws">AMOS · KST</div></div>
     </div>
     <div class="ops-alert-tags" style="margin-top:8px"><span class="ops-alert-tag" id="liveSnow">❄ 강설 실황: 별도 METAR 연동 예정</span><span class="ops-alert-tag" id="liveThunder">⛈ 뇌우 실황: 별도 METAR/특보 연동 예정</span></div>
     <div class="ops-weather" style="margin-top:10px">
@@ -320,7 +323,8 @@ function renderWeather(payload){
   document.getElementById('liveTemp').textContent=f1(live.ta_c,'°C');
   document.getElementById('liveVis').textContent=fmtVis(live.vis_m);
   const ws=Number(live.ws10_ms??live.ws02_ms), gust=Number(live.ws10_max_ms??live.ws02_max_ms);
-  document.getElementById('liveWind').textContent=(Number.isFinite(ws)?ws.toFixed(1)+'m/s':'-')+' / '+(Number.isFinite(gust)?gust.toFixed(1)+'m/s':'-');
+  document.getElementById('liveWind').textContent=Number.isFinite(ws)?ws.toFixed(1)+'m/s':'-';
+  document.getElementById('liveGust').textContent=Number.isFinite(gust)?gust.toFixed(1)+'m/s':'-';
   document.getElementById('liveRain').textContent=f1(live.rn_mm,'mm');
   document.getElementById('liveFeels').textContent=f1(live.feels_c,'°C');
   document.getElementById('liveTm').textContent=fmtTm(live.tm);
@@ -342,7 +346,7 @@ function renderWeather(payload){
   if(Number.isFinite(live.ta_c)&&live.ta_c>=33){tags.push(['danger','폭염조건 '+Number(live.ta_c).toFixed(1)+'°C']);danger++;}
   if(Number.isFinite(live.ta_c)&&live.ta_c<=-10){tags.push(['danger','혹한조건 '+Number(live.ta_c).toFixed(1)+'°C']);danger++;}
   if(Number.isFinite(live.rn_mm)&&live.rn_mm>0){tags.push(['warn','강수 '+Number(live.rn_mm).toFixed(1)+'mm']);warn++;}
-  if(!payload?.live?.ok)tags.push(['warn','AMOS 미연결: KMA_AMOS_AUTH_KEY 필요']);
+  if(!payload?.live?.ok)tags.push(['warn','AMOS 실황 수신 실패: '+safeText(payload?.live?.error)]);
   if(!tags.length)tags.push(['ok','공항 운영기상 특이사항 없음']);
   document.getElementById('opsAlertTags').innerHTML=tags.map(([c,t])=>`<span class="ops-alert-tag ${c}">${String(t).replace(/[<>]/g,'')}</span>`).join('');
   setOpsAlertState(danger?'danger':warn?'warn':'ok',danger?`운영경보 ${danger}건`:warn?`주의정보 ${warn}건`:'정상');
