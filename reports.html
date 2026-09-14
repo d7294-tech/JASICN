@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>JAS 업무 / 보고</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--bg:#02070d;--panel:#0b2033;--panel2:#0e2940;--line:#21445e;--text:#eef7ff;--muted:#87a3b9;--cyan:#19d7ff;--green:#24e98a;--amber:#ffbc25;--red:#ff5365;--purple:#9c72ff;--blue:#188cff}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,"Noto Sans KR",sans-serif;font-size:14px}.hidden{display:none!important}
+header{height:62px;border-bottom:1px solid #173247;display:flex;align-items:center;padding:0 18px;gap:16px;position:sticky;top:0;background:#02070df2;z-index:20}.logo{font-size:36px;font-weight:1000;font-style:italic;color:#ff671f;letter-spacing:-3px}.title{font-size:20px;font-weight:900}.sub{color:var(--muted)}.spacer{flex:1}.badge{border:1px solid #28536f;background:#071725;border-radius:10px;padding:8px 11px;color:#b9d6e9}
+.toolbar{display:flex;gap:8px;align-items:center;padding:12px 16px;border-bottom:1px solid #163247;position:sticky;top:62px;background:#02070df2;z-index:19;flex-wrap:wrap}button,input,select,textarea{font:inherit}.btn{border:1px solid #2a5977;background:#0a2337;color:#f3fbff;border-radius:8px;padding:10px 14px;font-weight:800;cursor:pointer}.btn:hover{filter:brightness(1.15)}.btn.primary{background:#076fd5;border-color:#1d98ff}.btn.green{background:#087b4f;border-color:#11b879}.btn.red{background:#d9364d;border-color:#ff5365}.btn.tab.active{background:#0878df}.date{background:#071b2a;color:#fff;border:1px solid #2b5671;border-radius:8px;padding:9px 12px}.status{color:var(--green);font-weight:800}
+main{padding:14px 16px 36px;max-width:1900px;margin:auto}.reportHead{display:flex;align-items:end;gap:14px;margin:4px 0 12px}.reportHead h1{margin:0;font-size:27px}.reportHead .period{font-size:16px;color:#b8d7eb}.kpis{display:grid;grid-template-columns:repeat(8,minmax(135px,1fr));gap:10px;margin-bottom:12px}.kpi{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px;min-height:92px}.kpi .label{color:#a9c2d4;font-weight:800}.kpi .num{font-size:30px;font-weight:1000;margin-top:9px;letter-spacing:-1px}.cyan .num{color:var(--cyan)}.green .num{color:var(--green)}.amber .num{color:var(--amber)}.red .num{color:var(--red)}.purple .num{color:var(--purple)}
+.grid2{display:grid;grid-template-columns:1.2fr .8fr;gap:12px}.grid3{display:grid;grid-template-columns:1fr .8fr .9fr;gap:12px}.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:12px}.panelHead{display:flex;align-items:center;gap:8px;padding:11px 13px;border-bottom:1px solid #28506b;background:#0d2840;font-size:17px;font-weight:900}.panelHead .small{margin-left:auto;font-size:12px;color:#8dadc2;font-weight:500}.tablewrap{overflow:auto;max-height:430px}table{width:100%;border-collapse:collapse;font-size:13px}th{position:sticky;top:0;background:#10314c;color:#acd1e9;padding:9px 8px;border-bottom:1px solid #28536f;white-space:nowrap}td{padding:8px;border-bottom:1px solid #183952;text-align:center}tr:hover td{background:#0d2940}.left{text-align:left}.sumrow td{font-weight:900;background:#0f2d47}.pill{display:inline-block;border:1px solid #315b75;border-radius:99px;padding:3px 7px;margin:1px 2px;background:#0a1d2c}.ok{color:var(--green)}.warn{color:var(--amber)}.danger{color:var(--red)}
+.notes{width:100%;min-height:120px;resize:vertical;background:#061724;color:#e7f6ff;border:1px solid #28536f;border-radius:7px;padding:10px;line-height:1.5}.sign{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.sign div{border:1px solid #28506b;padding:13px;border-radius:8px;color:#9cb7c9}.monthlyOnly{display:none}.monthlyMode .dailyOnly{display:none}.monthlyMode .monthlyOnly{display:block}.monthlyMode .monthlyGrid{display:grid}.monthlyGrid{display:none;grid-template-columns:1fr 1fr;gap:12px}
+.empty{padding:26px;text-align:center;color:#728da2}.tiny{font-size:11px;color:#6f8ca0}.gseBar{height:8px;background:#142f43;border-radius:20px;overflow:hidden;min-width:100px}.gseBar i{display:block;height:100%;background:#1fdda1}.footerNote{color:#7292a8;font-size:11px;margin:8px 2px}.sectionTitle{font-size:18px;font-weight:900;margin:12px 0 8px}.right{text-align:right}
+@media(max-width:1200px){.kpis{grid-template-columns:repeat(4,1fr)}.grid2,.grid3,.monthlyGrid{grid-template-columns:1fr}}
+@media print{
+ @page{size:A4 landscape;margin:8mm} body{background:white!important;color:#111!important;font-size:9px}.noPrint,header,.toolbar{display:none!important}main{padding:0;max-width:none}.reportHead{margin:0 0 5mm}.reportHead h1{font-size:18px}.reportHead .period{color:#333}.kpis{grid-template-columns:repeat(8,1fr);gap:3px;margin-bottom:4px}.kpi{background:#fff!important;border:1px solid #888!important;min-height:52px;padding:5px}.kpi .label{color:#333;font-size:8px}.kpi .num{font-size:17px;margin-top:3px;color:#111!important}.panel{background:#fff!important;border:1px solid #777!important;break-inside:avoid;margin-bottom:4px}.panelHead{background:#eaf2f7!important;color:#111!important;border-bottom:1px solid #777;padding:5px;font-size:11px}.panelHead .small{color:#444}.tablewrap{overflow:visible;max-height:none}table{font-size:8px}th{position:static;background:#e7eff4!important;color:#111!important;padding:3px;border:1px solid #999}td{padding:3px;border:1px solid #aaa;color:#111!important}.sumrow td{background:#eef4f7!important}.grid2,.grid3,.monthlyGrid{gap:4px}.notes{background:#fff;color:#111;border:1px solid #888;min-height:50px;font-size:8px}.sign div{border:1px solid #888;color:#111;padding:7px}.pill{border:1px solid #999;background:white}.gseBar{border:1px solid #999;background:#fff}.gseBar i{background:#555}.footerNote,.tiny{color:#555}.pageBreak{break-before:page}.monthlyMode .monthlyOnly{display:block!important}.monthlyMode .dailyOnly{display:none!important}
+}
+</style>
+</head><body>
+<header><div class="logo">JAS</div><div class="title">업무 / 보고</div><div class="sub">운영 · 인원 · FLT · 휴게 · 연장 · 장비 통합 보고</div><div class="spacer"></div><div id="userBadge" class="badge">로그인 확인 중</div></header>
+<div class="toolbar noPrint">
+ <button class="btn tab active" id="dailyTab">일별 운용보고서</button><button class="btn tab" id="monthlyTab">월별 운용보고서</button>
+ <input id="opDate" type="date" class="date"><button class="btn" id="todayBtn">오늘</button><button class="btn primary" id="refreshBtn">새로고침</button>
+ <div class="spacer"></div><span id="cloudStatus" class="status">CLOUD 대기</span><button class="btn green" id="pdfBtn">PDF 출력</button>
+</div>
+<main id="main">
+ <div class="reportHead"><h1 id="reportTitle">일별 운용보고서</h1><div id="periodLabel" class="period"></div></div>
+ <section class="kpis dailyOnly">
+  <div class="kpi cyan"><div class="label">오전 출근 인원</div><div class="num" id="kAm">-</div></div>
+  <div class="kpi green"><div class="label">오후 출근 인원</div><div class="num" id="kPm">-</div></div>
+  <div class="kpi amber"><div class="label">총 출근 인원</div><div class="num" id="kTotalPeople">-</div></div>
+  <div class="kpi purple"><div class="label">당일 총 연장</div><div class="num" id="kDailyOt">-</div></div>
+  <div class="kpi cyan"><div class="label">FLT TOTAL</div><div class="num" id="kFlights">-</div></div>
+  <div class="kpi green"><div class="label">배정 완료</div><div class="num" id="kAssigned">-</div></div>
+  <div class="kpi amber"><div class="label">휴게 등록 조</div><div class="num" id="kBreakTeams">-</div></div>
+  <div class="kpi cyan"><div class="label">장비 가용률</div><div class="num" id="kGseAvail">-</div></div>
+ </section>
+ <section class="kpis monthlyOnly">
+  <div class="kpi cyan"><div class="label">누적 출근 인원</div><div class="num" id="mAttendance">-</div></div>
+  <div class="kpi purple"><div class="label">월 총 연장</div><div class="num" id="mOt">-</div></div>
+  <div class="kpi green"><div class="label">주간 연장</div><div class="num" id="mDayOt">-</div></div>
+  <div class="kpi amber"><div class="label">야간 연장</div><div class="num" id="mNightOt">-</div></div>
+  <div class="kpi cyan"><div class="label">TOTAL 편수</div><div class="num" id="mFlights">-</div></div>
+  <div class="kpi green"><div class="label">IN 편수</div><div class="num" id="mArr">-</div></div>
+  <div class="kpi amber"><div class="label">OUT 편수</div><div class="num" id="mDep">-</div></div>
+  <div class="kpi cyan"><div class="label">정비 입고 건수</div><div class="num" id="mMaint">-</div></div>
+ </section>
+
+ <div class="grid2 dailyOnly">
+  <section class="panel"><div class="panelHead">1. 오전 / 오후 출근 현황 및 휴게시간 <span class="small">인원/조 운영 + 잡배정 CLOUD</span></div><div class="tablewrap"><table><thead><tr><th>구분</th><th>조</th><th>근무코드</th><th>인원</th><th>휴게시간</th><th>비고</th></tr></thead><tbody id="crewBody"></tbody></table></div></section>
+  <section class="panel"><div class="panelHead">2. 연장 근무 현황 <span class="small">연장 SKD 업로드 자료</span></div><div class="tablewrap"><table><thead><tr><th>성명</th><th>사번</th><th>연장 시작</th><th>연장 종료</th><th>시간</th></tr></thead><tbody id="otBody"></tbody></table></div></section>
+ </div>
+ <div class="grid2 dailyOnly">
+  <section class="panel"><div class="panelHead">3. FLT SKD 조배정 현황 <span id="flightSummary" class="small"></span></div><div class="tablewrap"><table><thead><tr><th>ARR FLT</th><th>DEP FLT</th><th>REG</th><th>IN 담당</th><th>OUT 담당</th><th>배정상태</th></tr></thead><tbody id="flightBody"></tbody></table></div></section>
+  <section class="panel"><div class="panelHead">4. 장비 운영 현황 <span class="small">GSE CLOUD 현재 기준</span></div><div class="tablewrap"><table><thead><tr><th>카테고리</th><th>전체</th><th>가용</th><th>가용률</th><th>가동</th><th>수리/비가용</th></tr></thead><tbody id="gseBody"></tbody></table></div></section>
+ </div>
+ <div class="grid2 dailyOnly">
+  <section class="panel"><div class="panelHead">5. 장비 배정 현황 <span class="small">RT1 / RT2 / BELT</span></div><div class="tablewrap"><table><thead><tr><th>조</th><th>RT1</th><th>RT2</th><th>BELT</th></tr></thead><tbody id="gseAssignBody"></tbody></table></div></section>
+  <section class="panel"><div class="panelHead">6. 비고 / 특이사항</div><div style="padding:10px"><textarea id="notes" class="notes" placeholder="당일 주요 이슈, 지연, 인력/장비 특이사항 등을 입력하세요."></textarea></div></section>
+ </div>
+
+ <div class="monthlyOnly monthlyGrid">
+  <section class="panel"><div class="panelHead">1. 일자별 출근 인원 현황 <span class="small">CLOUD 저장 일자 기준</span></div><div class="tablewrap"><table><thead><tr><th>일자</th><th>오전</th><th>오후</th><th>기타</th><th>합계</th></tr></thead><tbody id="monthPeopleBody"></tbody></table></div></section>
+  <section class="panel"><div class="panelHead">2. 월 연장 근무 현황 <span class="small">연장 SKD 기준</span></div><div class="tablewrap"><table><thead><tr><th>성명</th><th>사번</th><th>총 연장</th><th>주간</th><th>야간</th></tr></thead><tbody id="monthOtBody"></tbody></table></div></section>
+  <section class="panel"><div class="panelHead">3. 일자별 FLT 현황</div><div class="tablewrap"><table><thead><tr><th>일자</th><th>IN</th><th>OUT</th><th>TOTAL</th></tr></thead><tbody id="monthFlightBody"></tbody></table></div></section>
+  <section class="panel"><div class="panelHead">4. 장비 / 정비 월 현황 <span class="small">정비 입고일 기준</span></div><div class="tablewrap"><table><thead><tr><th>구분</th><th>건수/대수</th><th>비고</th></tr></thead><tbody id="monthGseBody"></tbody></table></div></section>
+  <section class="panel" style="grid-column:1/-1"><div class="panelHead">5. 월간 비고 / 특이사항</div><div style="padding:10px"><textarea id="monthNotes" class="notes" placeholder="월간 주요 이슈, 인원/장비/운항 특이사항 등을 입력하세요."></textarea></div></section>
+ </div>
+ <div class="sign"><div>작성자 : ____________________</div><div>검토자 : ____________________</div><div>승인자 : ____________________</div></div>
+ <div class="footerNote">※ 월 출근 인원은 인원/조 운영에서 CLOUD에 저장된 일자별 조 편성 자료를 합산합니다. 장비 가용률은 보고서 조회 시점의 GSE CLOUD 현재 상태입니다.</div>
+</main>
+<script>
+const SUPABASE_URL='https://yblzvrfkohppnrxeorce.supabase.co';
+const SUPABASE_KEY='sb_publishable_1P8VyOOWWTf41F__nOYuUw_GKo-DiKu';
+const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const $=s=>document.querySelector(s);let mode='daily';let last={};
+function todayLocal(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function h(v){const n=Number(v)||0;return n?`${n.toFixed(2)}h`:'-'}
+function groupName(g){const s=String(g||'').trim();if(!s)return '-';if(/^\d+$/.test(s))return s+'조';return s}
+function shift(code){const c=String(code||'').toUpperCase().replace(/\s/g,'');if(/^(RA|A)/.test(c))return '오전';if(/^(RP|P)/.test(c))return '오후';return '기타'}
+function fmtBreak(arr){if(!Array.isArray(arr)||!arr.length)return '-';return arr.filter(x=>x?.start&&x?.end).map(x=>`${x.start}~${x.end}`).join(', ')||'-'}
+function monthRange(date){const d=new Date(date+'T00:00:00');const y=d.getFullYear(),m=d.getMonth();const a=`${y}-${String(m+1).padStart(2,'0')}-01`;const last=new Date(y,m+1,0).getDate();return {a,b:`${y}-${String(m+1).padStart(2,'0')}-${String(last).padStart(2,'0')}`,key:`${y}-${String(m+1).padStart(2,'0')}`}}
+function parseExt(){try{return JSON.parse(localStorage.getItem('jas_personnel_monthly_ext_v1')||'null')}catch{return null}}
+function parseAssignKey(k){const p=String(k).split('|');if(p.length<4)return null;const side=p[p.length-1];if(side!=='IN'&&side!=='OUT')return null;return {arr:p[0]||'',dep:p[1]||'',reg:p[2]||'',side}}
+function normTeam(v){return String(v||'').replace(/\s/g,'').replace(/^(\d+)$/,'$1조')}
+async function ensureAuth(){const {data:{session}}=await sb.auth.getSession();if(!session?.user){location.href='index.html';return false}$('#userBadge').textContent=session.user.email||'USER';return true}
+async function q(table,sel='*',fn){let x=sb.from(table).select(sel);if(fn)x=fn(x);const {data,error}=await x;if(error)throw error;return data||[]}
+async function loadDaily(date){
+ $('#cloudStatus').textContent='CLOUD 불러오는 중...';
+ const [pRows,jRows,fRows,gMaster,gMaint]=await Promise.all([
+  q('jas_personnel_daily','operation_date,summary,updated_at',x=>x.eq('operation_date',date)),
+  q('jas_job_daily','operation_date,assignments,breaks,updated_at',x=>x.eq('operation_date',date)),
+  q('jas_flights','operation_date,flight,direction,reg,schedule_time,status',x=>x.eq('operation_date',date).order('schedule_time')),
+  q('jas_gse_master','equipment_no,equipment_name,category,operation_state,current_meter'),
+  q('jas_gse_maintenance','id,equipment_no,status,inbound_date,outbound_date,note,issue')
+ ]);
+ const p=pRows[0]||{}, summary=p.summary||{}, crewRows=Array.isArray(summary.rows)?summary.rows:[];
+ const job=jRows[0]||{}, assigns=job.assignments||{}, breaks=job.breaks||{};
+ let am=0,pm=0,other=0;crewRows.forEach(r=>{const n=Number(r.count)||((r.names||[]).length);const s=shift(r.code);if(s==='오전')am+=n;else if(s==='오후')pm+=n;else other+=n});
+ $('#kAm').textContent=am+'명';$('#kPm').textContent=pm+'명';$('#kTotalPeople').textContent=(am+pm+other)+'명';
+ const breakByNorm={};Object.entries(breaks).forEach(([k,v])=>breakByNorm[normTeam(k)]=v);
+ $('#kBreakTeams').textContent=Object.values(breaks).filter(v=>Array.isArray(v)&&v.some(x=>x?.start&&x?.end)).length+'조';
+ $('#crewBody').innerHTML=crewRows.length?crewRows.map(r=>{const gn=groupName(r.group),br=breaks[r.group]||breaks[gn]||breakByNorm[normTeam(gn)]||[];return `<tr><td>${shift(r.code)}</td><td><b>${esc(gn)}</b></td><td>${esc(r.code)}</td><td>${Number(r.count)||((r.names||[]).length)}</td><td>${esc(fmtBreak(br))}</td><td>${br.length?'':'휴게 미등록'}</td></tr>`}).join(''):'<tr><td colspan="6" class="empty">선택일 인원 조 편성 CLOUD 자료가 없습니다.</td></tr>';
+ const ext=parseExt(),d=new Date(date+'T00:00:00'),day=d.getDate();let dailyOt=0,otRows=[];
+ if(ext&&Number(ext.year)===d.getFullYear()&&Number(ext.month)===d.getMonth()+1){for(const x of ext.items||[]){const e=x.days?.[day]||x.days?.[String(day)];if(e&&(e.start||e.end)){const total=Number(e.total)||0;dailyOt+=total;otRows.push({...x,...e,total})}}}
+ $('#kDailyOt').textContent=h(dailyOt);$('#otBody').innerHTML=otRows.length?otRows.sort((a,b)=>String(a.start).localeCompare(String(b.start))).map(x=>`<tr><td>${esc(x.name)}</td><td>${esc(x.empNo)}</td><td>${esc(x.start||'-')}</td><td>${esc(x.end||'-')}</td><td>${h(x.total)}</td></tr>`).join(''):'<tr><td colspan="5" class="empty">선택일 연장 자료가 없습니다. 인원/조 운영에서 연장 SKD를 업로드해 주세요.</td></tr>';
+ const inF=fRows.filter(x=>String(x.direction).toUpperCase()==='IN'),outF=fRows.filter(x=>String(x.direction).toUpperCase()==='OUT');$('#kFlights').textContent=(inF.length+outF.length)+'편';
+ const jobs=new Map();Object.entries(assigns).forEach(([k,v])=>{const p=parseAssignKey(k);if(!p||!v)return;const key=`${p.arr}|${p.dep}|${p.reg}`;if(!jobs.has(key))jobs.set(key,{arr:p.arr,dep:p.dep,reg:p.reg,IN:'',OUT:''});jobs.get(key)[p.side]=v});
+ const assignedSides=[...jobs.values()].reduce((n,x)=>n+(x.IN?1:0)+(x.OUT?1:0),0);$('#kAssigned').textContent=assignedSides+'건';
+ $('#flightSummary').textContent=`IN ${inF.length} / OUT ${outF.length} · 배정 ${assignedSides}건`;
+ $('#flightBody').innerHTML=jobs.size?[...jobs.values()].map(x=>`<tr><td>${esc(x.arr||'-')}</td><td>${esc(x.dep||'-')}</td><td>${esc(x.reg||'-')}</td><td>${esc(x.IN||'-')}</td><td>${esc(x.OUT||'-')}</td><td class="${x.IN||x.OUT?'ok':'warn'}">${x.IN&&x.OUT?'IN/OUT 완료':(x.IN||x.OUT?'부분 배정':'미배정')}</td></tr>`).join(''):'<tr><td colspan="6" class="empty">잡배정 CLOUD 자료가 없습니다.</td></tr>';
+ // GSE availability: use latest maintenance state per equipment
+ const latest={};gMaint.forEach(x=>{if(!latest[x.equipment_no]||Number(x.id)>Number(latest[x.equipment_no].id))latest[x.equipment_no]=x});
+ const isUnavailable=x=>{const m=latest[x.equipment_no],s=String(m?.status||'');return ['수리중','기타 비가용'].includes(s)||(s==='입고대기'&&String(m?.note||'').includes('[#UNAVAIL]'))};
+ const cats={};gMaster.forEach(x=>{const c=x.category||'미분류';(cats[c]??=[]).push(x)});let availAll=0;gMaster.forEach(x=>{if(!isUnavailable(x))availAll++});$('#kGseAvail').textContent=gMaster.length?Math.round(availAll/gMaster.length*100)+'%':'-';
+ $('#gseBody').innerHTML=Object.entries(cats).sort((a,b)=>a[0].localeCompare(b[0])).map(([c,a])=>{const av=a.filter(x=>!isUnavailable(x)).length,run=a.filter(x=>String(x.operation_state)==='가동').length,un=a.length-av;return `<tr><td class="left"><b>${esc(c)}</b></td><td>${a.length}</td><td>${av}</td><td><b class="ok">${a.length?Math.round(av/a.length*100):0}%</b></td><td>${run}</td><td>${un}</td></tr>`}).join('')||'<tr><td colspan="6" class="empty">GSE 자료 없음</td></tr>';
+ const gseMap={};Object.entries(assigns).forEach(([k,v])=>{if(!k.startsWith('GSE|')||!v)return;const p=k.split('|');const team=p[1]||'-',slot=p[2]||'-';(gseMap[team]??={RT1:'-',RT2:'-',BELT:'-'})[slot]=v});
+ $('#gseAssignBody').innerHTML=Object.entries(gseMap).length?Object.entries(gseMap).map(([team,o])=>`<tr><td><b>${esc(team)}</b></td><td>${esc(o.RT1||'-')}</td><td>${esc(o.RT2||'-')}</td><td>${esc(o.BELT||'-')}</td></tr>`).join(''):'<tr><td colspan="4" class="empty">장비 배정 자료가 없습니다.</td></tr>';
+ last={date,am,pm,other,dailyOt,flights:inF.length+outF.length};$('#cloudStatus').textContent='CLOUD 조회 완료';
+ restoreNotes(date,false);
+}
+async function loadMonthly(date){
+ $('#cloudStatus').textContent='월간 CLOUD 집계 중...';const r=monthRange(date);
+ const [ps,fs,maint]=await Promise.all([
+  q('jas_personnel_daily','operation_date,summary',x=>x.gte('operation_date',r.a).lte('operation_date',r.b).order('operation_date')),
+  q('jas_flights','operation_date,flight,direction',x=>x.gte('operation_date',r.a).lte('operation_date',r.b).order('operation_date')),
+  q('jas_gse_maintenance','id,equipment_no,status,inbound_date,outbound_date,issue',x=>x.gte('inbound_date',r.a).lte('inbound_date',r.b).order('inbound_date'))
+ ]);
+ let attend=0;$('#monthPeopleBody').innerHTML=ps.length?ps.map(x=>{let am=0,pm=0,o=0;for(const z of x.summary?.rows||[]){const n=Number(z.count)||((z.names||[]).length);const s=shift(z.code);if(s==='오전')am+=n;else if(s==='오후')pm+=n;else o+=n}const t=am+pm+o;attend+=t;return `<tr><td>${esc(x.operation_date)}</td><td>${am}</td><td>${pm}</td><td>${o}</td><td><b>${t}</b></td></tr>`}).join(''):'<tr><td colspan="5" class="empty">월간 인원 CLOUD 저장 자료가 없습니다.</td></tr>';$('#mAttendance').textContent=attend+'명';
+ const ext=parseExt();let mt=0,md=0,mn=0,items=[];if(ext&&`${ext.year}-${String(ext.month).padStart(2,'0')}`===r.key){items=ext.items||[];mt=items.reduce((a,x)=>a+(Number(x.total)||0),0);md=items.reduce((a,x)=>a+(Number(x.day)||0),0);mn=items.reduce((a,x)=>a+(Number(x.night)||0),0)}$('#mOt').textContent=h(mt);$('#mDayOt').textContent=h(md);$('#mNightOt').textContent=h(mn);$('#monthOtBody').innerHTML=items.length?items.filter(x=>(Number(x.total)||0)>0).sort((a,b)=>(Number(b.total)||0)-(Number(a.total)||0)).map(x=>`<tr><td>${esc(x.name)}</td><td>${esc(x.empNo)}</td><td>${h(x.total)}</td><td>${h(x.day)}</td><td>${h(x.night)}</td></tr>`).join(''):'<tr><td colspan="5" class="empty">월간 연장 SKD 자료가 없습니다.</td></tr>';
+ const byDate={};for(const x of fs){const d=x.operation_date;(byDate[d]??={IN:0,OUT:0});const dir=String(x.direction).toUpperCase();if(dir==='IN')byDate[d].IN++;if(dir==='OUT')byDate[d].OUT++}let arr=0,dep=0;$('#monthFlightBody').innerHTML=Object.entries(byDate).map(([d,v])=>{arr+=v.IN;dep+=v.OUT;return `<tr><td>${d}</td><td>${v.IN}</td><td>${v.OUT}</td><td><b>${v.IN+v.OUT}</b></td></tr>`}).join('')||'<tr><td colspan="4" class="empty">월간 FLT CLOUD 자료가 없습니다.</td></tr>';$('#mArr').textContent=arr+'편';$('#mDep').textContent=dep+'편';$('#mFlights').textContent=(arr+dep)+'편';
+ $('#mMaint').textContent=maint.length+'건';const open=maint.filter(x=>!x.outbound_date).length,done=maint.filter(x=>x.outbound_date).length;$('#monthGseBody').innerHTML=`<tr><td class="left">정비 입고</td><td>${maint.length}건</td><td>${r.key}</td></tr><tr><td class="left">출고 완료</td><td>${done}건</td><td>동월 입고건 기준</td></tr><tr><td class="left">미출고</td><td>${open}건</td><td>동월 입고건 기준</td></tr>`;
+ $('#cloudStatus').textContent='월간 집계 완료';restoreNotes(r.key,true);
+}
+function notesKey(period,monthly){return `jas_report_notes_${monthly?'month':'day'}_${period}`}
+function restoreNotes(period,monthly){const el=monthly?$('#monthNotes'):$('#notes');el.value=localStorage.getItem(notesKey(period,monthly))||'';el.oninput=()=>localStorage.setItem(notesKey(period,monthly),el.value)}
+async function refresh(){const date=$('#opDate').value||todayLocal();$('#periodLabel').textContent=mode==='daily'?date:monthRange(date).key;$('#reportTitle').textContent=mode==='daily'?'일별 운용보고서':'월별 운용보고서';try{if(mode==='daily')await loadDaily(date);else await loadMonthly(date)}catch(e){console.error(e);$('#cloudStatus').textContent='조회 실패';alert('보고서 데이터 조회 실패\n'+(e.message||e))}}
+function setMode(m){mode=m;document.body.classList.toggle('monthlyMode',m==='monthly');$('#dailyTab').classList.toggle('active',m==='daily');$('#monthlyTab').classList.toggle('active',m==='monthly');refresh()}
+$('#dailyTab').onclick=()=>setMode('daily');$('#monthlyTab').onclick=()=>setMode('monthly');$('#refreshBtn').onclick=refresh;$('#todayBtn').onclick=()=>{$('#opDate').value=todayLocal();refresh()};$('#opDate').onchange=refresh;$('#pdfBtn').onclick=()=>window.print();
+(async()=>{if(!await ensureAuth())return;$('#opDate').value=todayLocal();await refresh()})();
+</script></body></html>
