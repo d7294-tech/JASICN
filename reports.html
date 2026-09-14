@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>JAS 업무 / 보고</title>
+<title>JAS 업무 / 보고 v0.1.1</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{--bg:#02070d;--panel:#0b2033;--panel2:#0e2940;--line:#21445e;--text:#eef7ff;--muted:#87a3b9;--cyan:#19d7ff;--green:#24e98a;--amber:#ffbc25;--red:#ff5365;--purple:#9c72ff;--blue:#188cff}
@@ -86,6 +86,13 @@ function monthRange(date){const d=new Date(date+'T00:00:00');const y=d.getFullYe
 function parseExt(){try{return JSON.parse(localStorage.getItem('jas_personnel_monthly_ext_v1')||'null')}catch{return null}}
 function parseAssignKey(k){const p=String(k).split('|');if(p.length<4)return null;const side=p[p.length-1];if(side!=='IN'&&side!=='OUT')return null;return {arr:p[0]||'',dep:p[1]||'',reg:p[2]||'',side}}
 function normTeam(v){return String(v||'').replace(/\s/g,'').replace(/^(\d+)$/,'$1조')}
+function buildCrewLabelMap(rows){
+ const m={'__EMERGENCY_G__':'G','__EMERGENCY_G1__':'G1'};
+ const active=(Array.isArray(rows)?rows:[]).filter(r=>r&&r.group&&Array.isArray(r.names)&&r.names.filter(Boolean).length>0);
+ active.forEach((r,idx)=>{const id=`${r.group}|${r.code||''}|${idx}`;const g=groupName(r.group);m[id]=`${g}${r.code?` (${r.code})`:''}`;});
+ return m;
+}
+function assignmentLabel(v,map){const raw=String(v||'');if(!raw)return '-';if(map&&map[raw])return map[raw];if(raw==='__EMERGENCY_G__')return 'G';if(raw==='__EMERGENCY_G1__')return 'G1';const p=raw.split('|');if(p.length>=2&&p[0]){const g=groupName(p[0]);return `${g}${p[1]?` (${p[1]})`:''}`;}return raw}
 async function ensureAuth(){const {data:{session}}=await sb.auth.getSession();if(!session?.user){location.href='index.html';return false}$('#userBadge').textContent=session.user.email||'USER';return true}
 async function q(table,sel='*',fn){let x=sb.from(table).select(sel);if(fn)x=fn(x);const {data,error}=await x;if(error)throw error;return data||[]}
 async function loadDaily(date){
@@ -99,6 +106,7 @@ async function loadDaily(date){
  ]);
  const p=pRows[0]||{}, summary=p.summary||{}, crewRows=Array.isArray(summary.rows)?summary.rows:[];
  const job=jRows[0]||{}, assigns=job.assignments||{}, breaks=job.breaks||{};
+ const crewLabelMap=buildCrewLabelMap(crewRows);
  let am=0,pm=0,other=0;crewRows.forEach(r=>{const n=Number(r.count)||((r.names||[]).length);const s=shift(r.code);if(s==='오전')am+=n;else if(s==='오후')pm+=n;else other+=n});
  $('#kAm').textContent=am+'명';$('#kPm').textContent=pm+'명';$('#kTotalPeople').textContent=(am+pm+other)+'명';
  const breakByNorm={};Object.entries(breaks).forEach(([k,v])=>breakByNorm[normTeam(k)]=v);
@@ -111,7 +119,7 @@ async function loadDaily(date){
  const jobs=new Map();Object.entries(assigns).forEach(([k,v])=>{const p=parseAssignKey(k);if(!p||!v)return;const key=`${p.arr}|${p.dep}|${p.reg}`;if(!jobs.has(key))jobs.set(key,{arr:p.arr,dep:p.dep,reg:p.reg,IN:'',OUT:''});jobs.get(key)[p.side]=v});
  const assignedSides=[...jobs.values()].reduce((n,x)=>n+(x.IN?1:0)+(x.OUT?1:0),0);$('#kAssigned').textContent=assignedSides+'건';
  $('#flightSummary').textContent=`IN ${inF.length} / OUT ${outF.length} · 배정 ${assignedSides}건`;
- $('#flightBody').innerHTML=jobs.size?[...jobs.values()].map(x=>`<tr><td>${esc(x.arr||'-')}</td><td>${esc(x.dep||'-')}</td><td>${esc(x.reg||'-')}</td><td>${esc(x.IN||'-')}</td><td>${esc(x.OUT||'-')}</td><td class="${x.IN||x.OUT?'ok':'warn'}">${x.IN&&x.OUT?'IN/OUT 완료':(x.IN||x.OUT?'부분 배정':'미배정')}</td></tr>`).join(''):'<tr><td colspan="6" class="empty">잡배정 CLOUD 자료가 없습니다.</td></tr>';
+ $('#flightBody').innerHTML=jobs.size?[...jobs.values()].map(x=>`<tr><td>${esc(x.arr||'-')}</td><td>${esc(x.dep||'-')}</td><td>${esc(x.reg||'-')}</td><td>${esc(assignmentLabel(x.IN,crewLabelMap))}</td><td>${esc(assignmentLabel(x.OUT,crewLabelMap))}</td><td class="${x.IN||x.OUT?'ok':'warn'}">${x.IN&&x.OUT?'IN/OUT 완료':(x.IN||x.OUT?'부분 배정':'미배정')}</td></tr>`).join(''):'<tr><td colspan="6" class="empty">잡배정 CLOUD 자료가 없습니다.</td></tr>';
  // GSE availability: use latest maintenance state per equipment
  const latest={};gMaint.forEach(x=>{if(!latest[x.equipment_no]||Number(x.id)>Number(latest[x.equipment_no].id))latest[x.equipment_no]=x});
  const isUnavailable=x=>{const m=latest[x.equipment_no],s=String(m?.status||'');return ['수리중','기타 비가용'].includes(s)||(s==='입고대기'&&String(m?.note||'').includes('[#UNAVAIL]'))};
