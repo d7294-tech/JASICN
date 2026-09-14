@@ -201,12 +201,12 @@ body.light .ops-alert{background:#fff} body.light .ops-weather .wbox{background:
       <div class="wbox"><div class="wl">현재풍속</div><div id="liveWind" class="wv">-</div><div class="ws">10분 평균 우선</div></div>
       <div class="wbox"><div class="wl">최대풍속</div><div id="liveGust" class="wv">-</div><div class="ws">10분 최대 우선</div></div>
       <div class="wbox"><div class="wl">강수</div><div id="liveRain" class="wv">-</div><div class="ws">AMOS · RN</div></div>
-      <div class="wbox"><div class="wl">강설</div><div id="liveSnow" class="wv">별도연동</div><div class="ws">AMOS 매분 출력필드 없음</div></div>
-      <div class="wbox"><div class="wl">뇌우</div><div id="liveThunder" class="wv">별도연동</div><div class="ws">METAR/특보 연동 예정</div></div>
+      <div class="wbox"><div class="wl">강설</div><div id="liveSnow" class="wv">조회중</div><div class="ws">METAR/SPECI · RKSI</div></div>
+      <div class="wbox"><div class="wl">뇌우</div><div id="liveThunder" class="wv">조회중</div><div class="ws">METAR/SPECI · RKSI</div></div>
       <div class="wbox"><div class="wl">체감온도</div><div id="liveFeels" class="wv">-</div><div class="ws">기온·습도·풍속 계산</div></div>
       <div class="wbox"><div class="wl">관측시각</div><div id="liveTm" class="wv" style="font-size:14px">-</div><div class="ws">AMOS · KST</div></div>
     </div>
-    <div class="ops-alert-tags" style="margin-top:8px"><span class="ops-alert-tag" id="liveSnow">❄ 강설 실황: 별도 METAR 연동 예정</span><span class="ops-alert-tag" id="liveThunder">⛈ 뇌우 실황: 별도 METAR/특보 연동 예정</span></div>
+    <div class="ops-alert-tags" id="metarWxTags" style="margin-top:8px"><span class="ops-alert-tag">METAR/SPECI 현재일기 조회 중</span></div>
     <div class="ops-weather" style="margin-top:10px">
       <div class="wbox"><div class="wl">최저 / 최고기온</div><div id="airTemp" class="wv">-</div><div class="ws">공식 공항기상정보</div></div>
       <div class="wbox"><div class="wl">낮 최고 체감온도</div><div id="airHeat" class="wv">-</div><div class="ws">예보값</div></div>
@@ -320,7 +320,7 @@ function f1(v,suf=''){return validNum(v)?Number(v).toFixed(1)+suf:'-';}
 function fmtVis(v){if(!validNum(v))return '-';const n=Number(v);return n>=10000?'10km+':n>=1000?(n/1000).toFixed(1)+'km':Math.round(n)+'m';}
 function fmtTm(tm){const x=String(tm||'');return /^\d{12}$/.test(x)?`${x.slice(0,4)}-${x.slice(4,6)}-${x.slice(6,8)} ${x.slice(8,10)}:${x.slice(10,12)}`:(x||'-');}
 function renderWeather(payload){
-  const off=payload?.official?.data||{}; const live=payload?.live?.data||{};
+  const off=payload?.official?.data||{}; const live=payload?.live?.data||{}; const metar=payload?.metar?.data||{};
   document.getElementById('liveTemp').textContent=f1(live.ta_c,'°C');
   document.getElementById('liveVis').textContent=fmtVis(live.vis_m);
   const windVals=[live.ws02_ms,live.ws02_max_ms,live.ws10_ms,live.ws10_max_ms].filter(validNum).map(Number);
@@ -329,6 +329,13 @@ function renderWeather(payload){
   document.getElementById('liveWind').textContent=Number.isFinite(ws)?ws.toFixed(1)+'m/s':'-';
   document.getElementById('liveGust').textContent=Number.isFinite(gust)?gust.toFixed(1)+'m/s':'-';
   document.getElementById('liveRain').textContent=f1(live.rn_mm,'mm');
+  const snowEl=document.getElementById('liveSnow'), thunderEl=document.getElementById('liveThunder');
+  if(snowEl) snowEl.textContent=payload?.metar?.ok?(metar.snow?'강설 감지':'없음'):'수신대기';
+  if(thunderEl) thunderEl.textContent=payload?.metar?.ok?(metar.thunder?'뇌우 감지':'없음'):'수신대기';
+  const metarTags=document.getElementById('metarWxTags'); if(metarTags){
+    if(payload?.metar?.ok){const parts=[]; if(metar.snow)parts.push(`<span class="ops-alert-tag warn">❄ 강설 ${safeText((metar.snow_codes||[]).join(', '))}</span>`); if(metar.thunder)parts.push(`<span class="ops-alert-tag danger">⛈ 뇌우 ${safeText((metar.thunder_codes||[]).join(', '))}</span>`); if(!parts.length)parts.push(`<span class="ops-alert-tag ok">METAR/SPECI · 강설/뇌우 없음</span>`); metarTags.innerHTML=parts.join('');}
+    else metarTags.innerHTML=`<span class="ops-alert-tag warn">METAR/SPECI 미연동: ${safeText(payload?.metar?.error)}</span>`;
+  }
   document.getElementById('liveFeels').textContent=validNum(live.feels_c)?Number(live.feels_c).toFixed(1)+'°C':'-';
   const feelBox=document.getElementById('liveFeels')?.closest('.wbox'); const feelSub=feelBox?.querySelector('.ws'); if(feelSub) feelSub.textContent=live.feels_type==='wind_chill'?'한랭 체감온도':live.feels_type==='heat_index'?'고온 체감온도':'적용 조건 아님';
   document.getElementById('liveTm').textContent=fmtTm(live.tm);
@@ -350,7 +357,10 @@ function renderWeather(payload){
   if(Number.isFinite(live.ta_c)&&live.ta_c>=33){tags.push(['danger','폭염조건 '+Number(live.ta_c).toFixed(1)+'°C']);danger++;}
   if(Number.isFinite(live.ta_c)&&live.ta_c<=-10){tags.push(['danger','혹한조건 '+Number(live.ta_c).toFixed(1)+'°C']);danger++;}
   if(Number.isFinite(live.rn_mm)&&live.rn_mm>0){tags.push(['warn','강수 '+Number(live.rn_mm).toFixed(1)+'mm']);warn++;}
+  if(payload?.metar?.ok&&metar.snow){tags.push(['warn','강설 실황 '+safeText((metar.snow_codes||[]).join(', '))]);warn++;}
+  if(payload?.metar?.ok&&metar.thunder){tags.push(['danger','뇌우 실황 '+safeText((metar.thunder_codes||[]).join(', '))]);danger++;}
   if(!payload?.live?.ok)tags.push(['warn','AMOS 실황 수신 실패: '+safeText(payload?.live?.error)]);
+  if(!payload?.metar?.ok)tags.push(['warn','METAR/SPECI 수신 대기: '+safeText(payload?.metar?.error)]);
   if(!tags.length)tags.push(['ok','공항 운영기상 특이사항 없음']);
   document.getElementById('opsAlertTags').innerHTML=tags.map(([c,t])=>`<span class="ops-alert-tag ${c}">${String(t).replace(/[<>]/g,'')}</span>`).join('');
   setOpsAlertState(danger?'danger':warn?'warn':'ok',danger?`운영경보 ${danger}건`:warn?`주의정보 ${warn}건`:'정상');
