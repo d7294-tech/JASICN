@@ -299,7 +299,7 @@ $('#memberList')?.addEventListener('click',async e=>{const b=e.target.closest('b
 setInterval(()=>{$('#clock').textContent=new Date().toLocaleString('ko-KR',{hour12:false})},1000);
 
 // ===== ICN AMOS LIVE =====
-const AMOS_FUNCTION='kma-amos';
+const AMOS_FUNCTION='quick-processor';
 const AMOS_REFRESH_MS=60*1000;
 function fmtNum(v,d=1){const n=Number(v);return Number.isFinite(n)?n.toFixed(d):'-';}
 function setOpsAlertState(level,text){const el=document.getElementById('opsAlertStatus');if(!el)return;el.className='ops-alert-status '+(level||'');el.textContent=text;}
