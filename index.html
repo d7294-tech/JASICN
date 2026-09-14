@@ -322,11 +322,12 @@ function renderWeather(payload){
   const off=payload?.official?.data||{}; const live=payload?.live?.data||{};
   document.getElementById('liveTemp').textContent=f1(live.ta_c,'°C');
   document.getElementById('liveVis').textContent=fmtVis(live.vis_m);
-  const ws=Number(live.ws10_ms??live.ws02_ms), gust=Number(live.ws10_max_ms??live.ws02_max_ms);
+  const ws=Number(live.ws10_ms??live.ws02_ms), gust=Number(live.max_wind_ms??Math.max(...[live.ws02_ms,live.ws02_max_ms,live.ws10_ms,live.ws10_max_ms].map(Number).filter(Number.isFinite)));
   document.getElementById('liveWind').textContent=Number.isFinite(ws)?ws.toFixed(1)+'m/s':'-';
   document.getElementById('liveGust').textContent=Number.isFinite(gust)?gust.toFixed(1)+'m/s':'-';
   document.getElementById('liveRain').textContent=f1(live.rn_mm,'mm');
-  document.getElementById('liveFeels').textContent=f1(live.feels_c,'°C');
+  document.getElementById('liveFeels').textContent=Number.isFinite(Number(live.feels_c))?Number(live.feels_c).toFixed(1)+'°C':'해당없음';
+  const feelBox=document.getElementById('liveFeels')?.closest('.wbox'); const feelSub=feelBox?.querySelector('.ws'); if(feelSub) feelSub.textContent=live.feels_type==='wind_chill'?'한랭 체감온도':live.feels_type==='heat_index'?'고온 체감온도':'적용 조건 아님';
   document.getElementById('liveTm').textContent=fmtTm(live.tm);
   const tmin=Number(off.tmin_c),tmax=Number(off.tmax_c),heat=Number(off.heat_c);
   document.getElementById('airTemp').textContent=(Number.isFinite(tmin)?tmin.toFixed(1)+'°C':'-')+' / '+(Number.isFinite(tmax)?tmax.toFixed(1)+'°C':'-');
