@@ -162,7 +162,7 @@ body:not(.light) .go{color:#20d7ff!important}
 .perm-note{font-size:10px;color:#7f9ab2;margin-top:5px}.card.permission-hidden{display:none!important}
 @media(max-width:900px){.member-row{grid-template-columns:1fr!important}.perm-grid{grid-template-columns:repeat(2,minmax(110px,1fr))}}
 .ver{font-size:11px;font-weight:800;color:#8fcfff;border:1px solid #275270;border-radius:8px;padding:5px 8px;margin-left:10px;white-space:nowrap}
-/* ===== ICN AMOS COMMON OPERATIONS ALERT ===== */
+/* ===== ICN AIRPORT WEATHER COMMON OPERATIONS ALERT ===== */
 .ops-alert{margin:0 0 22px;background:#0b1b2e;border:1px solid var(--line);border-radius:14px;padding:14px 16px}
 .ops-alert-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}.ops-alert-head b{font-size:15px}.ops-alert-status{font-size:11px;font-weight:900;border-radius:999px;padding:5px 9px;background:#153044;color:#9fdcff;border:1px solid #31516b}.ops-alert-status.ok{background:#103728;color:#70f1b4;border-color:#236748}.ops-alert-status.warn{background:#4a3511;color:#ffd36a;border-color:#6c531e}.ops-alert-status.danger{background:#481c23;color:#ff9aa8;border-color:#71303a}.ops-alert-updated{margin-left:auto;font-size:11px;color:var(--muted)}
 .ops-weather{display:grid;grid-template-columns:repeat(6,minmax(120px,1fr));gap:8px}.ops-weather .wbox{background:#081727;border:1px solid #203a52;border-radius:10px;padding:10px}.ops-weather .wl{font-size:10px;color:#819bb4;font-weight:800;margin-bottom:4px}.ops-weather .wv{font-size:17px;font-weight:950;color:#eaf3ff}.ops-weather .ws{font-size:10px;color:#91a8bd;margin-top:4px}.ops-alert-tags{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}.ops-alert-tag{font-size:11px;font-weight:900;border:1px solid #2b4a64;background:#10253a;color:#b8cce0;border-radius:999px;padding:5px 9px}.ops-alert-tag.warn{border-color:#7a5a1e;background:#3d2d0f;color:#ffd36a}.ops-alert-tag.danger{border-color:#7a2c38;background:#3b1820;color:#ff8d9d}.ops-alert-tag.ok{border-color:#236748;background:#103728;color:#70f1b4}
@@ -299,8 +299,8 @@ $('#memberList')?.addEventListener('click',async e=>{const b=e.target.closest('b
 setInterval(()=>{$('#clock').textContent=new Date().toLocaleString('ko-KR',{hour12:false})},1000);
 
 // ===== ICN AIRPORT WEATHER / COMMON OPERATIONS ALERT =====
-const AMOS_FUNCTION='quick-processor'; // function slug 유지
-const AMOS_REFRESH_MS=5*60*1000; // 해당 API는 06/17시 발표자료이므로 5분 확인이면 충분
+const AIRPORT_WEATHER_FUNCTION='quick-processor'; // function slug 유지
+const AIRPORT_WEATHER_REFRESH_MS=5*60*1000; // 06/17시 발표자료 확인
 function setOpsAlertState(level,text){const el=document.getElementById('opsAlertStatus');if(!el)return;el.className='ops-alert-status '+(level||'');el.textContent=text;}
 function safeText(v){return (v==null||String(v).trim()==='')?'-':String(v).trim();}
 function renderAirportWeather(payload){
@@ -330,10 +330,10 @@ function renderAirportWeather(payload){
   setOpsAlertState(danger?'danger':warn?'warn':'ok',danger?`공식경보/위험 ${danger}건`:warn?`주의정보 ${warn}건`:'정상');
   document.getElementById('opsAlertUpdated').textContent='수신 '+new Date().toLocaleTimeString('ko-KR',{hour12:false});
 }
-async function loadAmos(){
+async function loadAirportWeather(){
   try{
     setOpsAlertState('','공항기상정보 조회 중');
-    const {data,error}=await sb.functions.invoke(AMOS_FUNCTION,{body:{airPortCd:'RKSI'}});
+    const {data,error}=await sb.functions.invoke(AIRPORT_WEATHER_FUNCTION,{body:{airPortCd:'RKSI'}});
     if(error)throw error;
     if(!data?.ok)throw new Error(data?.error||'공항기상정보 응답 오류');
     renderAirportWeather(data);
@@ -343,7 +343,7 @@ async function loadAmos(){
     document.getElementById('opsAlertUpdated').textContent='마지막 시도 '+new Date().toLocaleTimeString('ko-KR',{hour12:false});
   }
 }
-setTimeout(loadAmos,1200); setInterval(loadAmos,AMOS_REFRESH_MS);
+setTimeout(loadAirportWeather,1200); setInterval(loadAirportWeather,AIRPORT_WEATHER_REFRESH_MS);
 
 </script>
 
