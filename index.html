@@ -315,21 +315,24 @@ const AIRPORT_WEATHER_FUNCTION='quick-processor';
 const AIRPORT_WEATHER_REFRESH_MS=60*1000;
 function setOpsAlertState(level,text){const el=document.getElementById('opsAlertStatus');if(!el)return;el.className='ops-alert-status '+(level||'');el.textContent=text;}
 function safeText(v){return (v==null||String(v).trim()==='')?'-':String(v).trim();}
-function f1(v,suf=''){const n=Number(v);return Number.isFinite(n)?n.toFixed(1)+suf:'-';}
-function fmtVis(v){const n=Number(v);if(!Number.isFinite(n))return '-';return n>=10000?'10km+':n>=1000?(n/1000).toFixed(1)+'km':Math.round(n)+'m';}
+function validNum(v){return !(v==null||v===''||(typeof v==='string'&&v.trim()===''))&&Number.isFinite(Number(v));}
+function f1(v,suf=''){return validNum(v)?Number(v).toFixed(1)+suf:'-';}
+function fmtVis(v){if(!validNum(v))return '-';const n=Number(v);return n>=10000?'10km+':n>=1000?(n/1000).toFixed(1)+'km':Math.round(n)+'m';}
 function fmtTm(tm){const x=String(tm||'');return /^\d{12}$/.test(x)?`${x.slice(0,4)}-${x.slice(4,6)}-${x.slice(6,8)} ${x.slice(8,10)}:${x.slice(10,12)}`:(x||'-');}
 function renderWeather(payload){
   const off=payload?.official?.data||{}; const live=payload?.live?.data||{};
   document.getElementById('liveTemp').textContent=f1(live.ta_c,'°C');
   document.getElementById('liveVis').textContent=fmtVis(live.vis_m);
-  const ws=Number(live.ws10_ms??live.ws02_ms), gust=Number(live.max_wind_ms??Math.max(...[live.ws02_ms,live.ws02_max_ms,live.ws10_ms,live.ws10_max_ms].map(Number).filter(Number.isFinite)));
+  const windVals=[live.ws02_ms,live.ws02_max_ms,live.ws10_ms,live.ws10_max_ms].filter(validNum).map(Number);
+  const ws=validNum(live.ws10_ms)?Number(live.ws10_ms):(validNum(live.ws02_ms)?Number(live.ws02_ms):NaN);
+  const gust=validNum(live.max_wind_ms)?Number(live.max_wind_ms):(windVals.length?Math.max(...windVals):NaN);
   document.getElementById('liveWind').textContent=Number.isFinite(ws)?ws.toFixed(1)+'m/s':'-';
   document.getElementById('liveGust').textContent=Number.isFinite(gust)?gust.toFixed(1)+'m/s':'-';
   document.getElementById('liveRain').textContent=f1(live.rn_mm,'mm');
-  document.getElementById('liveFeels').textContent=Number.isFinite(Number(live.feels_c))?Number(live.feels_c).toFixed(1)+'°C':'해당없음';
+  document.getElementById('liveFeels').textContent=validNum(live.feels_c)?Number(live.feels_c).toFixed(1)+'°C':'-';
   const feelBox=document.getElementById('liveFeels')?.closest('.wbox'); const feelSub=feelBox?.querySelector('.ws'); if(feelSub) feelSub.textContent=live.feels_type==='wind_chill'?'한랭 체감온도':live.feels_type==='heat_index'?'고온 체감온도':'적용 조건 아님';
   document.getElementById('liveTm').textContent=fmtTm(live.tm);
-  const tmin=Number(off.tmin_c),tmax=Number(off.tmax_c),heat=Number(off.heat_c);
+  const tmin=validNum(off.tmin_c)?Number(off.tmin_c):NaN,tmax=validNum(off.tmax_c)?Number(off.tmax_c):NaN,heat=validNum(off.heat_c)?Number(off.heat_c):NaN;
   document.getElementById('airTemp').textContent=(Number.isFinite(tmin)?tmin.toFixed(1)+'°C':'-')+' / '+(Number.isFinite(tmax)?tmax.toFixed(1)+'°C':'-');
   document.getElementById('airHeat').textContent=Number.isFinite(heat)?heat.toFixed(1)+'°C':'-';
   document.getElementById('airRain').textContent=safeText(off.rain);
