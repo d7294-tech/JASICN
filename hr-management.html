@@ -18,6 +18,35 @@ main{max-width:1580px;margin:auto;padding:24px 22px 50px}.hero{display:flex;alig
 .table-wrap{overflow:auto;border:1px solid #222f3d;border-radius:10px}table{width:100%;border-collapse:collapse;min-width:1100px}thead th{position:sticky;top:0;background:#101c28;color:#9fb8cf;font-size:11px;text-align:left;padding:10px 8px;border-bottom:1px solid #2a4055;white-space:nowrap;z-index:2}tbody td{padding:9px 8px;border-bottom:1px solid #18232e;font-size:12px;white-space:nowrap}tbody tr:hover{background:#0e1b27;cursor:pointer}.num{text-align:right;font-variant-numeric:tabular-nums}.tag{display:inline-block;border-radius:999px;padding:3px 7px;font-size:10px;font-weight:900;border:1px solid #31516b;background:#153044;color:#9fdcff}.tag.ok{border-color:#236748;background:#103728;color:#70f1b4}.tag.off{border-color:#6c3840;background:#351d22;color:#ff9cab}.tag.leave{border-color:#6d5822;background:#342b12;color:#ffd36a}.empty{text-align:center;padding:28px;color:#8094a7}
 .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.82);z-index:100;padding:18px}.modal.show{display:flex}.modal-card{width:min(1040px,97vw);max-height:88vh;overflow:auto;background:#0c141d;border:1px solid #35516b;border-radius:16px;padding:18px}.modal-head{display:flex;align-items:center;gap:10px}.modal-head h2{margin:0;flex:1}.person-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin:14px 0}.person-box{background:#08121c;border:1px solid #24384b;border-radius:9px;padding:10px}.person-box .l{font-size:10px;color:#819bb4}.person-box .v{font-weight:900;margin-top:4px;font-size:13px}.event-list{margin-top:14px}.event{padding:8px 10px;border-top:1px solid #1f2d39;font-size:12px;display:grid;grid-template-columns:90px 70px 1fr 80px 1.5fr;gap:8px}.event .late{color:#ffd36a}
 @media(max-width:1150px){.kpis{grid-template-columns:repeat(4,1fr)}.person-grid{grid-template-columns:repeat(3,1fr)}}@media(max-width:760px){.upload-grid{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,1fr)}.hero{align-items:flex-start;flex-direction:column}.person-grid{grid-template-columns:repeat(2,1fr)}header .sub{display:none}}
+
+/* ===== PDF / PRINT ===== */
+.print-only{display:none}
+@media print{
+  @page{size:A4 landscape;margin:8mm}
+  body{background:#fff!important;color:#000!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  header,.upload-grid,#notice,#reloadCloudBtn,.modal,.btn,.filters{display:none!important}
+  main{max-width:none!important;padding:0!important;margin:0!important}
+  .hero{margin:0 0 8px!important;display:block!important}
+  .hero .eyebrow,.hero p,.hero .clock{display:none!important}
+  .hero h1{font-size:20px!important;color:#000!important;margin:0 0 4px!important}
+  .print-only{display:block!important;color:#333!important;font-size:10px!important;margin:0 0 8px!important}
+  .kpis{grid-template-columns:repeat(7,1fr)!important;gap:4px!important;margin:6px 0 8px!important}
+  .kpi{background:#fff!important;border:1px solid #999!important;padding:6px!important;break-inside:avoid}
+  .kpi .label{color:#333!important;font-size:8px!important}
+  .kpi .value{color:#000!important;font-size:15px!important}
+  .kpi .unit{color:#444!important;font-size:8px!important}
+  .panel{background:#fff!important;border:0!important;padding:0!important;margin:0!important}
+  .panel:nth-of-type(2){display:none!important}
+  .panel-head{margin:0 0 5px!important}
+  .panel-head h3{font-size:12px!important;color:#000!important}
+  #basisText{color:#333!important;font-size:8px!important;margin-bottom:4px!important}
+  .table-wrap{overflow:visible!important;border:1px solid #777!important;border-radius:0!important}
+  table{min-width:0!important;width:100%!important;table-layout:auto!important}
+  thead th{position:static!important;background:#eee!important;color:#000!important;font-size:7.5px!important;padding:4px 3px!important;border:1px solid #999!important}
+  tbody td{color:#000!important;font-size:7.5px!important;padding:4px 3px!important;border:1px solid #bbb!important}
+  tbody tr{break-inside:avoid}
+  .tag{background:#fff!important;color:#000!important;border:0!important;padding:0!important;font-size:7.5px!important}
+}
 </style>
 </head>
 <body>
@@ -28,6 +57,7 @@ main{max-width:1580px;margin:auto;padding:24px 22px 50px}.hero{display:flex;alig
 </header>
 <main>
   <div class="hero"><div><div class="eyebrow">PERSONNEL / ATTENDANCE ANALYTICS</div><h1>인사 관리</h1><p>월별 SKD와 근태보고를 사번 기준으로 결합해 RA·RP 휴근 참여, 지각·결근 현황을 자동 집계합니다.</p></div><div id="clock" class="clock"></div></div>
+  <div id="printMeta" class="print-only"></div>
   <div id="notice" class="notice"></div>
 
   <div class="upload-grid">
@@ -45,7 +75,7 @@ main{max-width:1580px;margin:auto;padding:24px 22px 50px}.hero{display:flex;alig
     <div class="kpi danger"><div class="label">결근</div><div><span id="kpiAbsent" class="value">-</span><span class="unit">건</span></div></div>
   </div>
 
-  <section class="panel"><div class="panel-head"><h3>직원별 월·연간 집계</h3><div class="filters"><select id="yearFilter"></select><select id="monthFilter"><option value="0">전체 월</option></select><select id="statusFilter"><option value="active">현재 재직자</option><option value="all">전체(퇴사 포함)</option><option value="left">퇴사자</option></select><input id="searchInput" placeholder="사번 / 성명 / 직급 / 직무 검색"></div></div><div id="basisText" class="muted" style="font-size:11px;margin-bottom:8px"></div><div class="table-wrap"><table><thead><tr><th>사번</th><th>성명</th><th>재직상태</th><th>소속/조</th><th>직급</th><th>직책</th><th>직무</th><th class="num">RA</th><th class="num">RP</th><th class="num">총 휴근</th><th class="num">지각</th><th class="num">지각 누적</th><th class="num">결근</th></tr></thead><tbody id="employeeRows"><tr><td colspan="13" class="empty">SKD 파일을 업로드해 주세요.</td></tr></tbody></table></div></section>
+  <section class="panel"><div class="panel-head"><h3>직원별 월·연간 집계</h3><button id="printPdfBtn" class="btn cyan" type="button">🖨 PDF 출력</button><div class="filters"><select id="yearFilter"></select><select id="monthFilter"><option value="0">전체 월</option></select><select id="statusFilter"><option value="active">현재 재직자</option><option value="all">전체(퇴사 포함)</option><option value="left">퇴사자</option></select><input id="searchInput" placeholder="사번 / 성명 / 직급 / 직무 검색"></div></div><div id="basisText" class="muted" style="font-size:11px;margin-bottom:8px"></div><div class="table-wrap"><table><thead><tr><th>사번</th><th>성명</th><th>재직상태</th><th>소속/조</th><th>직급</th><th>직책</th><th>직무</th><th class="num">RA</th><th class="num">RP</th><th class="num">총 휴근</th><th class="num">지각</th><th class="num">지각 누적</th><th class="num">결근</th></tr></thead><tbody id="employeeRows"><tr><td colspan="13" class="empty">SKD 파일을 업로드해 주세요.</td></tr></tbody></table></div></section>
 
   <section class="panel"><div class="panel-head"><h3>업로드 현황</h3><button id="reloadCloudBtn" class="btn" type="button">☁ Cloud 다시 불러오기</button></div><div id="uploadHistory" class="muted" style="font-size:12px">저장된 데이터 없음</div></section>
 </main>
@@ -109,6 +139,16 @@ function fillFilters(){const years=[...new Set(monthlyRows.map(x=>Number(x.year)
 function renderAll(){fillFilters();const rows=aggregate(),latest=latestMonthKey();const activeCount=latest?[...latestStatusMap().values()].filter(x=>x.employment_status!=='퇴사').length:0;$('#kpiEmployees').textContent=activeCount||'-';$('#kpiHolidayPeople').textContent=rows.filter(x=>x.holiday>0).length;$('#kpiRA').textContent=rows.reduce((s,x)=>s+x.ra,0);$('#kpiRP').textContent=rows.reduce((s,x)=>s+x.rp,0);$('#kpiHoliday').textContent=rows.reduce((s,x)=>s+x.holiday,0);$('#kpiLate').textContent=rows.reduce((s,x)=>s+x.late,0);$('#kpiAbsent').textContent=rows.reduce((s,x)=>s+x.absent,0);$('#basisText').textContent=latest?`표출 인원 기준: 최신 SKD ${latest.year}년 ${latest.month}월 명단만 · 조별 정렬 · RA/RP는 코드 접두어 기준`:'현재 재직자 기준월 없음';const body=$('#employeeRows');if(!rows.length){body.innerHTML='<tr><td colspan="13" class="empty">조건에 해당하는 데이터가 없습니다.</td></tr>';}else body.innerHTML=rows.map(x=>`<tr data-emp="${esc(x.employee_no)}"><td>${esc(x.employee_no)}</td><td><b>${esc(x.name)}</b></td><td><span class="tag ${x.employment_status==='퇴사'?'off':/육휴|병가/.test(x.duty_group)?'leave':'ok'}">${esc(x.employment_status==='퇴사'?'퇴사':x.duty_group||'재직')}</span></td><td>${esc(x.duty_group)}</td><td>${esc(x.grade)}</td><td>${esc(x.position)}</td><td>${esc(x.job)}</td><td class="num">${x.ra}</td><td class="num">${x.rp}</td><td class="num"><b>${x.holiday}</b></td><td class="num">${x.late}</td><td class="num">${fmtMin(x.lateMinutes)}</td><td class="num">${x.absent}</td></tr>`).join('');const months=[...new Set(monthlyRows.map(x=>`${x.year}-${String(x.month).padStart(2,'0')}`))].sort();$('#uploadHistory').innerHTML=`SKD: ${months.length?months.join(', '):'없음'}<br>근태 이벤트: ${attendanceRows.length}건 · 저장: ${cloudReady?'Supabase Cloud + Local':'Local (Cloud 미설정/미연결)'}`;}
 function openPerson(id){const year=Number($('#yearFilter').value),all=monthlyRows.filter(x=>empKey(x.employee_no)===id&&Number(x.year)===year).sort((a,b)=>Number(a.month)-Number(b.month));if(!all.length)return;const latest=latestStatusMap().get(id)||all[all.length-1];$('#personTitle').textContent=`${latest.name} · ${id}`;const boxes=[['재직상태',latest.employment_status==='퇴사'?'퇴사':latest.duty_group||'재직'],['직급',latest.grade||'-'],['직책',latest.position||'-'],['직무',latest.job||'-'],['입사일',latest.join_date||'-'],['기준연도',year+'년']];$('#personMeta').innerHTML=boxes.map(([l,v])=>`<div class="person-box"><div class="l">${esc(l)}</div><div class="v">${esc(v)}</div></div>`).join('');const mr=$('#personMonths');mr.innerHTML=Array.from({length:12},(_,i)=>{const m=i+1,r=all.find(x=>Number(x.month)===m),ev=attendanceRows.filter(x=>empKey(x.employee_no)===id&&Number(x.year)===year&&Number(x.month)===m),late=ev.filter(x=>/지각/.test(x.event_type)),abs=ev.filter(x=>/결근/.test(x.event_type));return `<tr><td>${m}월</td><td class="num">${r?.ra_count||0}</td><td class="num">${r?.rp_count||0}</td><td class="num"><b>${r?.holiday_count||0}</b></td><td class="num">${late.length}</td><td class="num">${fmtMin(late.reduce((s,x)=>s+(Number(x.late_minutes)||0),0))}</td><td class="num">${abs.length}</td><td>${esc(r?`${r.employment_status==='퇴사'?'퇴사':r.duty_group||'재직'}`:'-')}</td></tr>`}).join('');const events=attendanceRows.filter(x=>empKey(x.employee_no)===id&&Number(x.year)===year).sort((a,b)=>String(a.work_date).localeCompare(String(b.work_date)));$('#personEvents').innerHTML=events.length?events.map(e=>`<div class="event"><div>${esc(e.work_date||`${e.month}월`)}</div><div><b>${esc(e.event_type)}</b></div><div>${esc(e.duty_code||'-')}</div><div class="late">${/지각/.test(e.event_type)?fmtMin(e.late_minutes):'-'}</div><div>${esc(e.reason||e.note||'-')}</div></div>`).join(''):'<div class="empty">근태 기록 없음</div>';$('#personModal').classList.add('show');}
 $('#employeeRows').addEventListener('click',e=>{const tr=e.target.closest('tr[data-emp]');if(tr)openPerson(tr.dataset.emp);});$('#personClose').onclick=()=>$('#personModal').classList.remove('show');$('#personModal').addEventListener('click',e=>{if(e.target.id==='personModal')$('#personModal').classList.remove('show');});['yearFilter','monthFilter','statusFilter'].forEach(id=>$('#'+id).addEventListener('change',renderAll));$('#searchInput').addEventListener('input',renderAll);
+function printHRPdf(){
+  const year=$('#yearFilter')?.value||'';
+  const month=Number($('#monthFilter')?.value||0);
+  const latest=latestMonthKey();
+  const now=new Date().toLocaleString('ko-KR',{hour12:false});
+  const meta=$('#printMeta');
+  if(meta)meta.textContent=`기준: ${year}년 ${month?month+'월':'연간'} · 표출인원: 최신 SKD ${latest?latest.year+'년 '+latest.month+'월':'-'} 기준 · 출력: ${now}`;
+  window.print();
+}
+$('#printPdfBtn')?.addEventListener('click',printHRPdf);
 setInterval(()=>$('#clock').textContent=new Date().toLocaleString('ko-KR',{hour12:false}),1000);
 (async()=>{loadLocal();renderAll();const {data}=await sb.auth.getSession();sessionUser=data?.session?.user||null;if(sessionUser){$('#authUser').textContent=sessionUser.email||'사용자';await loadCloud();}else{$('#authUser').textContent='로그인 필요';showNotice('메인에서 로그인 후 인사 관리 페이지를 사용해 주세요. 이 PC에 저장된 Local 데이터는 계속 볼 수 있습니다.');}})();
 </script>
