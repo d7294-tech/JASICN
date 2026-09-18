@@ -20,6 +20,11 @@ main{max-width:1660px;margin:auto;padding:24px 20px 50px}.hero{display:flex;alig
 .mini-btn.danger{border-color:#8b2f3b;color:#ff8794;background:#3a141b}.mini-btn.danger:hover{background:#5a1b26}
 
 
+
+/* ===== 개인교육기록 / 교육이력 ===== */
+.record-toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}.record-toolbar select,.record-toolbar input{background:#08121c;color:#eef7ff;border:1px solid #2b465e;border-radius:8px;padding:8px 10px;outline:none}.record-toolbar .grow{min-width:260px;flex:1}.profile-grid{display:grid;grid-template-columns:repeat(4,minmax(170px,1fr));gap:8px;margin:10px 0 14px}.profile-field{background:#09151f;border:1px solid #233b50;border-radius:9px;padding:8px}.profile-field label{display:block;color:#7f9ab2;font-size:10px;font-weight:900;margin-bottom:4px}.profile-field input{width:100%;background:#07111a;color:#f3f8ff;border:1px solid #28435b;border-radius:7px;padding:7px 8px}.category-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}.category-btn{border:1px solid #2c536e;background:#0a1a27;color:#9fc2df;border-radius:999px;padding:6px 10px;font-size:11px;font-weight:900;cursor:pointer}.category-btn.active{background:#0c6c91;color:#fff;border-color:#13a1d3}.record-table table{min-width:1450px}.record-table td{white-space:normal;vertical-align:top}.record-table .course-cell{min-width:250px;font-weight:850}.history-wrap{overflow:auto;border:1px solid #22303e;border-radius:10px;max-height:68vh}.history-table{border-collapse:separate;border-spacing:0;min-width:3200px}.history-table th,.history-table td{border-right:1px solid #1e3040;border-bottom:1px solid #182a39}.history-table th{position:sticky;top:0;z-index:3;text-align:center;white-space:normal;min-width:140px}.history-table th.emp-sticky,.history-table td.emp-sticky{position:sticky;left:0;z-index:4;background:#0d1a26;min-width:85px}.history-table th.name-sticky,.history-table td.name-sticky{position:sticky;left:85px;z-index:4;background:#0d1a26;min-width:110px}.history-table th.rank-sticky,.history-table td.rank-sticky{position:sticky;left:195px;z-index:4;background:#0d1a26;min-width:70px}.history-cell{cursor:pointer;min-width:145px;line-height:1.35}.history-cell:hover{background:#112638}.history-cell .hc-type{font-weight:950;color:#6ee7b7}.history-cell .hc-date{color:#fff;font-weight:800}.history-cell .hc-exp{color:#8fb0c9;font-size:10px}.history-cell .hc-exp.warn{color:#ffd36a}.history-cell .hc-exp.expired{color:#ff7e8d}.history-cell.empty{color:#5e7488;text-align:center}.history-group-legal{background:#123047!important;color:#9fe6ff!important}.history-group-job{background:#183326!important;color:#9df3c0!important}.course-help{font-size:10px;color:#7694ad;margin-top:3px}.modal-card.wide{width:min(900px,97vw)}.record-meta{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:8px 0}.record-meta .mini{background:#08131d;border:1px solid #23384a;border-radius:8px;padding:7px;font-size:11px}.record-meta .mini b{display:block;color:#78d8ff;margin-bottom:2px}.record-note{font-size:11px;color:#7c9bb4}.history-legend{display:flex;gap:8px;flex-wrap:wrap;font-size:10px;color:#8aa2b7;margin-bottom:8px}.history-legend span{border:1px solid #2a4155;border-radius:999px;padding:4px 7px}
+@media(max-width:1050px){.profile-grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:650px){.profile-grid{grid-template-columns:1fr}}
+
 /* ===== PDF / PRINT EXPORT ===== */
 .print-report-head{display:none}
 .pdf-btn{background:#0b5d78;border-color:#1689ad;color:#e9fbff}
@@ -91,12 +96,51 @@ main{max-width:1660px;margin:auto;padding:24px 20px 50px}.hero{display:flex;alig
     <div class="kpi"><div class="l">평가 대기/진행</div><div id="kpiAssess" class="v purple">0</div></div>
     <div class="kpi"><div class="l">합격</div><div id="kpiPass" class="v green">0</div></div>
   </div>
-  <div class="tabs"><button class="tab active" data-view="calendarView">📅 교육 캘린더</button><button class="tab" data-view="instructorView">👨‍🏫 교육담당 스케줄</button><button class="tab" data-view="progressView">📈 교육 진행상황</button></div>
+  <div class="tabs"><button class="tab active" data-view="calendarView">📅 교육 캘린더</button><button class="tab" data-view="recordView">📘 개인교육기록</button><button class="tab" data-view="historyView">📚 교육이력</button><button class="tab" data-view="instructorView">👨‍🏫 교육담당 스케줄</button><button class="tab" data-view="progressView">📈 교육 진행상황</button></div>
 
   <section id="calendarView" class="view active">
     <div class="cal-layout">
       <div class="panel"><div class="calbar"><button id="prevMonth" class="btn">◀</button><h2 id="monthTitle"></h2><button id="nextMonth" class="btn">▶</button><button id="todayBtn" class="btn">오늘</button><div class="spacer"></div><button id="calendarPdfBtn" class="btn pdf-btn">🖨 PDF 출력</button><button id="addEventBtn" class="btn primary">＋ 교육 일정</button></div><div id="calendar" class="calendar"></div></div>
       <div class="panel"><div class="panel-head"><h3>다가오는 교육</h3><span class="muted" style="font-size:11px">최근/예정 일정</span></div><div id="upcomingList" class="upcoming"></div></div>
+    </div>
+  </section>
+
+
+  <section id="recordView" class="view">
+    <div class="panel">
+      <div class="panel-head"><h3>개인 교육기록 카드</h3><span class="muted" style="font-size:11px">엑셀 양식 기준 · 웹 직접입력 / CLOUD 저장</span></div>
+      <div class="record-toolbar">
+        <select id="recordEmployeeSelect" class="grow"><option value="">직원 선택</option></select>
+        <input id="recordEmployeeSearch" class="grow" placeholder="성명 / 사번 검색">
+        <button id="saveProfileBtn" class="btn green">프로필 저장</button>
+        <button id="addRecordBtn" class="btn primary">＋ 교육기록 입력</button>
+      </div>
+      <div class="profile-grid">
+        <div class="profile-field"><label>성명</label><input id="profileName"></div>
+        <div class="profile-field"><label>사번</label><input id="profileEmpNo"></div>
+        <div class="profile-field"><label>직위</label><input id="profileRank"></div>
+        <div class="profile-field"><label>영문이름</label><input id="profileEnglish"></div>
+        <div class="profile-field"><label>입사일자</label><input id="profileHireDate" type="date"></div>
+        <div class="profile-field"><label>소속</label><input id="profileCompany" value="㈜제이에이에스"></div>
+        <div class="profile-field"><label>부서</label><input id="profileDepartment" value="인천공항 램프지점"></div>
+        <div class="profile-field"><label>직책/직무</label><input id="profilePosition"></div>
+      </div>
+      <div class="category-tabs" id="recordCategoryTabs">
+        <button class="category-btn active" data-category="">전체</button>
+        <button class="category-btn" data-category="법정">법정</button>
+        <button class="category-btn" data-category="직무-초기,정기">직무-초기,정기</button>
+        <button class="category-btn" data-category="기타">기타</button>
+        <button class="category-btn" data-category="산업안전보건">산업안전보건</button>
+      </div>
+      <div class="tablewrap record-table"><table><thead><tr><th>구분</th><th>교육내용</th><th>교육일자</th><th>장소</th><th>강사</th><th>교육시간</th><th>보수교육예정</th><th>교육이수</th><th>비고</th><th>조치</th></tr></thead><tbody id="recordRows"></tbody></table></div>
+    </div>
+  </section>
+
+  <section id="historyView" class="view">
+    <div class="panel">
+      <div class="panel-head"><h3>인천공항 램프지점 교육이력</h3><button id="historyRefreshBtn" class="btn">↻ 최신 인원</button><div class="filters"><input id="historySearch" placeholder="사번 / 성명 / 직위 검색"></div></div>
+      <div class="history-legend"><span>셀 클릭 = 바로 입력/수정</span><span>노랑 = 만료 60일 이내</span><span>빨강 = 만료</span><span>각 과정은 가장 최근 교육기록 표시</span></div>
+      <div class="history-wrap"><table class="history-table"><thead id="historyHead"></thead><tbody id="historyRows"></tbody></table></div>
     </div>
   </section>
 
@@ -109,26 +153,76 @@ main{max-width:1660px;margin:auto;padding:24px 20px 50px}.hero{display:flex;alig
 
 <div id="progressModal" class="modal"><div class="modal-card"><div class="modal-head"><h2>교육대상 등록</h2><button class="btn" id="progressClose">닫기</button></div><div class="form-grid"><input id="progressId" type="hidden"><div class="field"><label>사번</label><input id="progressEmpNo"></div><div class="field"><label>성명</label><input id="progressName"></div><div class="field full"><label>교육과정</label><input id="progressCourse" placeholder="예: Tow Tractor Pushback Initial"></div><div class="field"><label>교육담당</label><input id="progressInstructor"></div><div class="field"><label>시작일</label><input id="progressStart" type="date"></div><div class="field"><label>현재단계</label><select id="progressStatus"><option>이론 완료</option><option>OJT 진행중</option><option>OJT 완료</option><option>평가</option><option>합격</option></select></div><div class="field full"><label>비고</label><textarea id="progressNote"></textarea></div></div><div class="modal-actions"><button id="progressSave" class="btn green">저장</button></div></div></div>
 
+
+<div id="recordModal" class="modal"><div class="modal-card wide"><div class="modal-head"><h2 id="recordModalTitle">교육기록 입력</h2><button class="btn" id="recordClose">닫기</button></div>
+  <div class="record-meta"><div class="mini"><b>사번</b><span id="recordModalEmpNo">-</span></div><div class="mini"><b>성명</b><span id="recordModalName">-</span></div><div class="mini"><b>기준</b><span>개인교육기록 / 교육이력 공용</span></div></div>
+  <div class="form-grid"><input id="recordId" type="hidden"><input id="recordCourseKey" type="hidden">
+    <div class="field"><label>교육 구분</label><select id="recordCategory"><option>법정</option><option>직무-초기,정기</option><option>기타</option><option>산업안전보건</option></select></div>
+    <div class="field"><label>과정</label><select id="recordCourseType"><option value="">-</option><option>초기</option><option>정기</option><option>보수</option><option>입문</option><option>OJT</option><option>평가</option></select></div>
+    <div class="field full"><label>교육내용</label><input id="recordCourseName" placeholder="교육과정/교육내용"></div>
+    <div class="field"><label>교육일자</label><input id="recordEducationDate" type="date"></div>
+    <div class="field"><label>보수교육예정 / 만료예정일</label><input id="recordExpiryDate" type="date"><div id="recordExpiryHint" class="course-help"></div></div>
+    <div class="field"><label>장소</label><input id="recordLocation" placeholder="램프 / 교육장 / 온라인"></div>
+    <div class="field"><label>강사</label><input id="recordInstructor"></div>
+    <div class="field"><label>교육시간</label><input id="recordDuration" placeholder="예: 2HR / 40시간"></div>
+    <div class="field"><label>교육이수</label><select id="recordCompletion"><option>이수</option><option>미이수</option><option value="">-</option></select></div>
+    <div class="field full"><label>비고</label><textarea id="recordNote" placeholder="초기 / 정기 / 평가결과 등"></textarea></div>
+  </div>
+  <div class="record-note">※ 교육이력 표준과정은 교육일자 입력 시 엑셀 양식의 주기에 따라 만료예정일을 자동 제안합니다. 필요하면 직접 수정할 수 있습니다.</div>
+  <div class="modal-actions"><button id="recordDelete" class="btn red" style="display:none">삭제</button><button id="recordSave" class="btn green">저장</button></div>
+</div></div>
+
 <script>
 const SUPABASE_URL='https://yblzvrfkohppnrxeorce.supabase.co';
 const SUPABASE_KEY='sb_publishable_1P8VyOOWWTf41F__nOYuUw_GKo-DiKu';
 const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
-const LS_EVENTS='jas_edu_events_v1',LS_PROGRESS='jas_edu_progress_v1';
-let events=[],progress=[],sessionUser=null,cloudReady=false,calDate=new Date();
+const LS_EVENTS='jas_edu_events_v1',LS_PROGRESS='jas_edu_progress_v1',LS_RECORDS='jas_edu_records_v1',LS_PROFILES='jas_edu_profiles_v1';
+let events=[],progress=[],eduRecords=[],eduProfiles=[],allPersonnelRows=[],sessionUser=null,cloudReady=false,calDate=new Date();
+let selectedRecordEmpNo='',recordCategoryFilter='';
 let realtimeChannel=null,reloadTimer=null,pollTimer=null;
 let eduPersonnelRows=[],eduPersonnelWorkTimes={},eduPersonnelMonthKey='',eduPersonnelUpdatedAt='';
 const $=s=>document.querySelector(s);const $$=s=>[...document.querySelectorAll(s)];
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function showNotice(msg,type=''){const el=$('#notice');el.textContent=msg;el.className='notice show '+type}function hideNotice(){$('#notice').className='notice'}
 function setCloudStatus(text,kind='sync'){const el=$('#cloudStatus');if(!el)return;el.textContent=text;el.className='cloud-chip '+kind}
-function loadLocal(){try{events=JSON.parse(localStorage.getItem(LS_EVENTS)||'[]');progress=JSON.parse(localStorage.getItem(LS_PROGRESS)||'[]')}catch{events=[];progress=[]}}
-function saveLocal(){localStorage.setItem(LS_EVENTS,JSON.stringify(events));localStorage.setItem(LS_PROGRESS,JSON.stringify(progress))}
+function loadLocal(){try{events=JSON.parse(localStorage.getItem(LS_EVENTS)||'[]');progress=JSON.parse(localStorage.getItem(LS_PROGRESS)||'[]');eduRecords=JSON.parse(localStorage.getItem(LS_RECORDS)||'[]');eduProfiles=JSON.parse(localStorage.getItem(LS_PROFILES)||'[]')}catch{events=[];progress=[];eduRecords=[];eduProfiles=[]}}
+function saveLocal(){localStorage.setItem(LS_EVENTS,JSON.stringify(events));localStorage.setItem(LS_PROGRESS,JSON.stringify(progress));localStorage.setItem(LS_RECORDS,JSON.stringify(eduRecords));localStorage.setItem(LS_PROFILES,JSON.stringify(eduProfiles))}
 function uuid(){return crypto?.randomUUID?crypto.randomUUID():'id-'+Date.now()+'-'+Math.random().toString(36).slice(2)}
 function ymd(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
 function stageIndex(s){return ['이론 완료','OJT 진행중','OJT 완료','평가','합격'].indexOf(s)}
 function nullIfBlank(v){return v==null||String(v).trim()===''?null:v}
 function eventForCloud(x){return {...x,event_date:nullIfBlank(x?.event_date),start_time:nullIfBlank(x?.start_time),end_time:nullIfBlank(x?.end_time)}}
 function progressForCloud(x){return {...x,start_date:nullIfBlank(x?.start_date)}}
+
+const EDU_COURSES=[
+ {key:'SMS',group:'법정',name:'Safety Management System (SMS)',months:12},
+ {key:'DG',group:'법정',name:'DANGEROUS GOODS 위험물 교육',months:24},
+ {key:'SEC',group:'법정',name:'항공보안',months:12},
+ {key:'ERP',group:'법정',name:'제주항공 비상대응 계획 (ERP)',months:24},
+ {key:'HF',group:'직무교육',name:'인적요소',months:36},
+ {key:'SAFE_OPS',group:'직무교육',name:'안전조업 절차/규정',months:12},
+ {key:'MARSHAL',group:'직무교육',name:'항공기 유도 및 조업',months:12},
+ {key:'GROUND_SAFETY',group:'직무교육',name:'지상 안전 교육',months:12},
+ {key:'INTERPHONE',group:'직무교육',name:'Interphone(Headset) Communication',months:12},
+ {key:'DEICING_THEORY',group:'직무교육',name:'제방빙',months:12},
+ {key:'TUG_DOLLY',group:'직무교육',name:'TUG CAR with DOLLY',months:24},
+ {key:'GPU',group:'직무교육',name:'GPU',months:24},
+ {key:'CONVEYOR',group:'직무교육',name:'CONVEYOR BELT',months:24},
+ {key:'LAV_WATER',group:'직무교육',name:'LAVATORY, POTABLE WATER TRUCK',months:24},
+ {key:'ASU_ACU',group:'직무교육',name:'ASU, ACU',months:24},
+ {key:'STEP_CAR',group:'직무교육',name:'STEP CAR',months:24},
+ {key:'RAMP_BUS',group:'직무교육',name:'RAMP BUS',months:12},
+ {key:'TOW_TRACTOR',group:'직무교육',name:'TOWING TRACTOR',months:12},
+ {key:'DEICING_TRUCK',group:'직무교육',name:'DE-ICING TRUCK',months:12}
+];
+function profileForEmp(empNo){return eduProfiles.find(x=>String(x.employee_no)===String(empNo))||null}
+function personnelForEmp(empNo){return allPersonnelRows.find(x=>String(x.empNo||x.employee_no||'')===String(empNo))||null}
+function recordForCloud(x){return {...x,education_date:nullIfBlank(x?.education_date),expiry_date:nullIfBlank(x?.expiry_date)} }
+function profileForCloud(x){return {...x,hire_date:nullIfBlank(x?.hire_date)} }
+function addMonthsMinusDay(dateStr,months){if(!dateStr||!months)return'';const d=new Date(dateStr+'T00:00:00');if(Number.isNaN(d.getTime()))return'';const day=d.getDate();d.setMonth(d.getMonth()+months);if(d.getDate()!==day)d.setDate(0);d.setDate(d.getDate()-1);return ymd(d)}
+function latestCourseRecord(empNo,key){return eduRecords.filter(r=>String(r.employee_no)===String(empNo)&&String(r.course_key||'')===String(key)).sort((a,b)=>String(b.education_date||'').localeCompare(String(a.education_date||''))||String(b.updated_at||'').localeCompare(String(a.updated_at||'')))[0]||null}
+function daysUntil(dateStr){if(!dateStr)return null;const a=new Date(ymd(new Date())+'T00:00:00'),b=new Date(dateStr+'T00:00:00');if(Number.isNaN(b.getTime()))return null;return Math.ceil((b-a)/86400000)}
+
 async function refreshSession(){
   try{
     let {data:{session}}=await sb.auth.getSession();
@@ -149,11 +243,11 @@ async function loadCloud({silent=false}={}){
   if(!sessionUser && !(await refreshSession())){cloudReady=false;setCloudStatus('● CLOUD 로그인 필요','err');if(!silent)showNotice('메인에서 로그인 후 사용해 주세요. 현재 PC의 Local 백업만 표시합니다.','error');loadLocal();renderAll();return false}
   try{
     if(!silent)setCloudStatus('● CLOUD 동기화 중','sync');
-    const [er,pr]=await Promise.all([sb.from('jas_edu_events').select('*').order('event_date'),sb.from('jas_edu_progress').select('*').order('updated_at',{ascending:false})]);
-    if(er.error)throw er.error;if(pr.error)throw pr.error;
+    const [er,pr,rr,pf]=await Promise.all([sb.from('jas_edu_events').select('*').order('event_date'),sb.from('jas_edu_progress').select('*').order('updated_at',{ascending:false}),sb.from('jas_edu_records').select('*').order('education_date',{ascending:false}),sb.from('jas_edu_employee_profile').select('*').order('name')]);
+    if(er.error)throw er.error;if(pr.error)throw pr.error;if(rr.error)throw rr.error;if(pf.error)throw pf.error;
     let cloudEvents=er.data||[],cloudProgress=pr.data||[];
     [cloudEvents,cloudProgress]=await migrateLocalIfCloudEmpty(cloudEvents,cloudProgress);
-    events=cloudEvents;progress=cloudProgress;cloudReady=true;saveLocal();hideNotice();renderAll();
+    events=cloudEvents;progress=cloudProgress;eduRecords=rr.data||[];eduProfiles=pf.data||[];cloudReady=true;saveLocal();hideNotice();await loadAllPersonnelRows({silent:true});renderAll();
     await loadEduPersonnelSchedule({silent:true});
     setCloudStatus('● CLOUD 연결','ok');return true;
   }catch(e){
@@ -168,7 +262,9 @@ function startRealtime(){
   realtimeChannel=sb.channel('jas-education-live')
     .on('postgres_changes',{event:'*',schema:'public',table:'jas_edu_events'},scheduleCloudReload)
     .on('postgres_changes',{event:'*',schema:'public',table:'jas_edu_progress'},scheduleCloudReload)
-    .on('postgres_changes',{event:'*',schema:'public',table:'jas_personnel_monthly'},()=>loadEduPersonnelSchedule({force:true,silent:true}))
+    .on('postgres_changes',{event:'*',schema:'public',table:'jas_edu_records'},scheduleCloudReload)
+    .on('postgres_changes',{event:'*',schema:'public',table:'jas_edu_employee_profile'},scheduleCloudReload)
+    .on('postgres_changes',{event:'*',schema:'public',table:'jas_personnel_monthly'},()=>{loadEduPersonnelSchedule({force:true,silent:true});loadAllPersonnelRows({silent:true})})
     .subscribe(status=>{
       if(status==='SUBSCRIBED')setCloudStatus('● CLOUD LIVE','ok');
       else if(status==='CHANNEL_ERROR'||status==='TIMED_OUT')setCloudStatus('● CLOUD 재연결 중','sync');
@@ -198,6 +294,31 @@ async function deleteProgressCloud(id){
   if(error)throw error;
   cloudReady=true;setCloudStatus('● CLOUD LIVE','ok');
 }
+
+async function saveEduProfileCloud(x){
+  if(!sessionUser && !(await refreshSession()))throw new Error('로그인 세션이 없습니다.');
+  const row=profileForCloud({...x,updated_at:new Date().toISOString(),updated_by:sessionUser.id});
+  const {error}=await sb.from('jas_edu_employee_profile').upsert(row,{onConflict:'employee_no'});if(error)throw error;setCloudStatus('● CLOUD LIVE','ok');
+}
+async function saveEduRecordCloud(x){
+  if(!sessionUser && !(await refreshSession()))throw new Error('로그인 세션이 없습니다.');
+  const row=recordForCloud({...x,updated_at:new Date().toISOString(),updated_by:sessionUser.id});
+  const {error}=await sb.from('jas_edu_records').upsert(row,{onConflict:'id'});if(error)throw error;setCloudStatus('● CLOUD LIVE','ok');
+}
+async function deleteEduRecordCloud(id){
+  if(!sessionUser && !(await refreshSession()))throw new Error('로그인 세션이 없습니다.');
+  const {error}=await sb.from('jas_edu_records').delete().eq('id',id);if(error)throw error;setCloudStatus('● CLOUD LIVE','ok');
+}
+async function loadAllPersonnelRows({silent=false}={}){
+  try{
+    const {data,error}=await sb.from('jas_personnel_monthly').select('month_key,schedule_rows').order('month_key',{ascending:false}).limit(1).maybeSingle();
+    if(error)throw error;
+    allPersonnelRows=Array.isArray(data?.schedule_rows)?data.schedule_rows:[];
+    renderEmployeeSelect();renderHistory();
+    return true;
+  }catch(e){if(!silent)console.warn('latest personnel load',e);allPersonnelRows=[];renderEmployeeSelect();renderHistory();return false}
+}
+
 function renderCalendar(){const y=calDate.getFullYear(),m=calDate.getMonth();$('#monthTitle').textContent=`${y}년 ${m+1}월`;const first=new Date(y,m,1),start=new Date(y,m,1-first.getDay());let html=['일','월','화','수','목','금','토'].map(x=>`<div class="dow">${x}</div>`).join('');for(let i=0;i<42;i++){const d=new Date(start);d.setDate(start.getDate()+i);const date=ymd(d),dayEvents=events.filter(e=>e.event_date===date).sort((a,b)=>String(a.start_time||'').localeCompare(String(b.start_time||'')));html+=`<div class="day ${d.getMonth()!==m?'other':''} ${date===ymd(new Date())?'today':''}" data-date="${date}"><div class="daynum">${d.getDate()}</div>${dayEvents.slice(0,4).map(e=>`<div class="event-pill ${esc(e.event_type)}" data-event-id="${esc(e.id)}" title="${esc(e.title)}">${esc(e.start_time||'')} ${esc(e.title)}</div>`).join('')}${dayEvents.length>4?`<div class="event-pill">+${dayEvents.length-4}건</div>`:''}</div>`}$('#calendar').innerHTML=html;const monthCount=events.filter(e=>String(e.event_date||'').startsWith(`${y}-${String(m+1).padStart(2,'0')}`)).length;$('#kpiEvents').textContent=monthCount;renderUpcoming()}
 function renderUpcoming(){const today=ymd(new Date()),list=events.filter(e=>e.event_date>=today).sort((a,b)=>(a.event_date+a.start_time).localeCompare(b.event_date+b.start_time)).slice(0,10);$('#upcomingList').innerHTML=list.length?list.map(e=>`<div class="up-item" data-event-id="${esc(e.id)}"><div class="up-date">${esc(e.event_date)} ${esc(e.start_time||'')}</div><div class="up-title">${esc(e.title)}</div><div class="up-meta">강사 ${esc(e.instructor||'-')} · ${esc(e.location||'-')}<br>대상 ${esc(e.target||'-')}</div></div>`).join(''):'<div class="muted">예정된 교육이 없습니다.</div>'}
 function eventOverlap(a,b){if(a.event_date!==b.event_date||!a.start_time||!a.end_time||!b.start_time||!b.end_time)return false;return a.start_time<b.end_time&&b.start_time<a.end_time}
@@ -243,7 +364,45 @@ function renderInstructors(){
 }
 function flowHtml(status){const stages=['이론 완료','OJT 진행중','OJT 완료','평가','합격'],idx=stageIndex(status);return `<div class="stage">${stages.map((s,i)=>`<span class="step ${i<idx?'done':i===idx?(s==='합격'?'pass':'current'):''}">${esc(s)}</span>`).join('')}</div>`}
 function renderProgress(){const q=$('#progressSearch').value.trim().toLowerCase(),sf=$('#statusFilter').value;let rows=progress.filter(x=>(!sf||x.status===sf)&&(!q||[x.employee_no,x.name,x.course,x.instructor].join(' ').toLowerCase().includes(q)));rows.sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'ko'));$('#progressRows').innerHTML=rows.length?rows.map(x=>`<tr><td>${esc(x.employee_no||'-')}</td><td><b>${esc(x.name)}</b></td><td>${esc(x.course)}</td><td>${esc(x.instructor||'-')}</td><td>${esc(x.start_date||'-')}</td><td><b>${esc(x.status)}</b></td><td>${flowHtml(x.status)}</td><td>${esc((x.updated_at||'').slice(0,10)||'-')}</td><td><div class="progress-actions"><button class="mini-btn" data-action="next" data-id="${esc(x.id)}">다음단계</button><button class="mini-btn" data-action="edit" data-id="${esc(x.id)}">수정</button><button class="mini-btn danger" data-action="delete" data-id="${esc(x.id)}">삭제</button></div></td></tr>`).join(''):'<tr><td colspan="9" class="muted" style="text-align:center;padding:28px">등록된 교육 진행내역이 없습니다.</td></tr>';$('#kpiTheory').textContent=progress.filter(x=>x.status==='이론 완료').length;$('#kpiOjt').textContent=progress.filter(x=>x.status==='OJT 진행중').length;$('#kpiOjtDone').textContent=progress.filter(x=>x.status==='OJT 완료').length;$('#kpiAssess').textContent=progress.filter(x=>x.status==='평가').length;$('#kpiPass').textContent=progress.filter(x=>x.status==='합격').length}
-function renderAll(){renderCalendar();renderInstructors();renderProgress()}
+
+function employeeCatalog(){
+  const m=new Map();
+  for(const p of allPersonnelRows){const no=String(p.empNo||p.employee_no||'').trim();if(no)m.set(no,{empNo:no,name:p.name||'',rank:p.rank||'',position:p.position||'',job:p.job||'',group:p.group||''})}
+  for(const p of eduProfiles){const no=String(p.employee_no||'').trim();if(no)m.set(no,{...(m.get(no)||{}),empNo:no,name:p.name||m.get(no)?.name||'',rank:p.rank||m.get(no)?.rank||'',position:p.position||m.get(no)?.position||'',job:p.job||m.get(no)?.job||''})}
+  for(const r of eduRecords){const no=String(r.employee_no||'').trim();if(no&&!m.has(no))m.set(no,{empNo:no,name:r.name||'',rank:'',position:'',job:'',group:''})}
+  return [...m.values()].sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'ko'));
+}
+function renderEmployeeSelect(){
+  const sel=$('#recordEmployeeSelect');if(!sel)return;const q=($('#recordEmployeeSearch')?.value||'').trim().toLowerCase();
+  const rows=employeeCatalog().filter(x=>!q||[x.empNo,x.name,x.rank,x.position,x.job].join(' ').toLowerCase().includes(q));
+  const cur=selectedRecordEmpNo||sel.value;
+  sel.innerHTML='<option value="">직원 선택</option>'+rows.map(x=>`<option value="${esc(x.empNo)}">${esc(x.name)} · ${esc(x.empNo)}${x.rank?' · '+esc(x.rank):''}</option>`).join('');
+  if(cur&&rows.some(x=>x.empNo===cur))sel.value=cur;
+}
+function selectRecordEmployee(empNo){
+  selectedRecordEmpNo=String(empNo||'');const p=profileForEmp(selectedRecordEmpNo),base=personnelForEmp(selectedRecordEmpNo)||{};
+  $('#profileEmpNo').value=selectedRecordEmpNo||'';$('#profileName').value=p?.name||base.name||'';$('#profileRank').value=p?.rank||base.rank||'';$('#profileEnglish').value=p?.english_name||'';$('#profileHireDate').value=p?.hire_date||'';$('#profileCompany').value=p?.company||'㈜제이에이에스';$('#profileDepartment').value=p?.department||'인천공항 램프지점';$('#profilePosition').value=p?.position||base.position||base.job||'';
+  renderRecordRows();
+}
+function renderRecordRows(){
+  const body=$('#recordRows');if(!body)return;if(!selectedRecordEmpNo){body.innerHTML='<tr><td colspan="10" class="muted" style="text-align:center;padding:30px">직원을 선택해 주세요.</td></tr>';return}
+  let rows=eduRecords.filter(r=>String(r.employee_no)===selectedRecordEmpNo&&(!recordCategoryFilter||r.category===recordCategoryFilter));
+  rows.sort((a,b)=>String(b.education_date||'').localeCompare(String(a.education_date||''))||String(a.course_name||'').localeCompare(String(b.course_name||''),'ko'));
+  body.innerHTML=rows.length?rows.map(r=>`<tr><td>${esc(r.category||'-')}<br><small class="muted">${esc(r.course_type||'-')}</small></td><td class="course-cell">${esc(r.course_name||'-')}</td><td>${esc(r.education_date||'-')}</td><td>${esc(r.location||'-')}</td><td>${esc(r.instructor||'-')}</td><td>${esc(r.duration||'-')}</td><td>${esc(r.expiry_date||'-')}</td><td>${esc(r.completion||'-')}</td><td>${esc(r.note||'-')}</td><td><div class="progress-actions"><button class="mini-btn" data-record-action="edit" data-id="${esc(r.id)}">수정</button><button class="mini-btn danger" data-record-action="delete" data-id="${esc(r.id)}">삭제</button></div></td></tr>`).join(''):'<tr><td colspan="10" class="muted" style="text-align:center;padding:30px">등록된 교육기록이 없습니다.</td></tr>';
+}
+function renderHistory(){
+  const head=$('#historyHead'),body=$('#historyRows');if(!head||!body)return;
+  const q=($('#historySearch')?.value||'').trim().toLowerCase();const people=employeeCatalog().filter(x=>!q||[x.empNo,x.name,x.rank,x.position,x.job].join(' ').toLowerCase().includes(q));
+  head.innerHTML='<tr><th class="emp-sticky" rowspan="2">사번</th><th class="name-sticky" rowspan="2">성명</th><th class="rank-sticky" rowspan="2">직위</th><th class="history-group-legal" colspan="4">법정교육</th><th class="history-group-job" colspan="15">직무교육</th></tr><tr>'+EDU_COURSES.map(c=>`<th title="${esc(c.name)}">${esc(c.name)}<div class="course-help">${c.months}개월</div></th>`).join('')+'</tr>';
+  body.innerHTML=people.length?people.map(p=>`<tr><td class="emp-sticky">${esc(p.empNo)}</td><td class="name-sticky"><b>${esc(p.name||'-')}</b></td><td class="rank-sticky">${esc(p.rank||'-')}</td>${EDU_COURSES.map(c=>{const r=latestCourseRecord(p.empNo,c.key);if(!r)return `<td class="history-cell empty" data-emp="${esc(p.empNo)}" data-course="${esc(c.key)}">＋</td>`;const du=daysUntil(r.expiry_date),cl=du==null?'':du<0?' expired':du<=60?' warn':'';return `<td class="history-cell" data-emp="${esc(p.empNo)}" data-course="${esc(c.key)}"><div class="hc-type">${esc(r.course_type||'-')}</div><div class="hc-date">${esc(r.education_date||'-')}</div><div class="hc-exp${cl}">만료 ${esc(r.expiry_date||'-')}${du!=null?` · ${du}일`:''}</div></td>`}).join('')}</tr>`).join(''):'<tr><td colspan="22" class="muted" style="padding:30px;text-align:center">표시할 직원이 없습니다.</td></tr>';
+}
+function openRecordModal({id='',empNo='',courseKey=''}={}){
+  const r=id?eduRecords.find(x=>x.id===id):null;const no=String(r?.employee_no||empNo||selectedRecordEmpNo||'');if(!no){alert('직원을 먼저 선택해 주세요.');return}const p=profileForEmp(no),base=personnelForEmp(no)||{};const course=EDU_COURSES.find(x=>x.key===(r?.course_key||courseKey));
+  $('#recordId').value=r?.id||'';$('#recordCourseKey').value=r?.course_key||course?.key||'';$('#recordModalEmpNo').textContent=no;$('#recordModalName').textContent=r?.name||p?.name||base.name||'';$('#recordCategory').value=r?.category||(course?.group==='법정'?'법정':'직무-초기,정기');$('#recordCourseType').value=r?.course_type||'';$('#recordCourseName').value=r?.course_name||course?.name||'';$('#recordEducationDate').value=r?.education_date||ymd(new Date());$('#recordExpiryDate').value=r?.expiry_date||'';$('#recordLocation').value=r?.location||'';$('#recordInstructor').value=r?.instructor||'';$('#recordDuration').value=r?.duration||'';$('#recordCompletion').value=r?.completion??'이수';$('#recordNote').value=r?.note||'';$('#recordDelete').style.display=r?'inline-block':'none';$('#recordModal').classList.add('show');updateExpiryHint();
+}
+function updateExpiryHint(){const key=$('#recordCourseKey').value,course=EDU_COURSES.find(x=>x.key===key),date=$('#recordEducationDate').value;if(course){const proposed=addMonthsMinusDay(date,course.months);$('#recordExpiryHint').textContent=`${course.months}개월 기준${proposed?' · 제안 '+proposed:''}`;if(date&&!$('#recordExpiryDate').value)$('#recordExpiryDate').value=proposed}else $('#recordExpiryHint').textContent=''}
+
+function renderAll(){renderCalendar();renderInstructors();renderProgress();renderEmployeeSelect();renderRecordRows();renderHistory()}
 function openEvent(date,id=''){const e=id?events.find(x=>x.id===id):null;$('#eventId').value=e?.id||'';$('#eventTitle').value=e?.title||'';$('#eventType').value=e?.event_type||'theory';$('#eventInstructor').value=e?.instructor||'';$('#eventDate').value=e?.event_date||date||ymd(new Date());$('#eventStart').value=e?.start_time||'';$('#eventEnd').value=e?.end_time||'';$('#eventLocation').value=e?.location||'';$('#eventTarget').value=e?.target||'';$('#eventNote').value=e?.note||'';$('#eventDelete').style.display=e?'inline-block':'none';$('#eventModal').classList.add('show')}
 function openProgress(id=''){const x=id?progress.find(v=>v.id===id):null;$('#progressId').value=x?.id||'';$('#progressEmpNo').value=x?.employee_no||'';$('#progressName').value=x?.name||'';$('#progressCourse').value=x?.course||'';$('#progressInstructor').value=x?.instructor||'';$('#progressStart').value=x?.start_date||ymd(new Date());$('#progressStatus').value=x?.status||'이론 완료';$('#progressNote').value=x?.note||'';$('#progressModal').classList.add('show')}
 
@@ -276,13 +435,28 @@ $('#calendarPdfBtn')?.addEventListener('click',()=>printEducationSection('calend
 $('#instructorPdfBtn')?.addEventListener('click',async()=>{await loadEduPersonnelSchedule({force:true,silent:true});printEducationSection('instructor')});
 $('#progressPdfBtn')?.addEventListener('click',()=>printEducationSection('progress'));
 
-$$('.tab').forEach(b=>b.onclick=()=>{$$('.tab').forEach(x=>x.classList.remove('active'));$$('.view').forEach(x=>x.classList.remove('active'));b.classList.add('active');$('#'+b.dataset.view).classList.add('active');if(b.dataset.view==='instructorView')loadEduPersonnelSchedule({force:true,silent:true})});
+$$('.tab').forEach(b=>b.onclick=()=>{$$('.tab').forEach(x=>x.classList.remove('active'));$$('.view').forEach(x=>x.classList.remove('active'));b.classList.add('active');$('#'+b.dataset.view).classList.add('active');if(b.dataset.view==='instructorView')loadEduPersonnelSchedule({force:true,silent:true});if(b.dataset.view==='recordView'){renderEmployeeSelect();renderRecordRows()}if(b.dataset.view==='historyView'){loadAllPersonnelRows({silent:true});renderHistory()}});
 $('#prevMonth').onclick=()=>{calDate=new Date(calDate.getFullYear(),calDate.getMonth()-1,1);renderCalendar();loadEduPersonnelSchedule({force:true,silent:true})};$('#nextMonth').onclick=()=>{calDate=new Date(calDate.getFullYear(),calDate.getMonth()+1,1);renderCalendar();loadEduPersonnelSchedule({force:true,silent:true})};$('#todayBtn').onclick=()=>{calDate=new Date();renderCalendar();loadEduPersonnelSchedule({force:true,silent:true})};$('#addEventBtn').onclick=()=>openEvent(ymd(new Date()));$('#eventClose').onclick=()=>$('#eventModal').classList.remove('show');$('#progressClose').onclick=()=>$('#progressModal').classList.remove('show');$('#addProgressBtn').onclick=()=>openProgress();
 $('#calendar').addEventListener('click',e=>{const p=e.target.closest('[data-event-id]');if(p){e.stopPropagation();openEvent('',p.dataset.eventId);return}const d=e.target.closest('.day');if(d)openEvent(d.dataset.date)});$('#upcomingList').addEventListener('click',e=>{const x=e.target.closest('[data-event-id]');if(x)openEvent('',x.dataset.eventId)});
 $('#eventSave').onclick=async()=>{const x={id:$('#eventId').value||uuid(),title:$('#eventTitle').value.trim(),event_type:$('#eventType').value,instructor:$('#eventInstructor').value.trim(),event_date:$('#eventDate').value,start_time:$('#eventStart').value,end_time:$('#eventEnd').value,location:$('#eventLocation').value.trim(),target:$('#eventTarget').value.trim(),note:$('#eventNote').value.trim(),updated_at:new Date().toISOString()};if(!x.title||!x.event_date){alert('교육명과 일자를 입력해 주세요.');return}const i=events.findIndex(e=>e.id===x.id);if(i>=0)events[i]={...events[i],...x};else events.push(x);saveLocal();try{await saveEventCloud(x)}catch(e){showNotice('Cloud 저장 실패(로컬에는 저장됨): '+(e.message||e),'error')}$('#eventModal').classList.remove('show');renderAll()};
 $('#eventDelete').onclick=async()=>{const id=$('#eventId').value;if(!id||!confirm('이 교육 일정을 삭제할까요?'))return;events=events.filter(x=>x.id!==id);saveLocal();try{await deleteEventCloud(id)}catch(e){showNotice('Cloud 삭제 실패: '+(e.message||e),'error')}$('#eventModal').classList.remove('show');renderAll()};
 $('#progressSave').onclick=async()=>{const x={id:$('#progressId').value||uuid(),employee_no:$('#progressEmpNo').value.trim(),name:$('#progressName').value.trim(),course:$('#progressCourse').value.trim(),instructor:$('#progressInstructor').value.trim(),start_date:$('#progressStart').value,status:$('#progressStatus').value,note:$('#progressNote').value.trim(),updated_at:new Date().toISOString()};if(!x.name||!x.course){alert('성명과 교육과정을 입력해 주세요.');return}const i=progress.findIndex(v=>v.id===x.id);if(i>=0)progress[i]={...progress[i],...x};else progress.push(x);saveLocal();try{await saveProgressCloud(x)}catch(e){showNotice('Cloud 저장 실패(로컬에는 저장됨): '+(e.message||e),'error')}$('#progressModal').classList.remove('show');renderProgress()};
 $('#progressRows').addEventListener('click',async e=>{const b=e.target.closest('button[data-action]');if(!b)return;const x=progress.find(v=>v.id===b.dataset.id);if(!x)return;if(b.dataset.action==='edit'){openProgress(x.id);return}if(b.dataset.action==='delete'){if(!confirm(`${x.name} · ${x.course} 교육 진행내역을 삭제할까요?`))return;progress=progress.filter(v=>v.id!==x.id);saveLocal();try{await deleteProgressCloud(x.id)}catch(err){showNotice('Cloud 삭제 실패: '+(err.message||err),'error');await loadCloud({silent:true});return}renderProgress();return}const stages=['이론 완료','OJT 진행중','OJT 완료','평가','합격'];const idx=stageIndex(x.status);if(idx<stages.length-1){x.status=stages[idx+1];x.updated_at=new Date().toISOString();saveLocal();try{await saveProgressCloud(x)}catch(err){showNotice('Cloud 저장 실패: '+(err.message||err),'error')}renderProgress()}});$('#statusFilter').onchange=renderProgress;$('#progressSearch').oninput=renderProgress;
+
+$('#recordEmployeeSearch')?.addEventListener('input',renderEmployeeSelect);
+$('#recordEmployeeSelect')?.addEventListener('change',e=>selectRecordEmployee(e.target.value));
+$('#recordCategoryTabs')?.addEventListener('click',e=>{const b=e.target.closest('[data-category]');if(!b)return;recordCategoryFilter=b.dataset.category||'';$$('#recordCategoryTabs .category-btn').forEach(x=>x.classList.toggle('active',x===b));renderRecordRows()});
+$('#saveProfileBtn')?.addEventListener('click',async()=>{const empNo=$('#profileEmpNo').value.trim(),name=$('#profileName').value.trim();if(!empNo||!name){alert('사번과 성명을 입력해 주세요.');return}const base=personnelForEmp(empNo)||{};const x={employee_no:empNo,name,english_name:$('#profileEnglish').value.trim(),rank:$('#profileRank').value.trim(),position:$('#profilePosition').value.trim(),job:base.job||'',company:$('#profileCompany').value.trim()||'㈜제이에이에스',department:$('#profileDepartment').value.trim()||'인천공항 램프지점',hire_date:$('#profileHireDate').value,updated_at:new Date().toISOString()};const i=eduProfiles.findIndex(v=>v.employee_no===empNo);if(i>=0)eduProfiles[i]={...eduProfiles[i],...x};else eduProfiles.push(x);selectedRecordEmpNo=empNo;saveLocal();try{await saveEduProfileCloud(x)}catch(err){showNotice('프로필 Cloud 저장 실패: '+(err.message||err),'error')}renderEmployeeSelect();renderHistory()});
+$('#addRecordBtn')?.addEventListener('click',()=>openRecordModal({empNo:selectedRecordEmpNo}));
+$('#recordClose')?.addEventListener('click',()=>$('#recordModal').classList.remove('show'));
+$('#recordEducationDate')?.addEventListener('change',()=>{if($('#recordCourseKey').value){$('#recordExpiryDate').value='';updateExpiryHint()}});
+$('#recordRows')?.addEventListener('click',async e=>{const b=e.target.closest('[data-record-action]');if(!b)return;const r=eduRecords.find(x=>x.id===b.dataset.id);if(!r)return;if(b.dataset.recordAction==='edit'){openRecordModal({id:r.id});return}if(confirm(`${r.name} · ${r.course_name} 기록을 삭제할까요?`)){eduRecords=eduRecords.filter(x=>x.id!==r.id);saveLocal();try{await deleteEduRecordCloud(r.id)}catch(err){showNotice('교육기록 Cloud 삭제 실패: '+(err.message||err),'error')}renderRecordRows();renderHistory()}});
+$('#recordSave')?.addEventListener('click',async()=>{const id=$('#recordId').value||uuid(),empNo=$('#recordModalEmpNo').textContent.trim(),name=$('#recordModalName').textContent.trim();const x={id,employee_no:empNo,name,category:$('#recordCategory').value,course_key:$('#recordCourseKey').value||null,course_name:$('#recordCourseName').value.trim(),course_type:$('#recordCourseType').value,duration:$('#recordDuration').value.trim(),education_date:$('#recordEducationDate').value,expiry_date:$('#recordExpiryDate').value,location:$('#recordLocation').value.trim(),instructor:$('#recordInstructor').value.trim(),completion:$('#recordCompletion').value,note:$('#recordNote').value.trim(),updated_at:new Date().toISOString()};if(!x.course_name){alert('교육내용을 입력해 주세요.');return}const i=eduRecords.findIndex(v=>v.id===id);if(i>=0)eduRecords[i]={...eduRecords[i],...x};else eduRecords.push(x);saveLocal();try{await saveEduRecordCloud(x)}catch(err){showNotice('교육기록 Cloud 저장 실패(로컬 저장됨): '+(err.message||err),'error')}$('#recordModal').classList.remove('show');renderRecordRows();renderHistory()});
+$('#recordDelete')?.addEventListener('click',async()=>{const id=$('#recordId').value;if(!id)return;const r=eduRecords.find(x=>x.id===id);if(!confirm(`${r?.name||''} · ${r?.course_name||''} 기록을 삭제할까요?`))return;eduRecords=eduRecords.filter(x=>x.id!==id);saveLocal();try{await deleteEduRecordCloud(id)}catch(err){showNotice('교육기록 Cloud 삭제 실패: '+(err.message||err),'error')}$('#recordModal').classList.remove('show');renderRecordRows();renderHistory()});
+$('#historySearch')?.addEventListener('input',renderHistory);
+$('#historyRefreshBtn')?.addEventListener('click',()=>loadAllPersonnelRows({silent:false}));
+$('#historyRows')?.addEventListener('click',e=>{const cell=e.target.closest('[data-emp][data-course]');if(!cell)return;const r=latestCourseRecord(cell.dataset.emp,cell.dataset.course);openRecordModal(r?{id:r.id}:{empNo:cell.dataset.emp,courseKey:cell.dataset.course})});
+
 setInterval(()=>$('#clock').textContent=new Date().toLocaleString('ko-KR',{hour12:false}),1000);
 sb.auth.onAuthStateChange(async(event,session)=>{
   sessionUser=session?.user||null;
