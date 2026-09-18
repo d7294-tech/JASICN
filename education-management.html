@@ -84,7 +84,7 @@ main{max-width:1660px;margin:auto;padding:24px 20px 50px}.hero{display:flex;alig
 /* ===== Excel DB seed / employee photo ===== */
 .profile-top{display:grid;grid-template-columns:150px 1fr;gap:14px;align-items:start;margin:10px 0 14px}.profile-photo-card{height:188px;border:1px solid #29465d;border-radius:12px;background:#07111a;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;position:relative}.profile-photo-card img{width:128px;height:152px;object-fit:cover;border-radius:9px;border:1px solid #37556e;background:#fff}.profile-photo-card .photo-none{color:#5f7a90;font-size:11px;font-weight:800}.profile-photo-card .photo-src{position:absolute;bottom:4px;left:6px;right:6px;text-align:center;color:#7699b5;font-size:9px}.seed-chip{border:1px solid #35617c;background:#0c2333;color:#9ee6ff;border-radius:999px;padding:6px 10px;font-size:10px;font-weight:900}.seed-import{background:#17452e!important;border-color:#277d50!important;color:#9df4c0!important}.seed-progress{font-size:10px;color:#8eb1c9;font-weight:800}.profile-grid{margin:0!important}@media(max-width:780px){.profile-top{grid-template-columns:1fr}.profile-photo-card{height:170px}.profile-photo-card img{height:140px;width:118px}}
 
-.record-course-group td{background:#13283a!important;color:#77d8ff!important;border-top:2px solid #2b6f91!important;border-bottom:1px solid #31506d!important;padding:10px 12px!important;font-size:13px}.record-course-group td span{margin-left:10px;color:#9fb7cb;font-size:11px;font-weight:700}
+.record-course-group td{background:#13283a!important;color:#77d8ff!important;border-top:2px solid #2b6f91!important;border-bottom:1px solid #31506d!important;padding:10px 12px!important;font-size:13px}.record-course-group td span{margin-left:10px;color:#9fb7cb;font-size:11px;font-weight:700}.record-sort{margin-left:auto;display:flex;align-items:center;gap:6px}.record-sort label{color:#7f9ab2;font-size:11px;font-weight:900}.record-sort select{background:#08121c;color:#eef7ff;border:1px solid #2b465e;border-radius:8px;padding:6px 9px;font-weight:800}.retention-chip{border:1px solid #4b3d1f;background:#211a0b;color:#ffd36a;border-radius:999px;padding:6px 9px;font-size:10px;font-weight:900}
 </style>
 </head>
 <body>
@@ -142,6 +142,8 @@ main{max-width:1660px;margin:auto;padding:24px 20px 50px}.hero{display:flex;alig
         <button class="category-btn" data-category="직무-초기,정기">직무-초기,정기</button>
         <button class="category-btn" data-category="기타">기타</button>
         <button class="category-btn" data-category="산업안전보건">산업안전보건</button>
+        <div class="record-sort"><label for="recordDateSort">교육일자 정렬</label><select id="recordDateSort"><option value="desc">최신순 ↓</option><option value="asc">과거순 ↑</option></select></div>
+        <span id="retentionStatus" class="retention-chip" title="최신 인원 SKD에서 퇴사자로 확인된 직원은 최초 확인일로부터 90일 후 교육기록/프로필/진행상황을 자동 정리합니다.">퇴사자 90일 자동삭제</span>
       </div>
       <div class="tablewrap record-table"><table><thead><tr><th>구분</th><th>교육내용</th><th>교육일자</th><th>장소</th><th>강사</th><th>교육시간</th><th>보수교육예정</th><th>교육이수</th><th>비고</th><th>조치</th></tr></thead><tbody id="recordRows"></tbody></table></div>
     </div>
@@ -194,15 +196,16 @@ const SEED_PHOTOS={"2309033":"data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAASABIAAD
 const SEED_RECORD_IDS=new Set(SEED_RECORDS.map(x=>x.id));
 
 let events=[],progress=[],eduRecords=[],eduProfiles=[],allPersonnelRows=[],sessionUser=null,cloudReady=false,calDate=new Date();
-let selectedRecordEmpNo='',recordCategoryFilter='';
+let selectedRecordEmpNo='',recordCategoryFilter='',recordDateSort='desc';
+let retentionDeletedEmpNos=new Set();
 let realtimeChannel=null,reloadTimer=null,pollTimer=null;
 let eduPersonnelRows=[],eduPersonnelWorkTimes={},eduPersonnelMonthKey='',eduPersonnelUpdatedAt='';
 const $=s=>document.querySelector(s);const $$=s=>[...document.querySelectorAll(s)];
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function showNotice(msg,type=''){const el=$('#notice');el.textContent=msg;el.className='notice show '+type}function hideNotice(){$('#notice').className='notice'}
 function setCloudStatus(text,kind='sync'){const el=$('#cloudStatus');if(!el)return;el.textContent=text;el.className='cloud-chip '+kind}
-function mergeSeedProfiles(rows=[]){const m=new Map(SEED_PROFILES.map(x=>[String(x.employee_no),{...x,source:'EXCEL_DB'}]));for(const x of rows||[])m.set(String(x.employee_no),{...(m.get(String(x.employee_no))||{}),...x,source:'CLOUD'});return [...m.values()]}
-function mergeSeedRecords(rows=[]){const m=new Map(SEED_RECORDS.map(x=>[String(x.id),x]));for(const x of rows||[])m.set(String(x.id),{...(m.get(String(x.id))||{}),...x,source:'CLOUD'});return [...m.values()]}
+function mergeSeedProfiles(rows=[]){const m=new Map(SEED_PROFILES.filter(x=>!retentionDeletedEmpNos.has(String(x.employee_no))).map(x=>[String(x.employee_no),{...x,source:'EXCEL_DB'}]));for(const x of rows||[]){if(retentionDeletedEmpNos.has(String(x.employee_no)))continue;m.set(String(x.employee_no),{...(m.get(String(x.employee_no))||{}),...x,source:'CLOUD'})}return [...m.values()]}
+function mergeSeedRecords(rows=[]){const m=new Map(SEED_RECORDS.filter(x=>!retentionDeletedEmpNos.has(String(x.employee_no))).map(x=>[String(x.id),x]));for(const x of rows||[]){if(retentionDeletedEmpNos.has(String(x.employee_no)))continue;m.set(String(x.id),{...(m.get(String(x.id))||{}),...x,source:'CLOUD'})}return [...m.values()]}
 function loadLocal(){try{events=JSON.parse(localStorage.getItem(LS_EVENTS)||'[]');progress=JSON.parse(localStorage.getItem(LS_PROGRESS)||'[]');const lr=JSON.parse(localStorage.getItem(LS_RECORDS)||'[]'),lp=JSON.parse(localStorage.getItem(LS_PROFILES)||'[]');eduRecords=mergeSeedRecords(lr);eduProfiles=mergeSeedProfiles(lp)}catch{events=[];progress=[];eduRecords=mergeSeedRecords([]);eduProfiles=mergeSeedProfiles([])}}
 function saveLocal(){try{localStorage.setItem(LS_EVENTS,JSON.stringify(events));localStorage.setItem(LS_PROGRESS,JSON.stringify(progress));localStorage.setItem(LS_RECORDS,JSON.stringify(eduRecords.filter(x=>x.source!=='EXCEL_DB')));localStorage.setItem(LS_PROFILES,JSON.stringify(eduProfiles.filter(x=>x.source!=='EXCEL_DB')))}catch(e){console.warn('교육 Local 저장 일부 생략',e)}}
 function uuid(){return crypto?.randomUUID?crypto.randomUUID():'id-'+Date.now()+'-'+Math.random().toString(36).slice(2)}
@@ -257,6 +260,47 @@ async function migrateLocalIfCloudEmpty(cloudEvents,cloudProgress){
   if(!cloudProgress.length&&localProgress.length){const rows=localProgress.map(x=>progressForCloud({...x,updated_by:sessionUser?.id||null}));const {error}=await sb.from('jas_edu_progress').upsert(rows,{onConflict:'id'});if(error)throw error;cloudProgress=rows}
   return [cloudEvents,cloudProgress];
 }
+async function loadRetentionState(){
+  try{
+    const {data,error}=await sb.from('jas_edu_retention').select('*');
+    if(error){if(String(error.code||'')==='42P01')return [];throw error}
+    retentionDeletedEmpNos=new Set((data||[]).filter(x=>x.deleted_at).map(x=>String(x.employee_no)));
+    return data||[];
+  }catch(e){console.warn('교육 퇴사자 보존상태 조회 실패',e);return []}
+}
+function isRetiredPersonnelRow(x){
+  const text=[x?.group,x?.bucket,x?.status,x?.position,x?.job].map(v=>String(v||'').trim()).join(' ');
+  return /퇴사/.test(text);
+}
+function addDaysYmd(dateStr,days){const d=new Date((dateStr||ymd(new Date()))+'T00:00:00');d.setDate(d.getDate()+days);return ymd(d)}
+async function syncRetiredRetention(existing=[]){
+  if(!sessionUser||!Array.isArray(allPersonnelRows)||!allPersonnelRows.length)return;
+  try{
+    const today=ymd(new Date()), byNo=new Map((existing||[]).map(x=>[String(x.employee_no),x]));
+    const retired=allPersonnelRows.filter(isRetiredPersonnelRow);
+    for(const p of retired){
+      const no=String(p.empNo||p.employee_no||'').trim();if(!no||byNo.has(no))continue;
+      const row={employee_no:no,name:p.name||'',retired_at:today,delete_after:addDaysYmd(today,90),hold:false,updated_at:new Date().toISOString()};
+      const {error}=await sb.from('jas_edu_retention').upsert(row,{onConflict:'employee_no'});if(error&&String(error.code||'')!=='42P01')throw error;byNo.set(no,row);
+    }
+    // 퇴사 상태가 해제된 경우, 아직 삭제 전이면 카운트를 취소한다.
+    const retiredSet=new Set(retired.map(p=>String(p.empNo||p.employee_no||'').trim()).filter(Boolean));
+    for(const [no,row] of byNo){if(row?.deleted_at||row?.hold||retiredSet.has(no))continue;await sb.from('jas_edu_retention').delete().eq('employee_no',no)}
+    // 90일 경과 + 보류 아님 = Cloud 교육자료 자동 삭제. retention tombstone은 남겨 embedded 원본도 다시 나타나지 않게 한다.
+    for(const [no,row] of byNo){if(row?.deleted_at||row?.hold||!row?.delete_after||String(row.delete_after)>today)continue;
+      await Promise.all([
+        sb.from('jas_edu_records').delete().eq('employee_no',no),
+        sb.from('jas_edu_employee_profile').delete().eq('employee_no',no),
+        sb.from('jas_edu_progress').delete().eq('employee_no',no)
+      ]);
+      const now=new Date().toISOString();await sb.from('jas_edu_retention').update({deleted_at:now,updated_at:now}).eq('employee_no',no);retentionDeletedEmpNos.add(no);
+      eduRecords=eduRecords.filter(x=>String(x.employee_no)!==no);eduProfiles=eduProfiles.filter(x=>String(x.employee_no)!==no);progress=progress.filter(x=>String(x.employee_no)!==no);
+    }
+    const pending=[...byNo.values()].filter(x=>!x.deleted_at&&!x.hold).length,dueDeleted=retentionDeletedEmpNos.size;
+    const st=$('#retentionStatus');if(st)st.textContent=`퇴사자 90일 자동삭제 · 대기 ${pending}명${dueDeleted?` · 삭제 ${dueDeleted}명`:''}`;
+    saveLocal();
+  }catch(e){console.warn('퇴사자 90일 자동삭제 처리 실패',e);const st=$('#retentionStatus');if(st)st.textContent='퇴사자 자동삭제 설정 확인 필요'}
+}
 async function loadCloud({silent=false}={}){
   if(!sessionUser && !(await refreshSession())){cloudReady=false;setCloudStatus('● CLOUD 로그인 필요','err');if(!silent)showNotice('메인에서 로그인 후 사용해 주세요. 현재 PC의 Local 백업만 표시합니다.','error');loadLocal();renderAll();return false}
   try{
@@ -265,7 +309,8 @@ async function loadCloud({silent=false}={}){
     if(er.error)throw er.error;if(pr.error)throw pr.error;if(rr.error)throw rr.error;if(pf.error)throw pf.error;
     let cloudEvents=er.data||[],cloudProgress=pr.data||[];
     [cloudEvents,cloudProgress]=await migrateLocalIfCloudEmpty(cloudEvents,cloudProgress);
-    events=cloudEvents;progress=cloudProgress;eduRecords=mergeSeedRecords(rr.data||[]);eduProfiles=mergeSeedProfiles(pf.data||[]);cloudReady=true;saveLocal();hideNotice();await loadAllPersonnelRows({silent:true});renderAll();
+    const retentionRows=await loadRetentionState();
+    events=cloudEvents.filter(x=>!retentionDeletedEmpNos.has(String(x.employee_no||'')));progress=cloudProgress.filter(x=>!retentionDeletedEmpNos.has(String(x.employee_no||'')));eduRecords=mergeSeedRecords(rr.data||[]);eduProfiles=mergeSeedProfiles(pf.data||[]);cloudReady=true;saveLocal();hideNotice();await loadAllPersonnelRows({silent:true});await syncRetiredRetention(retentionRows);renderAll();
     await loadEduPersonnelSchedule({silent:true});
     setCloudStatus('● CLOUD 연결','ok');return true;
   }catch(e){
@@ -385,8 +430,8 @@ function renderProgress(){const q=$('#progressSearch').value.trim().toLowerCase(
 
 function employeeCatalog(){
   const m=new Map();
-  for(const p of allPersonnelRows){const no=String(p.empNo||p.employee_no||'').trim();if(no)m.set(no,{empNo:no,name:p.name||'',rank:p.rank||'',position:p.position||'',job:p.job||'',group:p.group||''})}
-  for(const p of eduProfiles){const no=String(p.employee_no||'').trim();if(no)m.set(no,{...(m.get(no)||{}),empNo:no,name:p.name||m.get(no)?.name||'',rank:p.rank||m.get(no)?.rank||'',position:p.position||m.get(no)?.position||'',job:p.job||m.get(no)?.job||''})}
+  for(const p of allPersonnelRows){const no=String(p.empNo||p.employee_no||'').trim();if(no&&!retentionDeletedEmpNos.has(no))m.set(no,{empNo:no,name:p.name||'',rank:p.rank||'',position:p.position||'',job:p.job||'',group:p.group||''})}
+  for(const p of eduProfiles){const no=String(p.employee_no||'').trim();if(no&&!retentionDeletedEmpNos.has(no))m.set(no,{...(m.get(no)||{}),empNo:no,name:p.name||m.get(no)?.name||'',rank:p.rank||m.get(no)?.rank||'',position:p.position||m.get(no)?.position||'',job:p.job||m.get(no)?.job||''})}
   for(const r of eduRecords){const no=String(r.employee_no||'').trim();if(no&&!m.has(no))m.set(no,{empNo:no,name:r.name||'',rank:'',position:'',job:'',group:''})}
   return [...m.values()].sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'ko'));
 }
@@ -403,6 +448,7 @@ function selectRecordEmployee(empNo){
   const ph=SEED_PHOTOS[selectedRecordEmpNo]||'';const img=$('#profilePhoto'),none=$('#profilePhotoNone');if(img){if(ph){img.src=ph;img.style.display='block';if(none)none.style.display='none'}else{img.removeAttribute('src');img.style.display='none';if(none)none.style.display='block'}}
   renderRecordRows();
 }
+function sortEducationDateRows(rows){const dir=recordDateSort==='asc'?1:-1;return rows.sort((a,b)=>dir*String(a.education_date||'').localeCompare(String(b.education_date||''))||String(a.course_name||'').localeCompare(String(b.course_name||''),'ko'))}
 function renderRecordRows(){
   const body=$('#recordRows');if(!body)return;if(!selectedRecordEmpNo){body.innerHTML='<tr><td colspan="10" class="muted" style="text-align:center;padding:30px">직원을 선택해 주세요.</td></tr>';return}
   let rows=eduRecords.filter(r=>String(r.employee_no)===selectedRecordEmpNo&&(!recordCategoryFilter||r.category===recordCategoryFilter));
@@ -421,14 +467,14 @@ function renderRecordRows(){
       return a.localeCompare(b,'ko');
     });
     body.innerHTML=keys.map(key=>{
-      const arr=groups.get(key).slice().sort((a,b)=>String(b.education_date||'').localeCompare(String(a.education_date||'')));
+      const arr=sortEducationDateRows(groups.get(key).slice());
       const c=EDU_COURSES.find(x=>x.key===key);const title=c?.name||arr[0]?.course_name||key;
       return `<tr class="record-course-group"><td colspan="10"><b>${esc(title)}</b><span>${arr.length}건</span></td></tr>`+arr.map(rowHtml).join('');
     }).join('');
     return;
   }
 
-  rows.sort((a,b)=>String(b.education_date||'').localeCompare(String(a.education_date||''))||String(a.course_name||'').localeCompare(String(b.course_name||''),'ko'));
+  sortEducationDateRows(rows);
   body.innerHTML=rows.map(rowHtml).join('');
 }
 function renderHistory(){
@@ -498,6 +544,7 @@ $('#recordEmployeeSearch')?.addEventListener('keydown',e=>{
 });
 $('#recordEmployeeSelect')?.addEventListener('change',e=>selectRecordEmployee(e.target.value));
 $('#recordCategoryTabs')?.addEventListener('click',e=>{const b=e.target.closest('[data-category]');if(!b)return;recordCategoryFilter=b.dataset.category||'';$$('#recordCategoryTabs .category-btn').forEach(x=>x.classList.toggle('active',x===b));renderRecordRows()});
+$('#recordDateSort')?.addEventListener('change',e=>{recordDateSort=e.target.value==='asc'?'asc':'desc';renderRecordRows()});
 $('#saveProfileBtn')?.addEventListener('click',async()=>{const empNo=$('#profileEmpNo').value.trim(),name=$('#profileName').value.trim();if(!empNo||!name){alert('사번과 성명을 입력해 주세요.');return}const base=personnelForEmp(empNo)||{};const x={employee_no:empNo,name,source:'CLOUD',english_name:$('#profileEnglish').value.trim(),rank:$('#profileRank').value.trim(),position:$('#profilePosition').value.trim(),job:base.job||'',company:$('#profileCompany').value.trim()||'㈜제이에이에스',department:$('#profileDepartment').value.trim()||'인천공항 램프지점',hire_date:$('#profileHireDate').value,updated_at:new Date().toISOString()};const i=eduProfiles.findIndex(v=>v.employee_no===empNo);if(i>=0)eduProfiles[i]={...eduProfiles[i],...x};else eduProfiles.push(x);selectedRecordEmpNo=empNo;saveLocal();try{await saveEduProfileCloud(x)}catch(err){showNotice('프로필 Cloud 저장 실패: '+(err.message||err),'error')}renderEmployeeSelect();renderHistory()});
 $('#addRecordBtn')?.addEventListener('click',()=>openRecordModal({empNo:selectedRecordEmpNo}));
 $('#recordClose')?.addEventListener('click',()=>$('#recordModal').classList.remove('show'));
@@ -539,5 +586,6 @@ sb.auth.onAuthStateChange(async(event,session)=>{
 });
 (async()=>{loadLocal();renderAll();setCloudStatus('● CLOUD 확인 중','sync');if(await refreshSession()){await loadCloud();startRealtime()}else{setCloudStatus('● CLOUD 로그인 필요','err');showNotice('메인에서 로그인 후 사용해 주세요. 현재 PC의 Local 백업만 표시합니다.','error')}})();
 </script>
+<!-- JAS EDU: record date sort + retired 90d retention -->
 </body>
 </html>
