@@ -83,6 +83,8 @@ main{max-width:1660px;margin:auto;padding:24px 20px 50px}.hero{display:flex;alig
 
 /* ===== Excel DB seed / employee photo ===== */
 .profile-top{display:grid;grid-template-columns:150px 1fr;gap:14px;align-items:start;margin:10px 0 14px}.profile-photo-card{height:188px;border:1px solid #29465d;border-radius:12px;background:#07111a;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;position:relative}.profile-photo-card img{width:128px;height:152px;object-fit:cover;border-radius:9px;border:1px solid #37556e;background:#fff}.profile-photo-card .photo-none{color:#5f7a90;font-size:11px;font-weight:800}.profile-photo-card .photo-src{position:absolute;bottom:4px;left:6px;right:6px;text-align:center;color:#7699b5;font-size:9px}.seed-chip{border:1px solid #35617c;background:#0c2333;color:#9ee6ff;border-radius:999px;padding:6px 10px;font-size:10px;font-weight:900}.seed-import{background:#17452e!important;border-color:#277d50!important;color:#9df4c0!important}.seed-progress{font-size:10px;color:#8eb1c9;font-weight:800}.profile-grid{margin:0!important}@media(max-width:780px){.profile-top{grid-template-columns:1fr}.profile-photo-card{height:170px}.profile-photo-card img{height:140px;width:118px}}
+
+.record-course-group td{background:#13283a!important;color:#77d8ff!important;border-top:2px solid #2b6f91!important;border-bottom:1px solid #31506d!important;padding:10px 12px!important;font-size:13px}.record-course-group td span{margin-left:10px;color:#9fb7cb;font-size:11px;font-weight:700}
 </style>
 </head>
 <body>
@@ -114,7 +116,7 @@ main{max-width:1660px;margin:auto;padding:24px 20px 50px}.hero{display:flex;alig
       <div class="panel-head"><h3>개인 교육기록 카드</h3><span class="muted" style="font-size:11px">엑셀 양식 기준 · 웹 직접입력 / CLOUD 저장</span></div>
       <div class="record-toolbar">
         <select id="recordEmployeeSelect" class="grow"><option value="">직원 선택</option></select>
-        <input id="recordEmployeeSearch" class="grow" placeholder="성명 / 사번 검색">
+        <input id="recordEmployeeSearch" class="grow" placeholder="성명 / 사번 검색 · 입력 후 Enter">
         <span id="seedInfo" class="seed-chip">EXCEL DB 166명 · 35,124건 · 사진 166명</span>
         <button id="seedCloudImportBtn" class="btn seed-import">원본자료 → CLOUD</button>
         <span id="seedImportStatus" class="seed-progress"></span>
@@ -404,8 +406,30 @@ function selectRecordEmployee(empNo){
 function renderRecordRows(){
   const body=$('#recordRows');if(!body)return;if(!selectedRecordEmpNo){body.innerHTML='<tr><td colspan="10" class="muted" style="text-align:center;padding:30px">직원을 선택해 주세요.</td></tr>';return}
   let rows=eduRecords.filter(r=>String(r.employee_no)===selectedRecordEmpNo&&(!recordCategoryFilter||r.category===recordCategoryFilter));
+  if(!rows.length){body.innerHTML='<tr><td colspan="10" class="muted" style="text-align:center;padding:30px">등록된 교육기록이 없습니다.</td></tr>';return}
+
+  const rowHtml=r=>`<tr><td>${esc(r.category||'-')}<br><small class="muted">${esc(r.course_type||'-')}</small></td><td class="course-cell">${esc(r.course_name||'-')}</td><td>${esc(r.education_date||'-')}</td><td>${esc(r.location||'-')}</td><td>${esc(r.instructor||'-')}</td><td>${esc(r.duration||'-')}</td><td>${esc(r.expiry_date||'-')}</td><td>${esc(r.completion||'-')}</td><td>${esc(r.note||'-')}</td><td><div class="progress-actions"><button class="mini-btn" data-record-action="edit" data-id="${esc(r.id)}">수정</button><button class="mini-btn danger" data-record-action="delete" data-id="${esc(r.id)}">삭제</button></div></td></tr>`;
+
+  // 법정교육 탭에서는 같은 과목끼리 묶어서 표시한다.
+  if(recordCategoryFilter==='법정'){
+    const legalOrder=['SMS','DG','SEC','ERP'];
+    const groups=new Map();
+    for(const r of rows){const key=String(r.course_key||r.course_name||'기타').trim();if(!groups.has(key))groups.set(key,[]);groups.get(key).push(r)}
+    const keys=[...groups.keys()].sort((a,b)=>{
+      const ia=legalOrder.indexOf(a),ib=legalOrder.indexOf(b);
+      if(ia>=0||ib>=0)return (ia<0?999:ia)-(ib<0?999:ib);
+      return a.localeCompare(b,'ko');
+    });
+    body.innerHTML=keys.map(key=>{
+      const arr=groups.get(key).slice().sort((a,b)=>String(b.education_date||'').localeCompare(String(a.education_date||'')));
+      const c=EDU_COURSES.find(x=>x.key===key);const title=c?.name||arr[0]?.course_name||key;
+      return `<tr class="record-course-group"><td colspan="10"><b>${esc(title)}</b><span>${arr.length}건</span></td></tr>`+arr.map(rowHtml).join('');
+    }).join('');
+    return;
+  }
+
   rows.sort((a,b)=>String(b.education_date||'').localeCompare(String(a.education_date||''))||String(a.course_name||'').localeCompare(String(b.course_name||''),'ko'));
-  body.innerHTML=rows.length?rows.map(r=>`<tr><td>${esc(r.category||'-')}<br><small class="muted">${esc(r.course_type||'-')}</small></td><td class="course-cell">${esc(r.course_name||'-')}</td><td>${esc(r.education_date||'-')}</td><td>${esc(r.location||'-')}</td><td>${esc(r.instructor||'-')}</td><td>${esc(r.duration||'-')}</td><td>${esc(r.expiry_date||'-')}</td><td>${esc(r.completion||'-')}</td><td>${esc(r.note||'-')}</td><td><div class="progress-actions"><button class="mini-btn" data-record-action="edit" data-id="${esc(r.id)}">수정</button><button class="mini-btn danger" data-record-action="delete" data-id="${esc(r.id)}">삭제</button></div></td></tr>`).join(''):'<tr><td colspan="10" class="muted" style="text-align:center;padding:30px">등록된 교육기록이 없습니다.</td></tr>';
+  body.innerHTML=rows.map(rowHtml).join('');
 }
 function renderHistory(){
   const head=$('#historyHead'),body=$('#historyRows');if(!head||!body)return;
@@ -460,7 +484,18 @@ $('#eventDelete').onclick=async()=>{const id=$('#eventId').value;if(!id||!confir
 $('#progressSave').onclick=async()=>{const x={id:$('#progressId').value||uuid(),employee_no:$('#progressEmpNo').value.trim(),name:$('#progressName').value.trim(),course:$('#progressCourse').value.trim(),instructor:$('#progressInstructor').value.trim(),start_date:$('#progressStart').value,status:$('#progressStatus').value,note:$('#progressNote').value.trim(),updated_at:new Date().toISOString()};if(!x.name||!x.course){alert('성명과 교육과정을 입력해 주세요.');return}const i=progress.findIndex(v=>v.id===x.id);if(i>=0)progress[i]={...progress[i],...x};else progress.push(x);saveLocal();try{await saveProgressCloud(x)}catch(e){showNotice('Cloud 저장 실패(로컬에는 저장됨): '+(e.message||e),'error')}$('#progressModal').classList.remove('show');renderProgress()};
 $('#progressRows').addEventListener('click',async e=>{const b=e.target.closest('button[data-action]');if(!b)return;const x=progress.find(v=>v.id===b.dataset.id);if(!x)return;if(b.dataset.action==='edit'){openProgress(x.id);return}if(b.dataset.action==='delete'){if(!confirm(`${x.name} · ${x.course} 교육 진행내역을 삭제할까요?`))return;progress=progress.filter(v=>v.id!==x.id);saveLocal();try{await deleteProgressCloud(x.id)}catch(err){showNotice('Cloud 삭제 실패: '+(err.message||err),'error');await loadCloud({silent:true});return}renderProgress();return}const stages=['이론 완료','OJT 진행중','OJT 완료','평가','합격'];const idx=stageIndex(x.status);if(idx<stages.length-1){x.status=stages[idx+1];x.updated_at=new Date().toISOString();saveLocal();try{await saveProgressCloud(x)}catch(err){showNotice('Cloud 저장 실패: '+(err.message||err),'error')}renderProgress()}});$('#statusFilter').onchange=renderProgress;$('#progressSearch').oninput=renderProgress;
 
-$('#recordEmployeeSearch')?.addEventListener('input',renderEmployeeSelect);
+$('#recordEmployeeSearch')?.addEventListener('input',e=>{
+  renderEmployeeSelect();
+  const q=String(e.target.value||'').trim().toLowerCase();if(!q)return;
+  const exact=employeeCatalog().find(x=>String(x.empNo||'').toLowerCase()===q||String(x.name||'').trim().toLowerCase()===q);
+  if(exact){$('#recordEmployeeSelect').value=exact.empNo;selectRecordEmployee(exact.empNo)}
+});
+$('#recordEmployeeSearch')?.addEventListener('keydown',e=>{
+  if(e.key!=='Enter')return;e.preventDefault();
+  const q=String(e.currentTarget.value||'').trim().toLowerCase();
+  const hit=employeeCatalog().find(x=>!q||[x.empNo,x.name,x.rank,x.position,x.job].join(' ').toLowerCase().includes(q));
+  if(hit){$('#recordEmployeeSelect').value=hit.empNo;selectRecordEmployee(hit.empNo)}
+});
 $('#recordEmployeeSelect')?.addEventListener('change',e=>selectRecordEmployee(e.target.value));
 $('#recordCategoryTabs')?.addEventListener('click',e=>{const b=e.target.closest('[data-category]');if(!b)return;recordCategoryFilter=b.dataset.category||'';$$('#recordCategoryTabs .category-btn').forEach(x=>x.classList.toggle('active',x===b));renderRecordRows()});
 $('#saveProfileBtn')?.addEventListener('click',async()=>{const empNo=$('#profileEmpNo').value.trim(),name=$('#profileName').value.trim();if(!empNo||!name){alert('사번과 성명을 입력해 주세요.');return}const base=personnelForEmp(empNo)||{};const x={employee_no:empNo,name,source:'CLOUD',english_name:$('#profileEnglish').value.trim(),rank:$('#profileRank').value.trim(),position:$('#profilePosition').value.trim(),job:base.job||'',company:$('#profileCompany').value.trim()||'㈜제이에이에스',department:$('#profileDepartment').value.trim()||'인천공항 램프지점',hire_date:$('#profileHireDate').value,updated_at:new Date().toISOString()};const i=eduProfiles.findIndex(v=>v.employee_no===empNo);if(i>=0)eduProfiles[i]={...eduProfiles[i],...x};else eduProfiles.push(x);selectedRecordEmpNo=empNo;saveLocal();try{await saveEduProfileCloud(x)}catch(err){showNotice('프로필 Cloud 저장 실패: '+(err.message||err),'error')}renderEmployeeSelect();renderHistory()});
