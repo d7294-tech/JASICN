@@ -66,6 +66,9 @@ function saveLocal(){localStorage.setItem(LS_EVENTS,JSON.stringify(events));loca
 function uuid(){return crypto?.randomUUID?crypto.randomUUID():'id-'+Date.now()+'-'+Math.random().toString(36).slice(2)}
 function ymd(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
 function stageIndex(s){return ['이론 완료','OJT 진행중','OJT 완료','평가','합격'].indexOf(s)}
+function nullIfBlank(v){return v==null||String(v).trim()===''?null:v}
+function eventForCloud(x){return {...x,event_date:nullIfBlank(x?.event_date),start_time:nullIfBlank(x?.start_time),end_time:nullIfBlank(x?.end_time)}}
+function progressForCloud(x){return {...x,start_date:nullIfBlank(x?.start_date)}}
 async function refreshSession(){
   try{
     let {data:{session}}=await sb.auth.getSession();
@@ -78,8 +81,8 @@ async function refreshSession(){
 async function migrateLocalIfCloudEmpty(cloudEvents,cloudProgress){
   const localEvents=(()=>{try{return JSON.parse(localStorage.getItem(LS_EVENTS)||'[]')}catch{return[]}})();
   const localProgress=(()=>{try{return JSON.parse(localStorage.getItem(LS_PROGRESS)||'[]')}catch{return[]}})();
-  if(!cloudEvents.length&&localEvents.length){const rows=localEvents.map(x=>({...x,updated_by:sessionUser?.id||null}));const {error}=await sb.from('jas_edu_events').upsert(rows,{onConflict:'id'});if(error)throw error;cloudEvents=rows}
-  if(!cloudProgress.length&&localProgress.length){const rows=localProgress.map(x=>({...x,updated_by:sessionUser?.id||null}));const {error}=await sb.from('jas_edu_progress').upsert(rows,{onConflict:'id'});if(error)throw error;cloudProgress=rows}
+  if(!cloudEvents.length&&localEvents.length){const rows=localEvents.map(x=>eventForCloud({...x,updated_by:sessionUser?.id||null}));const {error}=await sb.from('jas_edu_events').upsert(rows,{onConflict:'id'});if(error)throw error;cloudEvents=rows}
+  if(!cloudProgress.length&&localProgress.length){const rows=localProgress.map(x=>progressForCloud({...x,updated_by:sessionUser?.id||null}));const {error}=await sb.from('jas_edu_progress').upsert(rows,{onConflict:'id'});if(error)throw error;cloudProgress=rows}
   return [cloudEvents,cloudProgress];
 }
 async function loadCloud({silent=false}={}){
@@ -113,7 +116,7 @@ function startRealtime(){
 async function saveEventCloud(x){
   if(!sessionUser && !(await refreshSession()))throw new Error('로그인 세션이 없습니다.');
   setCloudStatus('● CLOUD 저장 중','sync');
-  const row={...x,updated_at:new Date().toISOString(),updated_by:sessionUser.id};
+  const row=eventForCloud({...x,updated_at:new Date().toISOString(),updated_by:sessionUser.id});
   const {error}=await sb.from('jas_edu_events').upsert(row,{onConflict:'id'});if(error)throw error;cloudReady=true;setCloudStatus('● CLOUD LIVE','ok');
 }
 async function deleteEventCloud(id){
@@ -123,7 +126,7 @@ async function deleteEventCloud(id){
 async function saveProgressCloud(x){
   if(!sessionUser && !(await refreshSession()))throw new Error('로그인 세션이 없습니다.');
   setCloudStatus('● CLOUD 저장 중','sync');
-  const row={...x,updated_at:new Date().toISOString(),updated_by:sessionUser.id};
+  const row=progressForCloud({...x,updated_at:new Date().toISOString(),updated_by:sessionUser.id});
   const {error}=await sb.from('jas_edu_progress').upsert(row,{onConflict:'id'});if(error)throw error;cloudReady=true;setCloudStatus('● CLOUD LIVE','ok');
 }
 function renderCalendar(){const y=calDate.getFullYear(),m=calDate.getMonth();$('#monthTitle').textContent=`${y}년 ${m+1}월`;const first=new Date(y,m,1),start=new Date(y,m,1-first.getDay());let html=['일','월','화','수','목','금','토'].map(x=>`<div class="dow">${x}</div>`).join('');for(let i=0;i<42;i++){const d=new Date(start);d.setDate(start.getDate()+i);const date=ymd(d),dayEvents=events.filter(e=>e.event_date===date).sort((a,b)=>String(a.start_time||'').localeCompare(String(b.start_time||'')));html+=`<div class="day ${d.getMonth()!==m?'other':''} ${date===ymd(new Date())?'today':''}" data-date="${date}"><div class="daynum">${d.getDate()}</div>${dayEvents.slice(0,4).map(e=>`<div class="event-pill ${esc(e.event_type)}" data-event-id="${esc(e.id)}" title="${esc(e.title)}">${esc(e.start_time||'')} ${esc(e.title)}</div>`).join('')}${dayEvents.length>4?`<div class="event-pill">+${dayEvents.length-4}건</div>`:''}</div>`}$('#calendar').innerHTML=html;const monthCount=events.filter(e=>String(e.event_date||'').startsWith(`${y}-${String(m+1).padStart(2,'0')}`)).length;$('#kpiEvents').textContent=monthCount;renderUpcoming()}
