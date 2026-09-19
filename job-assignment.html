@@ -750,18 +750,38 @@ function jas3CrewInfo(id){
 }
 function jas3AssignmentRows(date){
   const now=new Date().toISOString(),rows=[];
+  const pushCrewRow=(base,crew,role='PRIMARY',primary=null)=>{
+    if(!crew||!crew.team)return;
+    rows.push({
+      ...base,
+      team_id:crew.id,team:crew.team,team_name:crew.name,shift_code:crew.code,
+      member_count:crew.members.length,assignment_role:role,
+      primary_team:primary?.team||crew.team,primary_team_id:primary?.id||crew.id,
+      updated_at:now,source:'JAS_JOB'
+    });
+  };
   for(const j of jobs){
     for(const side of ['IN','OUT']){
       const flight=side==='IN'?j.arrFlight:j.depFlight;if(!flight)continue;
       const cid=assignments[assignKey(j,side)]||'';if(!cid)continue;
-      const c=jas3CrewInfo(cid),supports=supportIds(j,side).map(x=>jas3CrewInfo(x).team).filter(Boolean);
-      rows.push({operation_date:date,direction:side,flight:normJobFlt(flight),reg:String(j.reg||''),team_id:c.id,team:c.team,team_name:c.name,shift_code:c.code,member_count:c.members.length,support_teams:supports,memo:String(assignments[memoKey(j)]||''),updated_at:now,source:'JAS_JOB'});
+      const primary=jas3CrewInfo(cid);
+      const supportInfos=supportIds(j,side).map(x=>jas3CrewInfo(x)).filter(x=>x?.team);
+      const base={
+        operation_date:date,direction:side,flight:normJobFlt(flight),reg:String(j.reg||''),
+        support_teams:supportInfos.map(x=>x.team),memo:String(assignments[memoKey(j)]||'')
+      };
+      pushCrewRow(base,primary,'PRIMARY',primary);
+      // JAS3는 TEAM 값으로 조회하는 버전이 있어 지원조도 별도 행으로 복제한다.
+      for(const sc of supportInfos){
+        if(String(sc.id)===String(primary.id))continue;
+        pushCrewRow(base,sc,'SUPPORT',primary);
+      }
     }
   }
   for(const t of towJobs){
     const cid=assignments[towAssignKey(t)]||'';if(!cid)continue;
     const c=jas3CrewInfo(cid),interphone=assignments[towRoleKey(t,'인터폰')]||'',operator=assignments[towRoleKey(t,'작동자')]||'';
-    rows.push({operation_date:date,direction:'TOW',flight:normJobFlt(t.depFlight||t.arrFlight||''),reg:String(t.reg||''),team_id:c.id,team:c.team,team_name:c.name,shift_code:c.code,member_count:c.members.length,tow_interphone:String(interphone),tow_operator:String(operator),start_time:String(t.start||''),end_time:String(t.end||''),updated_at:now,source:'JAS_JOB'});
+    pushCrewRow({operation_date:date,direction:'TOW',flight:normJobFlt(t.depFlight||t.arrFlight||''),reg:String(t.reg||''),tow_interphone:String(interphone),tow_operator:String(operator),start_time:String(t.start||''),end_time:String(t.end||''),support_teams:[],memo:''},c,'PRIMARY',c);
   }
   return rows;
 }
@@ -821,6 +841,18 @@ async function syncJas3JobState(date,{manual=false}={}){
       }
       await flush();
     }
+
+    // 구형/현행 JAS3 모두 호환: 날짜 EXTRA 문서에도 같은 배열을 병행 저장한다.
+    // jas_flights의 REG/LDM 필드는 건드리지 않고 assignments/breaks만 merge한다.
+    const extraId='EXTRA__'+String(date||'').replace(/\D/g,'');
+    await jas3JobDb.collection('jas_flights').doc(extraId).set({
+      operation_date:date,
+      assignments:assignmentsRows,
+      breaks:breakRows,
+      ops_updated_at:new Date().toISOString(),
+      ops_source:'JAS_JOB_DUAL_SYNC'
+    },{merge:true});
+    totalWrites++;
 
     setJas3JobBadge(`JAS3 완료 · 배정 ${assignmentsRows.length} · 휴게 ${breakRows.length} · WRITE ${totalWrites}`,true);
     return true;
